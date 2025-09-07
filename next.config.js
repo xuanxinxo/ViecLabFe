@@ -2,6 +2,8 @@
 const nextConfig = {
   reactStrictMode: true,
   swcMinify: true,
+  // Tắt telemetry
+  telemetry: false,
   images: {
     domains: [
       'media-blog.jobsgo.vn',
