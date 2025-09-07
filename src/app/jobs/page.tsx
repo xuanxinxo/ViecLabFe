@@ -73,7 +73,7 @@ function useJobsQuery(page: number, limit: number) {
     queryKey: ['jobs', 'external', page, limit],
     queryFn: async (): Promise<JobsApiResponse> => {
       try {
-        const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
+        const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://https://vieclabbe.onrender.com';
         const res = await fetch(`${backendUrl}/api/jobs?page=${page}&limit=${limit}`);
         
         if (!res.ok) {

@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
     try {
       console.log('🔍 [ADMIN JOBS] Calling backend API...');
       
-      const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+      const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'https://vieclabbe.onrender.com';
       const queryParams = status && status !== 'all' ? `?status=${status}` : '';
       
       console.log('🔍 [ADMIN JOBS] Backend URL:', `${backendUrl}/api/jobs${queryParams}`);
@@ -134,7 +134,7 @@ export async function POST(request: NextRequest) {
 
     // Call backend API to create job
     try {
-      const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+      const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'https://vieclabbe.onrender.com';
       
       const jobData = {
         title: body.title,

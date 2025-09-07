@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
     console.log('Search parameters:', { searchQuery, locationQuery, page, limit });
     
     // Call backend API directly to get newjobs data from MongoDB
-    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'https://vieclabbe.onrender.com';
     const queryParams = new URLSearchParams({
       page: page.toString(),
       limit: limit.toString(),

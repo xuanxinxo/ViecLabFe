@@ -107,11 +107,11 @@ export default function CarouselJob() {
       setError(null);
       
       try {
-        console.log('Fetching jobs from http://localhost:5000/api/jobs...');
+        console.log('Fetching jobs from http://https://vieclabbe.onrender.com/api/jobs...');
         const startTime = Date.now();
         
         // Fetch jobs directly from the backend API
-        const response = await fetch('http://localhost:5000/api/jobs');
+        const response = await fetch('http://https://vieclabbe.onrender.com/api/jobs');
         
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);

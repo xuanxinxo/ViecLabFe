@@ -59,7 +59,7 @@ export default function NewsSection() {
           </Link>
         </div>
         <div className="text-center py-8 text-gray-500">
-          Không có tin tức nào để hiển thịsssssssssssssssss
+          Không có tin tức nào để hiển thị
         </div>
       </section>
     );

@@ -18,7 +18,7 @@ export async function GET(
     }
 
     // Call backend API directly
-    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'https://vieclabbe.onrender.com';
     const response = await fetch(`${backendUrl}/api/jobs/${id}`, {
       method: 'GET',
       headers: {
@@ -129,7 +129,7 @@ export async function PUT(
     }
 
     // Call backend API to update job
-    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'https://vieclabbe.onrender.com';
     const response = await fetch(`${backendUrl}/api/jobs/${id}`, {
       method: 'PUT',
       headers: {
@@ -167,7 +167,7 @@ export async function DELETE(
     }
 
     // Call backend API to delete job
-    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'https://vieclabbe.onrender.com';
     const response = await fetch(`${backendUrl}/api/jobs/${id}`, {
       method: 'DELETE',
       headers: {

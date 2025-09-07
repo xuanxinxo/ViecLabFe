@@ -20,7 +20,7 @@ export async function GET(
     }
 
     // Call backend API directly
-    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'https://vieclabbe.onrender.com';
     const response = await fetch(`${backendUrl}/api/jobs/${params.id}`, {
       method: 'GET',
       headers: {
@@ -187,7 +187,7 @@ export async function PUT(
     }
 
     // Call backend API to update the job
-    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'https://vieclabbe.onrender.com';
     console.log('📤 [ADMIN JOBS] Sending update request to backend:', {
       url: `${backendUrl}/api/jobs/${jobId}`,
       data: data,
@@ -300,7 +300,7 @@ export async function DELETE(
     }
 
     // Call backend API to delete the job
-    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'https://vieclabbe.onrender.com';
     
     // Forward the authorization header to backend
     const authHeader = request.headers.get('authorization');
@@ -368,7 +368,7 @@ export async function PATCH(
     });
 
     // Call backend API to update the job
-    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'https://vieclabbe.onrender.com';
     
     // Forward the authorization header to backend
     const authHeader = request.headers.get('authorization');

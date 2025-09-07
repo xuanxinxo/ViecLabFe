@@ -81,7 +81,7 @@ export async function GET() {
   
   try {
     // Call backend API to get real applications
-    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'https://vieclabbe.onrender.com';
     console.log('[APPLICATIONS] Calling backend API:', `${backendUrl}/api/applications`);
     
     const response = await fetch(`${backendUrl}/api/applications`, {

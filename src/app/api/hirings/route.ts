@@ -7,7 +7,7 @@ export async function GET(req: Request) {
     const status = searchParams.get('status') || 'approved';
 
     // Call backend API directly to get hiring data from MongoDB
-    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'https://vieclabbe.onrender.com';
     const response = await fetch(`${backendUrl}/api/hirings?status=${status}`, {
       method: 'GET',
       headers: {
@@ -79,7 +79,7 @@ export async function POST(req: Request) {
     }
 
     // Call backend API to create hiring
-    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'https://vieclabbe.onrender.com';
     const response = await fetch(`${backendUrl}/api/hirings`, {
       method: 'POST',
       headers: {

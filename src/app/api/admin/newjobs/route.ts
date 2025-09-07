@@ -79,7 +79,7 @@ export async function GET(request: NextRequest) {
     console.log('Status filter from URL:', status);
 
     // Call backend API directly to get hirings data from MongoDB
-    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'https://vieclabbe.onrender.com';
     
     // Build query parameters for hirings API
     const queryParams = new URLSearchParams();

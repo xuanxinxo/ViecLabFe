@@ -36,7 +36,7 @@ export async function PUT(
     }
 
     // Call backend API to update job status
-    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'https://vieclabbe.onrender.com';
     const response = await fetch(`${backendUrl}/api/jobs/${id}`, {
       method: 'PATCH',
       headers: {

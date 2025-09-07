@@ -14,7 +14,7 @@ export async function GET(
     }
 
     // Call backend API directly to get hiring data from MongoDB
-    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'https://vieclabbe.onrender.com';
     const response = await fetch(`${backendUrl}/api/hirings/${id}`, {
       method: 'GET',
       headers: {
@@ -56,7 +56,7 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
     }
 
     // Call backend API to update hiring
-    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'https://vieclabbe.onrender.com';
     const response = await fetch(`${backendUrl}/api/hirings/${id}`, {
       method: 'PUT',
       headers: {
@@ -89,7 +89,7 @@ export async function DELETE(_req: Request, { params }: { params: { id: string }
     }
 
     // Call backend API to delete hiring
-    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'https://vieclabbe.onrender.com';
     const response = await fetch(`${backendUrl}/api/hirings/${id}`, {
       method: 'DELETE',
       headers: {

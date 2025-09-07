@@ -4,7 +4,7 @@ import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
 type HttpMethod = 'get' | 'post' | 'put' | 'delete';
 
 // Base API configuration
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://vieclabbe.onrender.com';
 
 // Create axios instance with base config
 console.log('Initializing API client with base URL:', `${API_URL}/api`);
