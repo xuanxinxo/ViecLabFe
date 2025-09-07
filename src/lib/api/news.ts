@@ -1,6 +1,6 @@
 import { PaginationParams, PaginatedResponse } from '@/src/types/job';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://vieclabbe.onrender.com';
 
 export interface NewsItem {
   _id: string;

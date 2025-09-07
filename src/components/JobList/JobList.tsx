@@ -34,24 +34,26 @@ export default function JobList({
 
       console.log("Loading jobs from hirings API...");
       
-      // Using the new API client with proper typing
-      const response = await apiClient.hirings.getAll();
-      console.log("API Response:", response);
+      // Call backend API directly
+      const response = await fetch('https://vieclabbe.onrender.com/api/hirings');
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const responseData = await response.json();
+      console.log("API Response:", responseData);
       
       // Handle different response formats
       let jobsData: Job[] = [];
       
-      if (response.data && Array.isArray(response.data)) {
-        // Direct array response
-        jobsData = response.data;
-      } else if (response.data && response.data.data && Array.isArray(response.data.data)) {
+      if (responseData.data && Array.isArray(responseData.data)) {
         // Nested data response
-        jobsData = response.data.data;
-      } else if (Array.isArray(response)) {
+        jobsData = responseData.data;
+      } else if (Array.isArray(responseData)) {
         // Direct array response
-        jobsData = response;
+        jobsData = responseData;
       } else {
-        console.error("Unexpected response format:", response);
+        console.error("Unexpected response format:", responseData);
         throw new Error("Invalid response format");
       }
       

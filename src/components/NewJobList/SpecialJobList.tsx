@@ -30,7 +30,7 @@ export default function SpecialJobList() {
       setLoading(true);
       setError('');
       // Lấy 4 job đặc biệt đã được phê duyệt
-      const res = await fetch('/api/newjobs?limit=4');
+      const res = await fetch('https://vieclabbe.onrender.com/api/newjobs?limit=4');
       const json = await res.json();
       if (json.jobs && Array.isArray(json.jobs)) {
         setJobs(json.jobs);

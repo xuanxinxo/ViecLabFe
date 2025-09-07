@@ -29,8 +29,8 @@ export default function NewJobList({
       setLoading(true);
       setError("");
 
-      // Call the /api/newjobs endpoint with pagination
-      const res = await fetch(`/api/newjobs?limit=${limit}&page=1`);
+      // Call the backend API directly
+      const res = await fetch(`https://vieclabbe.onrender.com/api/newjobs?limit=${limit}&page=1`);
       if (!res.ok) {
         const errorText = await res.text();
         throw new Error(`Lỗi kết nối: ${res.status}, ${errorText}`);
