@@ -63,33 +63,52 @@ function LoginContent() {
     setIsLoading(true);
 
     try {
-      const res = await apiClient.auth.login({ email: form.email, password: form.password });
-      const payload = res.data;
+      const payload = await apiClient.auth.login({ email: form.email, password: form.password });
+      
+      console.log('Login response:', payload);
 
       if (!payload?.success) {
         throw new Error(payload?.message || 'Đăng nhập thất bại');
       }
 
       const user = payload?.data?.user;
-      const accessToken = payload?.data?.accessToken;
-      const refreshToken = payload?.data?.refreshToken;
+      const token = payload?.data?.token;
 
       setSuccess('Đăng nhập thành công! Đang chuyển hướng...');
 
       if (user) {
         localStorage.setItem('user', JSON.stringify(user));
       }
-      if (accessToken) {
-        localStorage.setItem('accessToken', accessToken);
-      }
-      if (refreshToken) {
-        localStorage.setItem('refreshToken', refreshToken);
+      if (token) {
+        localStorage.setItem('token', token);
       }
 
-      const redirectTo = user?.role === 'ADMIN' ? '/admin' : '/';
-      setTimeout(() => router.push(redirectTo), 800);
+      const redirectTo = user?.role === 'admin' ? '/admin' : '/';
+      setTimeout(() => {
+        try {
+          router.push(redirectTo);
+        } catch (routerError) {
+          console.error('Router error:', routerError);
+          window.location.href = redirectTo;
+        }
+      }, 800);
+      
+      // Log the full response for debugging
+      console.log('Full login response:', payload);
     } catch (err: any) {
-      setError(err?.message || 'Có lỗi xảy ra khi đăng nhập');
+      console.error('Login error:', err);
+      let errorMessage = err?.message || 'Có lỗi xảy ra khi đăng nhập';
+      
+      // Handle specific error cases
+      if (err?.message?.includes('401') || err?.message?.includes('Unauthorized')) {
+        errorMessage = 'Email hoặc mật khẩu không đúng. Vui lòng kiểm tra lại.';
+      } else if (err?.message?.includes('Failed to fetch') || err?.message?.includes('NetworkError')) {
+        errorMessage = 'Không thể kết nối đến server. Vui lòng kiểm tra kết nối internet và thử lại.';
+      } else if (err?.message?.includes('timeout')) {
+        errorMessage = 'Server phản hồi chậm. Vui lòng thử lại sau.';
+      }
+      
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -100,7 +119,7 @@ function LoginContent() {
       <div className="max-w-md w-full space-y-8">
         <div>
           <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Đăng nhập vào tài khoảnxxxxxxxxxxxxxxx
+            Đăng nhập vào tài khoản
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
             Hoặc{' '}
@@ -108,6 +127,12 @@ function LoginContent() {
               đăng ký tài khoản mới
             </Link>
           </p>
+          <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
+            <p className="text-sm text-blue-800">
+              <strong>Lưu ý:</strong> Hiện tại backend chưa có tài khoản test. 
+              Vui lòng liên hệ quản trị viên để được cấp tài khoản hoặc kiểm tra lại thông tin đăng nhập.
+            </p>
+          </div>
         </div>
         
         {/* Success and Error Messages */}

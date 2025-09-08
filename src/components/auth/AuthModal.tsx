@@ -30,7 +30,13 @@ export default function AuthModal({ isOpen }: AuthModalProps) {
     try {
       setIsLoading(true);
       // Redirect to registration page with role parameter
-      router.push(`/register?role=${isCustomer ? 'customer' : 'employer'}`);
+      try {
+        router.push(`/register?role=${isCustomer ? 'customer' : 'employer'}`);
+      } catch (routerError) {
+        console.error('Router error:', routerError);
+        // Fallback: use window.location
+        window.location.href = `/register?role=${isCustomer ? 'customer' : 'employer'}`;
+      }
       setShowModal(false); // Close modal after click
       // Set login status to true after successful registration
       localStorage.setItem('isLoggedIn', 'true');
@@ -47,7 +53,13 @@ export default function AuthModal({ isOpen }: AuthModalProps) {
     try {
       setIsLoading(true);
       // Redirect to login page with role parameter
-      router.push(`/login?role=${isCustomer ? 'customer' : 'employer'}`);
+      try {
+        router.push(`/login?role=${isCustomer ? 'customer' : 'employer'}`);
+      } catch (routerError) {
+        console.error('Router error:', routerError);
+        // Fallback: use window.location
+        window.location.href = `/login?role=${isCustomer ? 'customer' : 'employer'}`;
+      }
       setShowModal(false); // Close modal after click
       // Set login status to true after successful login
       localStorage.setItem('isLoggedIn', 'true');

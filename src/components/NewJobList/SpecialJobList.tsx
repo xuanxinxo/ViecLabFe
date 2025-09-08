@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import NewJobApplyModal from '@/src/components/NewJobApplyModal';
+import { apiClient } from '../../lib/api';
 
 export interface SpecialJob {
   _id: string;
@@ -30,10 +31,16 @@ export default function SpecialJobList() {
       setLoading(true);
       setError('');
       // Lấy 4 job đặc biệt đã được phê duyệt
-      const res = await fetch('https://vieclabbe.onrender.com/api/newjobs?limit=4');
-      const json = await res.json();
-      if (json.jobs && Array.isArray(json.jobs)) {
+      const json = await apiClient.newJobs.getAll({ limit: 4 });
+      // Handle backend response format: /api/newjobs returns array directly
+      if (Array.isArray(json)) {
+        setJobs(json);
+      } else if (json.success && Array.isArray(json.data)) {
+        setJobs(json.data);
+      } else if (json.jobs && Array.isArray(json.jobs)) {
         setJobs(json.jobs);
+      } else if (json.data && Array.isArray(json.data)) {
+        setJobs(json.data);
       } else {
         throw new Error('Invalid response format');
       }

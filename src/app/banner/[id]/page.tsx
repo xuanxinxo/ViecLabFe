@@ -48,10 +48,24 @@ export default function BannerDetail() {
     async function loadJob() {
       try {
         setLoading(true);
-        const response = await fetch(`/api/jobs/${params.id}`);
+        const response = await fetch(`https://vieclabbe.onrender.com/api/jobs/${params.id}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+          },
+          mode: 'cors',
+        });
         const data = await response.json();
         if (response.ok) {
-          setJob(data);
+          // Handle backend response format: {success: true, data: {...}}
+          if (data.success && data.data) {
+            setJob(data.data);
+          } else if (data) {
+            setJob(data);
+          } else {
+            setError('Không tìm thấy việc làm');
+          }
         } else {
           setError(data.error || 'Không tìm thấy việc làm');
         }
@@ -87,12 +101,20 @@ export default function BannerDetail() {
   return (
     <div className="min-h-screen bg-gray-50 pb-16">
       <header className="bg-white shadow-sm border-b mb-8">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
-          <Link href="/" className="text-blue-600 hover:underline">← Quay lại trang chủ</Link>
-        </div>
-      </header>
 
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      </header>
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 mt-40">
+        <Link 
+          href="/" 
+          className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-50 hover:text-blue-600 hover:border-blue-300 transition-all duration-200 ease-in-out"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+          </svg>
+          Quay lại trang chủ
+        </Link>
+      </div>
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 ">
         <div className="bg-white rounded-xl shadow-md overflow-hidden">
 
           {/* Banner: Thông tin + hình ảnh */}
@@ -112,7 +134,7 @@ export default function BannerDetail() {
                   Ngày đăng: <span className="font-semibold">{new Date(job.postedDate).toLocaleDateString('vi-VN')}</span>
                 </div>
               </div>
-    
+
               {job.img && (
                 <div className="w-full md:w-48 h-36 bg-white rounded-md overflow-hidden flex items-center justify-center shadow-sm">
                   <img

@@ -62,14 +62,21 @@ export default function AdminApplications() {
       const applicationsData = await response.json();
       console.log(`[ADMIN APPLICATIONS] API response:`, applicationsData);
 
-      // Backend returns {success: true, data: [...]}
-      if (applicationsData.success && applicationsData.data) {
-        console.log(`[ADMIN APPLICATIONS] Fetched ${applicationsData.data.length} applications from backend`);
-        setApplications(applicationsData.data);
+      // Handle different response formats
+      let applications = [];
+      if (applicationsData.success && applicationsData.data && Array.isArray(applicationsData.data)) {
+        applications = applicationsData.data;
+      } else if (applicationsData.data && Array.isArray(applicationsData.data)) {
+        applications = applicationsData.data;
+      } else if (Array.isArray(applicationsData)) {
+        applications = applicationsData;
       } else {
         console.error('[ADMIN APPLICATIONS] Invalid API response format:', applicationsData);
         throw new Error('Invalid API response format');
       }
+      
+      console.log(`[ADMIN APPLICATIONS] Fetched ${applications.length} applications from backend`);
+      setApplications(applications);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to load applications';
       console.error('[ADMIN APPLICATIONS] Error:', errorMessage, err);

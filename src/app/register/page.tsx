@@ -27,16 +27,25 @@ export default function RegisterPage() {
     }
     setLoading(true);
     try {
-      const res = await apiClient.auth.register({
+      const payload = await apiClient.auth.register({
         email: form.email,
         password: form.password,
         name: form.name,
       });
-      const payload = res.data;
+      
+      console.log('Register response:', payload);
+      
       if (payload?.success) {
         const user = payload?.data?.user || payload?.user;
         setMessage(`Đăng ký thành công! Xin chào ${user?.name || form.name}`);
-        setTimeout(() => router.push('/login?registered=true'), 800);
+        setTimeout(() => {
+          try {
+            router.push('/login?registered=true');
+          } catch (routerError) {
+            console.error('Router error:', routerError);
+            window.location.href = '/login?registered=true';
+          }
+        }, 800);
       } else if (payload?.errors) {
         const errs = Object.values(payload.errors as any).flat().join(' ');
         setMessage(errs);
@@ -45,8 +54,20 @@ export default function RegisterPage() {
       } else {
         setMessage('Có lỗi xảy ra');
       }
+      
+      // Log the full response for debugging
+      console.log('Full register response:', payload);
     } catch (err: any) {
-      setMessage(err?.response?.data?.message || 'Không thể kết nối đến server');
+      console.error('Register error:', err);
+      const errorMessage = err?.response?.data?.message || 
+                          err?.message || 
+                          'Không thể kết nối đến server. Vui lòng thử lại sau.';
+      setMessage(errorMessage);
+      
+      // If it's a network error, try to provide more helpful message
+      if (err?.message?.includes('Failed to fetch') || err?.message?.includes('NetworkError')) {
+        setMessage('Không thể kết nối đến server. Vui lòng kiểm tra kết nối internet và thử lại.');
+      }
     } finally {
       setLoading(false);
     }
@@ -57,7 +78,15 @@ export default function RegisterPage() {
       <form onSubmit={handleRegister} className="relative z-10 flex flex-col md:flex-row bg-gray-800 bg-opacity-90 rounded-xl shadow-2xl p-8 md:p-12 max-w-4xl w-full mx-4">
         <div className="w-full md:w-1/2 p-4 md:p-8 flex flex-col justify-center space-y-6">
           <h2 className="text-4xl font-bold text-center">Đăng ký</h2>
-          {message && <div className="text-center text-red-400">{message}</div>}
+          {message && (
+            <div className={`text-center p-3 rounded-lg ${
+              message.includes('thành công') 
+                ? 'text-green-400 bg-green-900 bg-opacity-50' 
+                : 'text-red-400 bg-red-900 bg-opacity-50'
+            }`}>
+              {message}
+            </div>
+          )}
 
           <input
             id="name"

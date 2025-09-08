@@ -1,6 +1,6 @@
 import { PaginationParams, PaginatedResponse } from '@/types/job';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '';
+const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL || 'https://vieclabbe.onrender.com').replace(/\/+$/, '');
 
 export interface Application {
   _id: string;
@@ -49,6 +49,7 @@ export async function getApplications(params?: PaginationParams): Promise<Pagina
     });
   }
 
+  // Use backend API directly
   const response = await fetch(`${API_BASE_URL}/api/applications?${queryParams.toString()}`, {
     credentials: 'include',
     headers: {
@@ -66,8 +67,8 @@ export async function getApplications(params?: PaginationParams): Promise<Pagina
 }
 
 export async function getFeaturedApplications(limit: number = 8): Promise<Application[]> {
-  // Use frontend API route instead of calling backend directly
-  const url = `/api/applications?limit=${limit}`;
+  // Use backend API directly
+  const url = `${API_BASE_URL}/api/applications?limit=${limit}`;
   
   console.log(`[getFeaturedApplications] Fetching from: ${url}`);
   
@@ -78,6 +79,7 @@ export async function getFeaturedApplications(limit: number = 8): Promise<Applic
         'Content-Type': 'application/json',
         'Accept': 'application/json',
       },
+      mode: 'cors',
     });
     
     if (!response.ok) {
@@ -89,12 +91,15 @@ export async function getFeaturedApplications(limit: number = 8): Promise<Applic
     const data = await response.json();
     console.log('[getFeaturedApplications] API response:', data);
     
-    // Handle different response formats
-    let applications = Array.isArray(data) 
-      ? data 
-      : Array.isArray(data?.data) 
-        ? data.data 
-        : [];
+    // Handle backend response format: {success: true, count: 29, data: [...]}
+    let applications = [];
+    if (data.success && Array.isArray(data.data)) {
+      applications = data.data;
+    } else if (Array.isArray(data)) {
+      applications = data;
+    } else if (Array.isArray(data?.data)) {
+      applications = data.data;
+    }
     
     console.log(`[getFeaturedApplications] Found ${applications.length} applications`);
     return applications;
@@ -107,6 +112,7 @@ export async function getFeaturedApplications(limit: number = 8): Promise<Applic
 }
 
 export async function getApplicationById(id: string): Promise<Application> {
+  // Use backend API directly
   const response = await fetch(`${API_BASE_URL}/api/applications/${id}`, {
     credentials: 'include',
     headers: {

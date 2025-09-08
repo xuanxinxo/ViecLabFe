@@ -1,6 +1,6 @@
 import { PaginationParams, PaginatedResponse } from '@/src/types/job';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://vieclabbe.onrender.com';
+const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL || 'https://vieclabbe.onrender.com').replace(/\/+$/, '');
 
 export interface NewsItem {
   _id: string;
@@ -30,7 +30,8 @@ export async function getNews(params?: PaginationParams): Promise<PaginatedRespo
     });
   }
 
-  const response = await fetch(`${API_BASE_URL}/api/news?${queryParams.toString()}`);
+  // Use local API route instead of backend directly
+  const response = await fetch(`/api/news?${queryParams.toString()}`);
   if (!response.ok) {
     throw new Error('Không thể tải danh sách tin tức');
   }
@@ -49,19 +50,32 @@ export async function getFeaturedNews(limit: number = 5, _cacheBuster?: number):
       params._t = _cacheBuster;
     }
     const response = await getNews(params);
-    // Chuẩn hóa nhiều dạng response khác nhau
+    // Handle backend response format: /api/news returns array directly
     let items: any[] = [];
-    if (Array.isArray(response)) items = response;
-    else if (Array.isArray((response as any)?.data)) items = (response as any).data;
-    else if (Array.isArray((response as any)?.news)) items = (response as any).news;
+    if (Array.isArray(response)) {
+      items = response;
+    } else if (response.success && Array.isArray(response.data)) {
+      items = response.data;
+    } else if (Array.isArray((response as any)?.data)) {
+      items = (response as any).data;
+    } else if (Array.isArray((response as any)?.news)) {
+      items = (response as any).news;
+    }
 
     // Nếu featured rỗng, fallback: lấy tin mới nhất (published)
     if (!items || items.length === 0) {
       const fallback = await getNews({ limit, status: 'published', sort: '-createdAt', _t: _cacheBuster });
-      if (Array.isArray(fallback)) items = fallback;
-      else if (Array.isArray((fallback as any)?.data)) items = (fallback as any).data;
-      else if (Array.isArray((fallback as any)?.news)) items = (fallback as any).news;
-      else items = [];
+      if (Array.isArray(fallback)) {
+        items = fallback;
+      } else if (fallback.success && Array.isArray(fallback.data)) {
+        items = fallback.data;
+      } else if (Array.isArray((fallback as any)?.data)) {
+        items = (fallback as any).data;
+      } else if (Array.isArray((fallback as any)?.news)) {
+        items = (fallback as any).news;
+      } else {
+        items = [];
+      }
     }
 
     // Đảm bảo mỗi phần tử có trường cần thiết và map an toàn
@@ -99,7 +113,8 @@ function cryptoRandomId(): string {
 }
 
 export async function getNewsDetail(id: string): Promise<NewsItem> {
-  const response = await fetch(`${API_BASE_URL}/api/news/${id}`);
+  // Use local API route instead of backend directly
+  const response = await fetch(`/api/news/${id}`);
   if (!response.ok) {
     throw new Error('Không thể tải chi tiết tin tức');
   }

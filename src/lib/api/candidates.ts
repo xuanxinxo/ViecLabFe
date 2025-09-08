@@ -1,6 +1,6 @@
 import { PaginationParams, PaginatedResponse } from '@/types/job';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '';
+const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL || 'https://vieclabbe.onrender.com').replace(/\/+$/, '');
 
 export interface Candidate {
   _id: string;
@@ -38,27 +38,16 @@ export async function getCandidates(params?: PaginationParams): Promise<Paginate
     });
   }
 
-  // Prefer backend if available, but fall back to Next route if 404/failed
-  const backendUrl = API_BASE_URL ? `${API_BASE_URL}/api/candidates?${queryParams.toString()}` : '';
-  const nextUrl = `/api/candidates?${queryParams.toString()}`;
-
-  let res: Response | null = null;
-  try {
-    if (backendUrl) {
-      res = await fetch(backendUrl);
-      if (res.ok) return res.json();
-    }
-  } catch {}
-
-  // Fallback to Next.js API route
-  res = await fetch(nextUrl);
-  if (!res.ok) {
+  // Use backend API directly
+  const response = await fetch(`${API_BASE_URL}/api/candidates?${queryParams.toString()}`);
+  if (!response.ok) {
     throw new Error('Không thể tải danh sách ứng viên');
   }
-  return res.json();
+  return response.json();
 }
 
 export async function getCandidateDetail(id: string): Promise<Candidate> {
+  // Use backend API directly
   const response = await fetch(`${API_BASE_URL}/api/candidates/${id}`);
   if (!response.ok) {
     throw new Error('Không thể tải chi tiết ứng viên');

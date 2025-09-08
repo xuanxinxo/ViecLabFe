@@ -7,107 +7,115 @@ export async function GET(request: NextRequest) {
   try {
     console.log('🔍 [JOBS API] GET request received');
     
-    // Sample jobs data - replace this with your actual database query
-    const jobs = [
-      {
-        id: 'job-1',
-        title: 'Frontend Developer React',
-        company: 'TechCorp Vietnam',
-        location: 'Hồ Chí Minh',
-        type: 'Full-time',
-        salary: '25.000.000 - 35.000.000 VND',
-        status: 'active',
-        postedDate: '2024-01-10',
-        deadline: '2024-02-10',
-        description: 'Chúng tôi đang tìm kiếm Frontend Developer có kinh nghiệm với React.',
-        requirements: ['React', 'JavaScript', 'TypeScript'],
-        benefits: ['Lương cao', 'Bảo hiểm', 'Remote work'],
-        tags: ['React', 'Frontend', 'JavaScript'],
-        isRemote: false,
-        createdAt: new Date('2024-01-10').toISOString(),
-        updatedAt: new Date('2024-01-10').toISOString()
-      },
-      {
-        id: 'job-2',
-        title: 'Backend Developer Node.js',
-        company: 'StartupHub',
-        location: 'Hà Nội',
-        type: 'Full-time',
-        salary: '20.000.000 - 30.000.000 VND',
-        status: 'pending',
-        postedDate: '2024-01-08',
-        deadline: '2024-02-08',
-        description: 'Tham gia phát triển backend cho ứng dụng fintech.',
-        requirements: ['Node.js', 'MongoDB', 'Express'],
-        benefits: ['Stock options', 'Flexible hours'],
-        tags: ['Node.js', 'Backend', 'MongoDB'],
-        isRemote: true,
-        createdAt: new Date('2024-01-08').toISOString(),
-        updatedAt: new Date('2024-01-08').toISOString()
-      },
-      {
-        id: 'job-3',
-        title: 'UI/UX Designer',
-        company: 'Creative Studio',
-        location: 'Đà Nẵng',
-        type: 'Part-time',
-        salary: '15.000.000 - 20.000.000 VND',
-        status: 'pending',
-        postedDate: '2024-01-12',
-        deadline: '2024-02-12',
-        description: 'Thiết kế giao diện người dùng cho các ứng dụng mobile và web.',
-        requirements: ['Figma', 'Sketch', 'Adobe XD'],
-        benefits: ['Làm việc linh hoạt', 'Môi trường sáng tạo'],
-        tags: ['UI/UX', 'Design', 'Figma'],
-        isRemote: false,
-        createdAt: new Date('2024-01-12').toISOString(),
-        updatedAt: new Date('2024-01-12').toISOString()
-      },
-      {
-        id: 'job-4',
-        title: 'DevOps Engineer',
-        company: 'CloudTech',
-        location: 'Remote',
-        type: 'Full-time',
-        salary: '30.000.000 - 40.000.000 VND',
-        status: 'active',
-        postedDate: '2024-01-15',
-        deadline: '2024-02-15',
-        description: 'Quản lý hạ tầng cloud và CI/CD pipelines.',
-        requirements: ['AWS', 'Docker', 'Kubernetes'],
-        benefits: ['Remote 100%', 'Lương cao', 'Flexible hours'],
-        tags: ['DevOps', 'AWS', 'Docker'],
-        isRemote: true,
-        createdAt: new Date('2024-01-15').toISOString(),
-        updatedAt: new Date('2024-01-15').toISOString()
-      },
-      {
-        id: 'job-5',
-        title: 'Mobile Developer Flutter',
-        company: 'AppStudio',
-        location: 'Hồ Chí Minh',
-        type: 'Full-time',
-        salary: '28.000.000 - 38.000.000 VND',
-        status: 'active',
-        postedDate: '2024-01-18',
-        deadline: '2024-02-18',
-        description: 'Phát triển ứng dụng mobile cross-platform với Flutter.',
-        requirements: ['Flutter', 'Dart', 'Firebase'],
-        benefits: ['Lương cao', 'Tham gia dự án thú vị'],
-        tags: ['Flutter', 'Mobile', 'Dart'],
-        isRemote: false,
-        createdAt: new Date('2024-01-18').toISOString(),
-        updatedAt: new Date('2024-01-18').toISOString()
-      }
-    ];
-
-    console.log('✅ [JOBS API] Returning', jobs.length, 'jobs');
+    // Get query parameters
+    const searchParams = request.nextUrl.searchParams;
+    const searchQuery = searchParams.get('search') || searchParams.get('q') || '';
+    const locationQuery = searchParams.get('location') || '';
+    const page = parseInt(searchParams.get('page') || searchParams.get('_page') || '1');
+    const limit = parseInt(searchParams.get('limit') || searchParams.get('_limit') || '10');
     
-    return NextResponse.json(jobs);
+    console.log('Search parameters:', { searchQuery, locationQuery, page, limit });
+    
+    // Call backend API directly - hardcode URL to ensure it works
+    const backendUrl = 'https://vieclabbe.onrender.com';
+    const queryParams = new URLSearchParams({
+      page: page.toString(),
+      limit: limit.toString(),
+      ...(searchQuery && { search: searchQuery }),
+      ...(locationQuery && { location: locationQuery })
+    });
+
+    console.log(`Calling backend API: ${backendUrl}/api/jobs?${queryParams}`);
+
+    const response = await fetch(`${backendUrl}/api/jobs?${queryParams}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      }
+    });
+
+    console.log(`Backend response status: ${response.status}`);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`Backend API error: ${response.status} - ${errorText}`);
+      
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: `Backend API error: ${response.status} - ${errorText}`,
+          data: [],
+          count: 0
+        },
+        { status: response.status }
+      );
+    }
+
+    // Backend API successful
+    const backendData = await response.json();
+    console.log('Backend response data:', backendData);
+    
+    // Handle different backend response formats
+    let jobsData = [];
+    if (Array.isArray(backendData)) {
+      jobsData = backendData;
+    } else if (backendData.data && Array.isArray(backendData.data)) {
+      jobsData = backendData.data;
+    } else if (backendData.jobs && Array.isArray(backendData.jobs)) {
+      jobsData = backendData.jobs;
+    } else {
+      console.error('Unexpected backend response format:', backendData);
+      jobsData = [];
+    }
+
+    // Client-side filtering if backend doesn't filter properly
+    if (searchQuery && searchQuery.trim()) {
+      const searchTerm = searchQuery.toLowerCase().trim();
+      console.log('Applying client-side search filter for:', searchTerm);
+      
+      jobsData = jobsData.filter((job: any) => {
+        const title = (job.title || '').toLowerCase();
+        const company = (job.company || '').toLowerCase();
+        const description = (job.description || '').toLowerCase();
+        const location = (job.location || '').toLowerCase();
+        
+        return title.includes(searchTerm) || 
+               company.includes(searchTerm) || 
+               description.includes(searchTerm) ||
+               location.includes(searchTerm);
+      });
+      
+      console.log(`Filtered results: ${jobsData.length} jobs match "${searchTerm}"`);
+    }
+
+    // Client-side location filtering
+    if (locationQuery && locationQuery.trim()) {
+      const locationTerm = locationQuery.toLowerCase().trim();
+      console.log('Applying client-side location filter for:', locationTerm);
+      
+      jobsData = jobsData.filter((job: any) => {
+        const location = (job.location || '').toLowerCase();
+        return location.includes(locationTerm);
+      });
+      
+      console.log(`Location filtered results: ${jobsData.length} jobs in "${locationTerm}"`);
+    }
+
+    return NextResponse.json({
+      success: true,
+      data: jobsData,
+      count: jobsData.length,
+      pagination: backendData.pagination || {}
+    });
   } catch (err) {
     console.error('💥 [JOBS API] Error:', err);
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { 
+        success: false,
+        error: 'Internal server error',
+        data: [],
+        count: 0
+      },
       { status: 500 }
     );
   }

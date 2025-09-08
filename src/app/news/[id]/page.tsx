@@ -22,7 +22,7 @@ export default async function NewsDetailPage({ params }: Props) {
     console.log(`[NEWS] Fetching news details for ID: ${params.id}`);
     
     // Fetch news details directly from the API
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/news/${params.id}`, {
+    const response = await fetch(`https://vieclabbe.onrender.com/api/news/${params.id}`, {
       cache: 'no-store',
     });
 
@@ -59,7 +59,7 @@ export default async function NewsDetailPage({ params }: Props) {
     const { title, summary, date, image, content } = normalizedItem;
 
     return (
-      <div className="max-w-3xl mx-auto p-6 bg-white rounded shadow mt-10">
+      <div className="max-w-3xl mx-auto p-6 bg-white rounded shadow mt-40">
         <h1 className="text-3xl font-bold mb-4">{title}</h1>
         <time className="text-gray-500 mb-4 block">
           {new Date(date).toLocaleDateString('vi-VN')}

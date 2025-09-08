@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 // import { apiClient } from "@/lib/api";
 import { apiClient } from '../../../lib/api';
-import { getUserFromRequest } from "@/src/lib/auth";
+import { getUserFromRequest } from "../../../lib/auth";
 
 export async function POST(req: Request) {
   console.log('[APPLICATIONS] POST request received');
@@ -103,7 +103,8 @@ export async function GET() {
       console.log(`[APPLICATIONS] Returning ${backendData.data.length} real applications from backend`);
       return NextResponse.json({ 
         success: true, 
-        data: backendData.data 
+        data: backendData.data,
+        count: backendData.data.length
       });
     } else {
       console.error('[APPLICATIONS] Backend response format invalid:', backendData);
@@ -118,7 +119,8 @@ export async function GET() {
     return NextResponse.json(
       { 
         success: true, 
-        data: [] 
+        data: [],
+        count: 0
       }
     );
   }

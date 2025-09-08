@@ -1,6 +1,6 @@
 import { Job, PaginationParams, PaginatedResponse } from '../../types/job';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '';
+const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL || 'https://vieclabbe.onrender.com').replace(/\/+$/, '');
 
 
 
@@ -18,7 +18,8 @@ export async function getJobs(params?: PaginationParams): Promise<PaginatedRespo
     });
   }
 
-  const response = await fetch(`${API_BASE_URL}/api/jobs?${queryParams.toString()}`);
+  // Use Next.js API route
+  const response = await fetch(`/api/jobs?${queryParams.toString()}`);
   if (!response.ok) {
     throw new Error('Không thể tải danh sách công việc');
   }
@@ -40,7 +41,8 @@ export async function getNewJobs(params?: PaginationParams): Promise<PaginatedRe
     });
   }
 
-  const response = await fetch(`${API_BASE_URL}/api/newjobs?${queryParams.toString()}`);
+  // Use Next.js API route
+  const response = await fetch(`/api/newjobs?${queryParams.toString()}`);
   if (!response.ok) {
     throw new Error('Không thể tải danh sách công việc mới');
   }
@@ -62,7 +64,8 @@ export async function getHiringJobs(params?: PaginationParams): Promise<Paginate
     });
   }
 
-  const response = await fetch(`${API_BASE_URL}/api/hirings?${queryParams.toString()}`);
+  // Use Next.js API route
+  const response = await fetch(`/api/hirings?${queryParams.toString()}`);
   if (!response.ok) {
     throw new Error('Không thể tải danh sách việc làm');
   }
@@ -74,7 +77,8 @@ export async function getHiringJobs(params?: PaginationParams): Promise<Paginate
  * Lấy chi tiết công việc
  */
 export async function getJobDetail(id: string): Promise<Job> {
-  const response = await fetch(`${API_BASE_URL}/api/jobs/${id}`);
+  // Use Next.js API route
+  const response = await fetch(`/api/jobs/${id}`);
   if (!response.ok) {
     throw new Error('Không thể tải chi tiết công việc');
   }

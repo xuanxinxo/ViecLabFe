@@ -1,67 +1,93 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 // GET: Lấy danh sách tin tức
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    console.log('[NEWS API] Fetching mock news data...');
+    console.log('[NEWS API] Fetching news from backend...');
     
-    // Mock data for news
-    const mockNews = [
-      {
-        _id: 'news-1',
-        title: 'Xu hướng công nghệ ngành F&B năm 2024',
-        summary: 'Ngành F&B đang trải qua những thay đổi lớn với sự phát triển của công nghệ AI, IoT và automation. Các nhà hàng đang áp dụng những giải pháp công nghệ mới để nâng cao trải nghiệm khách hàng.',
-        date: '2024-01-15',
-        image: 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=500&h=300&fit=crop',
-        link: 'https://example.com/news/1',
-        createdAt: new Date('2024-01-15').toISOString(),
-        updatedAt: new Date('2024-01-15').toISOString()
-      },
-      {
-        _id: 'news-2',
-        title: 'Toredco ra mắt dịch vụ tư vấn chiến lược kinh doanh mới',
-        summary: 'Công ty Toredco chính thức ra mắt dịch vụ tư vấn chiến lược kinh doanh toàn diện, hỗ trợ các doanh nghiệp vừa và nhỏ phát triển bền vững trong thời đại số.',
-        date: '2024-01-12',
-        image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=500&h=300&fit=crop',
-        link: 'https://example.com/news/2',
-        createdAt: new Date('2024-01-12').toISOString(),
-        updatedAt: new Date('2024-01-12').toISOString()
-      },
-      {
-        _id: 'news-3',
-        title: 'Hướng dẫn setup hệ thống POS cho nhà hàng',
-        summary: 'Hệ thống POS (Point of Sale) hiện đại không chỉ giúp quản lý bán hàng mà còn tích hợp nhiều tính năng như quản lý kho, báo cáo doanh thu và phân tích khách hàng.',
-        date: '2024-01-10',
-        image: 'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=500&h=300&fit=crop',
-        link: 'https://example.com/news/3',
-        createdAt: new Date('2024-01-10').toISOString(),
-        updatedAt: new Date('2024-01-10').toISOString()
-      },
-      {
-        _id: 'news-4',
-        title: 'Công nghệ AI trong ngành dịch vụ ăn uống',
-        summary: 'Trí tuệ nhân tạo đang cách mạng hóa ngành dịch vụ ăn uống với các ứng dụng từ chatbot đặt hàng, phân tích sở thích khách hàng đến tối ưu hóa menu và dự báo nhu cầu.',
-        date: '2024-01-08',
-        image: 'https://images.unsplash.com/photo-1485827404703-89b55fcc595e?w=500&h=300&fit=crop',
-        link: 'https://example.com/news/4',
-        createdAt: new Date('2024-01-08').toISOString(),
-        updatedAt: new Date('2024-01-08').toISOString()
-      },
-      {
-        _id: 'news-5',
-        title: 'Toredco tổ chức hội thảo "Digital Transformation in F&B"',
-        summary: 'Sự kiện hội thảo chuyên đề về chuyển đổi số trong ngành F&B sẽ diễn ra vào tháng 2/2024, quy tụ các chuyên gia hàng đầu và doanh nghiệp tiêu biểu trong lĩnh vực.',
-        date: '2024-01-05',
-        image: 'https://images.unsplash.com/photo-1511578314322-379afb476865?w=500&h=300&fit=crop',
-        link: 'https://example.com/news/5',
-        createdAt: new Date('2024-01-05').toISOString(),
-        updatedAt: new Date('2024-01-05').toISOString()
+    // Get query parameters
+    const { searchParams } = new URL(request.url);
+    const queryParams = searchParams.toString();
+    
+    // Call backend API
+    const backendUrl = (process.env.NEXT_PUBLIC_API_URL || 'https://vieclabbe.onrender.com').replace(/\/+$/, '');
+    
+    let news = [];
+    
+    try {
+      const response = await fetch(`${backendUrl}/api/news?${queryParams}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        signal: AbortSignal.timeout(10000), // 10 second timeout
+      });
+      
+      if (response.ok) {
+        const newsData = await response.json();
+        news = Array.isArray(newsData) ? newsData : (newsData.data || []);
+        console.log(`[NEWS API] Got ${news.length} news items from backend`);
+      } else {
+        console.warn(`[NEWS API] Backend error: ${response.status}, using fallback data`);
       }
-    ];
+    } catch (fetchError) {
+      console.warn('[NEWS API] Backend not accessible, using fallback data:', fetchError);
+    }
     
-    console.log(`[NEWS API] Returning ${mockNews.length} news items`);
+    // Fallback to mock data if backend fails
+    if (news.length === 0) {
+      console.log('[NEWS API] Using fallback mock data');
+      news = [
+        {
+          _id: 'news-1',
+          title: 'Xu hướng công nghệ ngành F&B năm 2024',
+          summary: 'Ngành F&B đang trải qua những thay đổi lớn với sự phát triển của công nghệ AI, IoT và automation.',
+          date: '2024-01-15',
+          image: 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=500&h=300&fit=crop',
+          link: 'https://example.com/news/1',
+          createdAt: new Date('2024-01-15').toISOString(),
+          updatedAt: new Date('2024-01-15').toISOString()
+        },
+        {
+          _id: 'news-2',
+          title: 'Toredco ra mắt dịch vụ tư vấn chiến lược kinh doanh mới',
+          summary: 'Công ty Toredco chính thức ra mắt dịch vụ tư vấn chiến lược kinh doanh toàn diện.',
+          date: '2024-01-12',
+          image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=500&h=300&fit=crop',
+          link: 'https://example.com/news/2',
+          createdAt: new Date('2024-01-12').toISOString(),
+          updatedAt: new Date('2024-01-12').toISOString()
+        },
+        {
+          _id: 'news-3',
+          title: 'Hướng dẫn setup hệ thống POS cho nhà hàng',
+          summary: 'Hệ thống POS hiện đại không chỉ giúp quản lý bán hàng mà còn tích hợp nhiều tính năng.',
+          date: '2024-01-10',
+          image: 'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=500&h=300&fit=crop',
+          link: 'https://example.com/news/3',
+          createdAt: new Date('2024-01-10').toISOString(),
+          updatedAt: new Date('2024-01-10').toISOString()
+        },
+        {
+          _id: 'news-4',
+          title: 'Công nghệ AI trong ngành dịch vụ ăn uống',
+          summary: 'Trí tuệ nhân tạo đang cách mạng hóa ngành dịch vụ ăn uống với các ứng dụng từ chatbot.',
+          date: '2024-01-08',
+          image: 'https://images.unsplash.com/photo-1485827404703-89b55fcc595e?w=500&h=300&fit=crop',
+          link: 'https://example.com/news/4',
+          createdAt: new Date('2024-01-08').toISOString(),
+          updatedAt: new Date('2024-01-08').toISOString()
+        }
+      ];
+    }
     
-    return NextResponse.json({ news: mockNews });
+    console.log(`[NEWS API] Returning ${news.length} news items`);
+    
+    return NextResponse.json({
+      success: true,
+      data: news,
+      count: news.length
+    });
   } catch (err) {
     console.error('Error in news API:', err);
     

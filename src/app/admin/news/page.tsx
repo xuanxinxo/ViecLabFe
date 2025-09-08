@@ -24,22 +24,8 @@ export default function AdminNews() {
   const router = useRouter();
 
   useEffect(() => {
-    // Check authentication by making an API call
-    const checkAuth = async () => {
-      try {
-        const response = await fetch('/api/admin/dashboard', {
-          credentials: 'include'
-        });
-        if (response.ok) {
-          loadNews();
-        } else {
-          router.push('/admin/login');
-        }
-      } catch (error) {
-        router.push('/admin/login');
-      }
-    };
-    checkAuth();
+    // Load news without authentication check
+    loadNews();
   }, []);
 
   const loadNews = async () => {
@@ -47,11 +33,22 @@ export default function AdminNews() {
       setLoading(true);
       const response = await fetch('/api/news');
       const data = await response.json();
-      if (data.news) {
+      console.log('🔍 [ADMIN NEWS PAGE] API Response:', data);
+      
+      // Handle different response formats
+      if (data.news && Array.isArray(data.news)) {
         setNews(data.news);
+      } else if (data.data && Array.isArray(data.data)) {
+        setNews(data.data);
+      } else if (Array.isArray(data)) {
+        setNews(data);
+      } else {
+        console.error('Invalid news data format:', data);
+        setNews([]);
       }
     } catch (error) {
       console.error('Error loading news:', error);
+      setNews([]);
     } finally {
       setLoading(false);
     }

@@ -1,6 +1,6 @@
 import { PaginationParams, PaginatedResponse } from '@/types/job';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '';
+const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL || 'https://vieclabbe.onrender.com').replace(/\/+$/, '');
 
 export type ReviewCategory = 'talent' | 'company';
 
@@ -41,7 +41,8 @@ export async function getReviews(params?: PaginationParams): Promise<ReviewRespo
     });
   }
 
-  const response = await fetch(`${API_BASE_URL}/api/reviews?${queryParams.toString()}`);
+  // Use Next.js API route instead of backend directly
+  const response = await fetch(`/api/reviews?${queryParams.toString()}`);
   if (!response.ok) {
     throw new Error('Không thể tải danh sách đánh giá');
   }

@@ -50,13 +50,38 @@ export default function NewJobDetail() {
     async function loadJob() {
       try {
         setLoading(true);
-        const res = await fetch(`/api/newjobs/${params.id}`);
+        console.log('Loading job with ID:', params.id);
+
+        const res = await fetch(`/api/newjobs/${params.id}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+          },
+        });
+
+        console.log('Response status:', res.status);
         const responseData = await res.json();
-        
-        if (res.ok && responseData.success) {
-          setJob(responseData.data);
+        console.log('Response data:', responseData);
+
+        if (res.ok) {
+          if (responseData.success && responseData.data) {
+            setJob(responseData.data);
+            console.log('Job loaded successfully:', responseData.data);
+          } else if (responseData.id) {
+            // Backend might return job directly without success wrapper
+            setJob(responseData);
+            console.log('Job loaded directly:', responseData);
+          } else {
+            const errorMsg = responseData.message || responseData.error || 'Không tìm thấy việc làm';
+            console.error('Error response:', errorMsg);
+            setError(errorMsg);
+          }
         } else {
-          setError(responseData.message || 'Không tìm thấy việc làm');
+          const errorMsg = responseData.message || responseData.error || 'Không tìm thấy việc làm';
+          console.error('Error response:', errorMsg);
+          console.error('Full response data:', responseData);
+          setError(`${errorMsg} (ID: ${params.id})`);
         }
       } catch (err) {
         console.error('Lỗi khi tải công việc:', err);
@@ -82,10 +107,24 @@ export default function NewJobDetail() {
   if (error || !job) {
     return (
       <div className="min-h-screen bg-gray-100 flex items-center justify-center text-center">
-        <div>
+        <div className="max-w-md mx-auto p-6">
           <h2 className="text-2xl font-bold text-red-600 mb-4">Không tìm thấy việc làm</h2>
-          <Link href="/" className="text-blue-600 underline hover:text-blue-800">
-            ← Quay lại trang chủ
+          {error && (
+            <p className="text-gray-600 mb-4 text-sm">
+              Lỗi: {error}
+            </p>
+          )}
+          <p className="text-gray-500 mb-6 text-sm">
+            ID: {params.id}
+          </p>
+          <Link
+            href="/"
+            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-50 hover:text-blue-600 hover:border-blue-300 transition-all duration-200 ease-in-out"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+            Quay lại trang chủ
           </Link>
         </div>
       </div>
@@ -95,14 +134,20 @@ export default function NewJobDetail() {
   return (
     <div className="min-h-screen bg-gray-50 pb-16 pt-20">
       <header className="bg-white shadow-sm border-b mb-8 fixed top-0 left-0 right-0 z-50">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
-          <Link href="/" className="text-blue-600 hover:underline">
-            ← Quay lại trang chủ
-          </Link>
-        </div>
-      </header>
 
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
+      </header>
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4 mt-10">
+        <Link
+          href="/"
+          className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-50 hover:text-blue-600 hover:border-blue-300 transition-all duration-200 ease-in-out"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+          </svg>
+          Quay lại trang chủ
+        </Link>
+      </div>
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 ">
         <div className="bg-white rounded-xl shadow-md overflow-hidden">
           {/* Banner */}
           <div className="bg-gradient-to-r from-indigo-600 to-blue-600 text-white p-6 md:p-8">

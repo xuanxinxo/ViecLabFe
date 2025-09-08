@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { apiClient } from '../../lib/api';
+import ApiStatus from '../../components/ui/ApiStatus';
 
 interface DashboardStats {
   totalJobs: number;
@@ -33,25 +34,32 @@ export default function AdminDashboard() {
       try {
         setLoading(true);
         
-        // Fetch stats from the API
-        const [jobsResponse, newsResponse, applicationsResponse] = await Promise.all([
+        console.log("Loading dashboard stats...");
+        
+        // Fetch stats from the API with better error handling
+        const [jobsResponse, newsResponse, applicationsResponse, hiringsResponse] = await Promise.allSettled([
           apiClient.jobs.getAll({}),
           apiClient.news.getAll({}),
-          apiClient.applications.getAll({})
+          apiClient.applications.getAll({}),
+          apiClient.hirings.getAll({})
         ]);
         
-        // Process the responses
-        const jobs = (jobsResponse as any).data || [];
-        const news = (newsResponse as any).data || [];
-        const applications = (applicationsResponse as any).data || [];
+        // Process the responses with fallback
+        const jobs = jobsResponse.status === 'fulfilled' ? ((jobsResponse.value as any).data || []) : [];
+        const news = newsResponse.status === 'fulfilled' ? ((newsResponse.value as any).data || []) : [];
+        const applications = applicationsResponse.status === 'fulfilled' ? ((applicationsResponse.value as any).data || []) : [];
+        const hirings = hiringsResponse.status === 'fulfilled' ? ((hiringsResponse.value as any).data || []) : [];
+        
+        console.log("Dashboard data loaded:", { jobs: jobs.length, news: news.length, applications: applications.length, hirings: hirings.length });
         
         // Calculate stats
-        const activeJobs = jobs.filter((job: any) => job.status === 'active').length;
-        const pendingJobs = jobs.filter((job: any) => job.status === 'pending').length;
+        const activeJobs = jobs.filter((job: any) => job.status === 'active' || job.status === 'published').length;
+        const pendingJobs = jobs.filter((job: any) => job.status === 'pending' || job.status === 'draft').length;
+        const totalJobCount = jobs.length + hirings.length; // Include hirings in total count
         
         setStats({
-          totalJobs: jobs.length,
-          totalFreelancers: 0, // Removed freelancers API call
+          totalJobs: totalJobCount,
+          totalFreelancers: applications.length, // Use applications as freelancer count
           totalReviews: 0, // This needs a dedicated reviews endpoint
           activeJobs,
           pendingJobs,
@@ -97,7 +105,10 @@ export default function AdminDashboard() {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-        <div className="text-xl">Loading...</div>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <div className="text-xl text-gray-600">Đang tải dữ liệu dashboard...</div>
+        </div>
       </div>
     );
   }
@@ -125,6 +136,14 @@ export default function AdminDashboard() {
               </h1>
             </div>
             <div className="flex items-center space-x-4">
+              <ApiStatus />
+              <button
+                onClick={() => window.location.reload()}
+                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                title="Làm mới dữ liệu"
+              >
+                🔄 Làm mới
+              </button>
               <span className="text-gray-600">Admin</span>
               <button
                 onClick={handleLogout}

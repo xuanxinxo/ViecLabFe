@@ -107,32 +107,31 @@ export default function CarouselJob() {
       setError(null);
       
       try {
-        console.log('Fetching jobs from https://vieclabbe.onrender.com/api/jobs...');
+        console.log('Fetching jobs using API client...');
         const startTime = Date.now();
         
-        // Fetch jobs directly from the backend API
-        const response = await fetch('https://vieclabbe.onrender.com/api/jobs');
-        
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
-        const jobsData = await response.json();
+        // Use API client to fetch jobs
+        const jobsData = await apiClient.jobs.getAll({});
         const responseTime = Date.now() - startTime;
         
         console.log(`Jobs fetched in ${responseTime}ms`, {
-          count: jobsData.length,
-          sample: jobsData[0] || 'No jobs found'
+          count: jobsData?.data?.length || jobsData?.length || 0,
+          sample: jobsData?.data?.[0] || jobsData?.[0] || 'No jobs found'
         });
         
-        // Handle both array response and object with data property
-        const jobsArray = Array.isArray(jobsData) 
-          ? jobsData 
-          : (jobsData.data || []);
+        // Handle API client response format
+        let jobsArray = [];
+        if (jobsData?.data && Array.isArray(jobsData.data)) {
+          jobsArray = jobsData.data;
+        } else if (Array.isArray(jobsData)) {
+          jobsArray = jobsData;
+        } else if (jobsData?.success && Array.isArray(jobsData.data)) {
+          jobsArray = jobsData.data;
+        }
         
         // Sort by date (newest first) and limit to 16 jobs
         const sortedJobs = [...jobsArray]
-          .sort((a, b) => new Date(b.postedDate).getTime() - new Date(a.postedDate).getTime())
+          .sort((a, b) => new Date(b.postedDate || b.createdAt).getTime() - new Date(a.postedDate || a.createdAt).getTime())
           .slice(0, 16);
         
         console.log(`Setting ${sortedJobs.length} jobs to state`);
@@ -142,9 +141,19 @@ export default function CarouselJob() {
           console.warn('No jobs found');
           setError('Hiện chưa có việc làm nào đang tuyển dụng');
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error fetching jobs:', error);
-        setError('Không thể tải danh sách việc làm. Vui lòng thử lại sau.');
+        
+        // Handle different types of errors
+        if (error.isTimeout) {
+          setError('Server đang phản hồi chậm. Vui lòng thử lại sau.');
+        } else if (error.isNetworkError) {
+          setError('Lỗi kết nối mạng. Vui lòng kiểm tra internet và thử lại.');
+        } else if (error.status === 404) {
+          setError('Không tìm thấy dữ liệu việc làm.');
+        } else {
+          setError('Không thể tải danh sách việc làm. Vui lòng thử lại sau.');
+        }
       } finally {
         setLoading(false);
       }
@@ -177,6 +186,31 @@ export default function CarouselJob() {
     return (
       <div className="w-full mt-14">
         <div className="text-center py-10 text-gray-500 animate-pulse">Đang tải việc làm...</div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="w-full mt-14">
+        <div className="text-center py-10">
+          <div className="text-red-500 mb-4">
+            <svg className="w-12 h-12 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+            </svg>
+            <p className="text-lg font-medium">{error}</p>
+          </div>
+          <button 
+            onClick={() => {
+              setError(null);
+              setLoading(true);
+              fetchJobs();
+            }}
+            className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            Thử lại
+          </button>
+        </div>
       </div>
     );
   }

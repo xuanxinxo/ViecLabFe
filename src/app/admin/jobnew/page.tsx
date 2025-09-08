@@ -51,14 +51,25 @@ export default function AdminJobs() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const token = localStorage.getItem('adminToken');
-        if (!token) {
-          router.push('/admin/login');
-          return;
+        // Load jobs without authentication
+        const response = await fetch('/api/newjobs');
+        const data = await response.json();
+        console.log('🔍 [ADMIN JOBNEW PAGE] API Response:', data);
+        
+        // Handle different response formats
+        let jobsData = [];
+        if (data.data && Array.isArray(data.data)) {
+          jobsData = data.data;
+        } else if (data.success && data.data && Array.isArray(data.data)) {
+          jobsData = data.data;
+        } else if (Array.isArray(data)) {
+          jobsData = data;
+        } else {
+          console.error('Invalid data format:', data);
+          throw new Error('Invalid data format');
         }
-
-        const data = await loadJobs(token, filter);
-        setJobs(data);
+        
+        setJobs(jobsData);
         setError(null);
       } catch (err) {
         console.error('Error in fetchData:', err);

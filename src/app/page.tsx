@@ -11,6 +11,7 @@ import SpecialJobList from '../components/NewJobList/SpecialJobList';
 import NewJobList from '../components/NewJobList/NewJobList';
 import NewsSection from '../components/NewsSection';
 import LogoSupport from '../components/Banner/LogoSuport';
+import StatsSection from '../components/StatsSection';
 
 export default function Home() {
   return (
@@ -50,6 +51,9 @@ export default function Home() {
         <Marquee />
         <HiringList />
       </div>
+
+      {/* Stats Section */}
+      <StatsSection />
 
       {/* News + Reviews */}
       <div className="mb-12 px-4 md:px-6 lg:px-8 space-y-12">

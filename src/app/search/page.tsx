@@ -368,28 +368,59 @@ function SearchContent() {
           {/* Job List */}
           <div className="space-y-4">
             {jobs.map((job) => (
-              <div key={job.id} className="bg-white rounded-lg shadow-sm overflow-hidden">
-                <div className="p-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-1">
-                    {job.title}
-                  </h3>
-                  <p className="text-gray-600 mb-2">
-                    {job.company} • {job.location}
-                  </p>
-                  <div className="flex flex-wrap gap-2 mb-4">
-                    <span className="px-3 py-1 bg-blue-100 text-blue-800 text-sm rounded-full">
-                      {job.type}
-                    </span>
-                    <span className="px-3 py-1 bg-green-100 text-green-800 text-sm rounded-full">
-                      {job.salary}
-                    </span>
+              <div key={job.id} className="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+                <div className="flex flex-col md:flex-row">
+                  {/* Job Image */}
+                  <div className="md:w-1/3 h-48 md:h-auto">
+                    {job.img ? (
+                      <img
+                        src={job.img}
+                        alt={job.title}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none';
+                          e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                        }}
+                      />
+                    ) : null}
+                    <div className={`w-full h-full bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center ${job.img ? 'hidden' : ''}`}>
+                      <div className="text-center">
+                        <svg className="w-16 h-16 mx-auto mb-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2-2v2m8 0V6a2 2 0 012 2v6a2 2 0 01-2 2H8a2 2 0 01-2-2V8a2 2 0 012-2V6" />
+                        </svg>
+                        <p className="text-sm text-gray-500">Không có hình ảnh</p>
+                      </div>
+                    </div>
                   </div>
-                  <button
-                    onClick={() => setApplyModal({ open: true, job })}
-                    className="mt-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-                  >
-                    Ứng tuyển ngay
-                  </button>
+                  
+                  {/* Job Content */}
+                  <div className="md:w-2/3 p-6">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                      {job.title}
+                    </h3>
+                    <p className="text-gray-600 mb-2">
+                      {job.company} • {job.location}
+                    </p>
+                    <div className="flex flex-wrap gap-2 mb-4">
+                      <span className="px-3 py-1 bg-blue-100 text-blue-800 text-sm rounded-full">
+                        {job.type}
+                      </span>
+                      <span className="px-3 py-1 bg-green-100 text-green-800 text-sm rounded-full">
+                        {job.salary}
+                      </span>
+                    </div>
+                    {job.description && (
+                      <p className="text-gray-600 text-sm mb-4 line-clamp-2">
+                        {job.description}
+                      </p>
+                    )}
+                    <button
+                      onClick={() => setApplyModal({ open: true, job })}
+                      className="mt-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                    >
+                      Ứng tuyển ngay
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}

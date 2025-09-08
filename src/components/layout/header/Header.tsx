@@ -153,22 +153,40 @@ export default function Header() {
 
           {/* Auth Buttons */}
           <div className="flex gap-4">
-            <Link href="/login">
-              <button className={`px-6 py-2 rounded-full font-semibold transition-all duration-300 transform hover:scale-105 ${isScrolled
+            <button 
+              onClick={() => {
+                try {
+                  window.location.href = '/login';
+                } catch (error) {
+                  console.error('Navigation error:', error);
+                  // Fallback: try router.push
+                  router.push('/login');
+                }
+              }}
+              className={`px-6 py-2 rounded-full font-semibold transition-all duration-300 transform hover:scale-105 ${isScrolled
                 ? 'bg-blue-900 text-white hover:bg-blue-800'
                 : 'bg-white text-blue-900 hover:bg-gray-100'
-                }`}>
-                Đăng nhập
-              </button>
-            </Link>
-            <Link href="/register">
-              <button className={`px-6 py-2 rounded-full font-semibold transition-all duration-300 transform hover:scale-105 ${isScrolled
+                }`}
+            >
+              Đăng nhập
+            </button>
+            <button 
+              onClick={() => {
+                try {
+                  window.location.href = '/register';
+                } catch (error) {
+                  console.error('Navigation error:', error);
+                  // Fallback: try router.push
+                  router.push('/register');
+                }
+              }}
+              className={`px-6 py-2 rounded-full font-semibold transition-all duration-300 transform hover:scale-105 ${isScrolled
                 ? 'border-2 border-blue-900 text-blue-900 hover:bg-blue-900 hover:text-white'
                 : 'border-2 border-white text-white hover:bg-white hover:text-blue-900'
-                }`}>
-                Đăng ký
-              </button>
-            </Link>
+                }`}
+            >
+              Đăng ký
+            </button>
           </div>
 
           {/* Auth Modal for first-time visitors */}

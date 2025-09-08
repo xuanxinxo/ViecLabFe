@@ -1,7 +1,9 @@
 'use client';
-import { Job } from '@/src/app/types/job';
+// import { Job } from '@/src/app/types/job';
+import { Job } from '@/types/job';
 
 import React, { useState } from 'react';
+import Link from 'next/link';
 import NewJobApplyModal from '../NewJobApplyModal';
 
 export default function JobCardNew({ job }: { job: Job }) {
@@ -85,12 +87,12 @@ export default function JobCardNew({ job }: { job: Job }) {
         >
           Ứng tuyển
         </button>
-        <a
+        <Link
           href={`/jobnew/${job._id || job.id}`}
-          className="w-full sm:w-auto text-sm text-blue-600 hover:text-blue-800 font-medium text-center bg-blue-50 rounded px-4 py-2"
+          className="w-full sm:w-auto text-sm text-blue-600 hover:text-blue-800 font-medium text-center bg-blue-50 rounded px-4 py-2 hover:bg-blue-100 transition-colors duration-200"
         >
           Xem chi tiết →
-        </a>
+        </Link>
       </div>
          <NewJobApplyModal open={showModal} onClose={() => setShowModal(false)} job={job} />
     </div>

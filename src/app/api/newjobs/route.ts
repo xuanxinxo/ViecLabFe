@@ -20,43 +20,47 @@ export async function GET(request: NextRequest) {
     
     // Get query parameters with proper type conversion and defaults
     const page = Math.max(1, parseInt(searchParams.get('page') || '1'));
-    const limit = Math.min(50, Math.max(1, parseInt(searchParams.get('limit') || '10')));
+    const limitParam = searchParams.get('limit');
+    const limit = limitParam ? Math.min(50, Math.max(1, parseInt(limitParam))) : undefined;
     const searchQuery = (searchParams.get('search') || '').toLowerCase().trim();
     const locationQuery = (searchParams.get('location') || '').toLowerCase().trim();
 
     console.log('Search parameters:', { searchQuery, locationQuery, page, limit });
     
     // Call backend API directly to get newjobs data from MongoDB
-    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'https://vieclabbe.onrender.com';
+    const backendUrl = (process.env.NEXT_PUBLIC_API_URL || 'https://vieclabbe.onrender.com').replace(/\/+$/, '');
     const queryParams = new URLSearchParams({
       page: page.toString(),
-      limit: limit.toString(),
+      ...(limit && { limit: limit.toString() }),
       ...(searchQuery && { search: searchQuery }),
       ...(locationQuery && { location: locationQuery })
     });
 
     console.log(`Calling backend API: ${backendUrl}/api/newjobs?${queryParams}`);
 
-    const response = await fetch(`${backendUrl}/api/newjobs?${queryParams}`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      }
-    });
-
-    console.log(`Backend response status: ${response.status}`);
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`Backend API error: ${response.status} - ${errorText}`);
-      throw new Error(`Backend API error: ${response.status} - ${errorText}`);
-    }
-
-    const newjobsData = await response.json();
-    console.log('Backend response data:', newjobsData);
+    let jobs = [];
     
-    // Backend returns array directly, we need to wrap it in the expected format
-    let jobs = Array.isArray(newjobsData) ? newjobsData : [];
+    try {
+      const response = await fetch(`${backendUrl}/api/newjobs?${queryParams}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        signal: AbortSignal.timeout(10000), // 10 second timeout
+      });
+
+      console.log(`Backend response status: ${response.status}`);
+
+      if (response.ok) {
+        const newjobsData = await response.json();
+        console.log('Backend response data:', newjobsData);
+        jobs = Array.isArray(newjobsData) ? newjobsData : [];
+      } else {
+        console.warn(`Backend API error: ${response.status}, using sample data`);
+      }
+    } catch (fetchError) {
+      console.warn('Backend API not accessible, using sample data:', fetchError);
+    }
     
     // If no jobs from backend, provide some sample data for testing
     if (jobs.length === 0) {
@@ -117,13 +121,15 @@ export async function GET(request: NextRequest) {
     
     // Apply pagination
     const totalJobs = filteredJobs.length;
-    const totalPages = Math.ceil(totalJobs / limit);
-    const startIndex = (page - 1) * limit;
-    const endIndex = startIndex + limit;
+    const totalPages = limit ? Math.ceil(totalJobs / limit) : 1;
+    const startIndex = limit ? (page - 1) * limit : 0;
+    const endIndex = limit ? startIndex + limit : totalJobs;
     const paginatedJobs = filteredJobs.slice(startIndex, endIndex);
 
     return NextResponse.json({
+      success: true,
       data: paginatedJobs,
+      count: totalJobs,
       pagination: {
         page,
         limit,

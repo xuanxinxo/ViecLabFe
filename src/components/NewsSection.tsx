@@ -32,6 +32,10 @@ export default function NewsSection() {
       } catch (err) {
         console.error("Error loading news:", err);
         setError("Không tải được tin tức. Vui lòng thử lại sau.");
+        // Retry after 3 seconds
+        setTimeout(() => {
+          fetchNews();
+        }, 3000);
       } finally {
         setLoading(false);
       }
@@ -42,11 +46,32 @@ export default function NewsSection() {
 
   if (loading)
     return (
-      <div className="p-4 bg-white rounded shadow">Đang tải tin tức...</div>
+      <div className="p-4 bg-white rounded shadow">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-2xl font-bold">Tin Tức</h2>
+          <Link href="/news" className="text-sm text-blue-600 hover:underline">
+            Xem thêm →
+          </Link>
+        </div>
+        <div className="text-center py-8 text-gray-500">
+          Đang tải tin tức...
+        </div>
+      </div>
     );
+    
   if (error)
     return (
-      <div className="p-4 bg-red-100 text-red-700 rounded">{error}</div>
+      <div className="p-4 bg-white rounded shadow mb-8">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-2xl font-bold">Tin Tức</h2>
+          <Link href="/news" className="text-sm text-blue-600 hover:underline">
+            Xem thêm →
+          </Link>
+        </div>
+        <div className="text-center py-8 text-red-500">
+          {error}
+        </div>
+      </div>
     );
 
   if (news.length === 0) {
@@ -55,7 +80,7 @@ export default function NewsSection() {
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-2xl font-bold">Tin Tức</h2>
           <Link href="/news" className="text-sm text-blue-600 hover:underline">
-            Xem thêm &rarr;
+            Xem thêm →
           </Link>
         </div>
         <div className="text-center py-8 text-gray-500">
@@ -70,7 +95,7 @@ export default function NewsSection() {
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-2xl font-bold">Tin Tức</h2>
         <Link href="/news" className="text-sm text-blue-600 hover:underline">
-          Xem thêm &rarr;
+          Xem thêm →
         </Link>
       </div>
 

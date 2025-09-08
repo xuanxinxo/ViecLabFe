@@ -18,7 +18,13 @@ export default async function Page({ params }: { params: Params }) {
   if (![1, 2, 3, 4, 5].includes(star)) return notFound();
 
   /* fetch API */
-  const res = await fetch('http://localhost:3000/api/reviews', { next: { revalidate: 60 } });
+  const res = await fetch('https://vieclabbe.onrender.com/api/reviews', { 
+    next: { revalidate: 60 },
+    headers: {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+    },
+  });
   const { data } = (await res.json()) as { data: Review[] };
 
   const list = data.filter((r) => r.category === params.category && r.rating === star);

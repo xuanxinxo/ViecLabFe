@@ -49,7 +49,14 @@ export default function Detailjobs() {
     async function loadJob() {
       try {
         setLoading(true);
-        const res = await fetch(`/api/hirings/${params.id}`);
+        const res = await fetch(`https://vieclabbe.onrender.com/api/hirings/${params.id}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+          },
+          mode: 'cors',
+        });
         const responseData = await res.json();
         
         if (res.ok && responseData.success) {
@@ -94,9 +101,15 @@ export default function Detailjobs() {
   return (
     <div className="min-h-screen bg-gray-50 pb-16 pt-20">
       <header className="bg-white shadow-sm border-b mb-8 fixed top-0 left-0 right-0 z-50">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
-          <Link href="/" className="text-blue-600 hover:underline">
-            ← Quay lại trang chủ
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <Link 
+            href="/" 
+            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-50 hover:text-blue-600 hover:border-blue-300 transition-all duration-200 ease-in-out"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+            Quay lại trang chủ
           </Link>
         </div>
       </header>

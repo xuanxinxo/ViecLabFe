@@ -32,21 +32,19 @@ export default function JobList({
       setLoading(true);
       setError("");
 
-      console.log("Loading jobs from hirings API...");
+      console.log("Loading jobs using API client...");
       
-      // Call backend API directly
-      const response = await fetch('https://vieclabbe.onrender.com/api/hirings');
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      
-      const responseData = await response.json();
+      // Use API client to fetch hirings
+      const responseData = await apiClient.hirings.getAll({});
       console.log("API Response:", responseData);
       
-      // Handle different response formats
+      // Handle backend response format: {success: true, count: 29, data: [...]}
       let jobsData: Job[] = [];
       
-      if (responseData.data && Array.isArray(responseData.data)) {
+      if (responseData.success && Array.isArray(responseData.data)) {
+        // Backend format: {success: true, data: [...]}
+        jobsData = responseData.data;
+      } else if (responseData.data && Array.isArray(responseData.data)) {
         // Nested data response
         jobsData = responseData.data;
       } else if (Array.isArray(responseData)) {
@@ -62,7 +60,17 @@ export default function JobList({
       
     } catch (err: any) {
       console.error("Error loading jobs:", err);
-      setError("Có lỗi xảy ra khi tải dữ liệu");
+      
+      // Handle different types of errors
+      if (err.isTimeout) {
+        setError("Server đang phản hồi chậm. Vui lòng thử lại sau.");
+      } else if (err.isNetworkError) {
+        setError("Lỗi kết nối mạng. Vui lòng kiểm tra internet và thử lại.");
+      } else if (err.status === 404) {
+        setError("Không tìm thấy dữ liệu việc làm.");
+      } else {
+        setError("Có lỗi xảy ra khi tải dữ liệu");
+      }
       setJobs([]);
     } finally {
       setLoading(false);
@@ -92,11 +100,20 @@ export default function JobList({
           ))}
 
         {!loading && error && (
-          <div className="text-center py-8 text-gray-500">
-            {error}
+          <div className="text-center py-8 col-span-full">
+            <div className="text-red-500 mb-4">
+              <svg className="w-12 h-12 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+              </svg>
+              <p className="text-lg font-medium">{error}</p>
+            </div>
             <button
-              onClick={loadJobs}
-              className="ml-2 text-blue-600 underline hover:text-blue-800"
+              onClick={() => {
+                setError("");
+                setLoading(true);
+                loadJobs();
+              }}
+              className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
             >
               Thử lại
             </button>

@@ -4,12 +4,58 @@ import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
 type HttpMethod = 'get' | 'post' | 'put' | 'delete';
 
 // Base API configuration
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://vieclabbe.onrender.com';
+const API_URL = (process.env.NEXT_PUBLIC_API_URL || 'https://vieclabbe.onrender.com').replace(/\/+$/, '');
+
+// Simple cache for API responses
+const apiCache = new Map<string, { data: any; timestamp: number }>();
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
+// Retry mechanism for failed requests
+const retryRequest = async (fn: () => Promise<any>, maxRetries: number = 3, delay: number = 2000): Promise<any> => {
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      return await fn();
+    } catch (error) {
+      console.log(`[API Retry] Attempt ${i + 1}/${maxRetries} failed:`, error);
+      if (i === maxRetries - 1) throw error;
+      // Exponential backoff with jitter
+      const backoffDelay = delay * Math.pow(2, i) + Math.random() * 1000;
+      console.log(`[API Retry] Waiting ${Math.round(backoffDelay)}ms before retry...`);
+      await new Promise(resolve => setTimeout(resolve, backoffDelay));
+    }
+  }
+};
+
+// Helper function to get cached data or fetch new data
+const getCachedOrFetch = async (key: string, fetchFn: () => Promise<any>) => {
+  const cached = apiCache.get(key);
+  const now = Date.now();
+  
+  if (cached && (now - cached.timestamp) < CACHE_DURATION) {
+    console.log(`[API Cache] Using cached data for ${key}`);
+    return cached.data;
+  }
+  
+  console.log(`[API Cache] Fetching fresh data for ${key}`);
+  const data = await retryRequest(fetchFn);
+  apiCache.set(key, { data, timestamp: now });
+  return data;
+};
 
 // Create axios instance with base config
 console.log('Initializing API client with base URL:', `${API_URL}/api`);
 const api: AxiosInstance = axios.create({
   baseURL: `${API_URL}/api`,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  timeout: 30000, // 30 seconds timeout
+  withCredentials: true, // This ensures cookies are sent with requests
+});
+
+// Create local API instance for frontend routes
+const localApi: AxiosInstance = axios.create({
+  baseURL: '/api', // Use local API routes
   headers: {
     'Content-Type': 'application/json',
   },
@@ -50,6 +96,21 @@ api.interceptors.request.use(
   }
 );
 
+// Request interceptor for local API
+localApi.interceptors.request.use(
+  (config) => {
+    console.log(`[LOCAL API] ${config.method?.toUpperCase()} ${config.url}`, {
+      params: config.params,
+      data: config.data
+    });
+    return config;
+  },
+  (error) => {
+    console.error('[LOCAL API] Request Error:', error);
+    return Promise.reject(error);
+  }
+);
+
 // Response interceptor for error handling
 api.interceptors.response.use(
   (response) => {
@@ -65,8 +126,31 @@ api.interceptors.response.use(
       method: error.config?.method,
       status: error.response?.status,
       data: error.response?.data,
-      message: error.message
+      message: error.message,
+      code: error.code
     });
+
+    // Handle timeout errors specifically
+    if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
+      console.warn('[API] Request timeout - server may be slow or overloaded');
+      return Promise.reject({
+        status: 408,
+        message: 'Request timeout. Server is taking too long to respond. Please try again.',
+        originalError: error,
+        isTimeout: true
+      });
+    }
+
+    // Handle network errors
+    if (error.message.includes('Network Error') || error.message.includes('ERR_NETWORK')) {
+      console.warn('[API] Network error - check internet connection');
+      return Promise.reject({
+        status: 0,
+        message: 'Network error. Please check your internet connection.',
+        originalError: error,
+        isNetworkError: true
+      });
+    }
 
     // Handle unauthorized access (401) or forbidden (403)
     if (error.response && (error.response.status === 401 || error.response.status === 403)) {
@@ -103,26 +187,67 @@ api.interceptors.response.use(
   }
 );
 
+// Response interceptor for local API
+localApi.interceptors.response.use(
+  (response) => {
+    console.log(`[LOCAL API] ${response.config.method?.toUpperCase()} ${response.config.url} ${response.status}`, {
+      status: response.status,
+      data: response.data
+    });
+    return response;
+  },
+  (error) => {
+    console.error('[LOCAL API] Response Error:', {
+      url: error.config?.url,
+      method: error.config?.method,
+      status: error.response?.status,
+      data: error.response?.data,
+      message: error.message
+    });
+    return Promise.reject(error);
+  }
+);
+
 // Generic API client
-const createApiClient = <T>(endpoint: string) => ({
-  getAll: (params?: any): Promise<AxiosResponse<T[]>> =>
-    api.get(`/${endpoint}`, { params }),
+const createApiClient = <T>(endpoint: string, apiInstance: AxiosInstance = api) => ({
+  getAll: async (params?: any): Promise<AxiosResponse<T[]>> => {
+    try {
+      const response = await apiInstance.get(`/${endpoint}`, { params });
+      console.log(`[API CLIENT] GET /${endpoint} response:`, response.data);
+      
+      // Handle different response formats from backend
+      if (response.data && typeof response.data === 'object') {
+        if (response.data.data && Array.isArray(response.data.data)) {
+          // Backend returns {data: [...], success: true}
+          return { ...response, data: response.data.data };
+        } else if (Array.isArray(response.data)) {
+          // Backend returns array directly
+          return response;
+        }
+      }
+      
+      return response;
+    } catch (error) {
+      console.error(`[API CLIENT] GET /${endpoint} error:`, error);
+      throw error;
+    }
+  },
   
   getById: (id: string): Promise<AxiosResponse<T>> =>
-    api.get(`/${endpoint}/${id}`),
+    apiInstance.get(`/${endpoint}/${id}`),
   
   create: (data: Partial<T>): Promise<AxiosResponse<T>> =>
-    api.post(`/${endpoint}`, data),
+    apiInstance.post(`/${endpoint}`, data),
   
   update: (id: string, data: Partial<T>): Promise<AxiosResponse<T>> =>
-    api.put(`/${endpoint}/${id}`, data),
+    apiInstance.put(`/${endpoint}/${id}`, data),
   
   delete: (id: string): Promise<AxiosResponse<void>> =>
-    api.delete(`/${endpoint}/${id}`),
+    apiInstance.delete(`/${endpoint}/${id}`),
   
   // Additional methods can be added here
   customRequest: <R = any>(config: AxiosRequestConfig): Promise<AxiosResponse<R>> =>
-    api(config),
+    apiInstance(config),
 });
 
 // Helper function to add admin token to requests
@@ -208,22 +333,129 @@ export const adminApi = {
 
 export const apiClient = {
   users: createApiClient<any>('users'),
-  jobs: createApiClient<any>('jobs'),
-  newJobs: createApiClient<any>('newjobs'),
+  jobs: createApiClient<any>('jobs'), // Use backend API directly
+  newJobs: createApiClient<any>('newjobs'), // Use backend API directly
   toredco: createApiClient<any>('toredco'),
-  applications: createApiClient<any>('applications'),
+  applications: createApiClient<any>('applications'), // Use backend API directly
   admin: adminApi, // Export admin API methods
-  hirings: createApiClient<any>('hirings'),
-  news: createApiClient<any>('news'),
+  hirings: createApiClient<any>('hirings'), // Use backend API directly
+  news: createApiClient<any>('news', localApi), // Use local API for news only
   
   
   // Custom API methods can be added here
   auth: {
-    // Align with backend Express routes under /api/users
-    login: (credentials: { email: string; password: string }) =>
-      api.post('/users/login', credentials),
-    register: (userData: any) =>
-      api.post('/users/register', userData),
+    // Use backend API directly for auth
+    login: async (credentials: { email: string; password: string }) => {
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+        
+        const response = await fetch(`${API_URL}/api/users/login`, {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          mode: 'cors',
+          signal: controller.signal,
+          body: JSON.stringify(credentials),
+        });
+        
+        clearTimeout(timeoutId);
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('Login API error response:', errorText);
+          
+          // Try to parse as JSON for better error handling
+          try {
+            const errorData = JSON.parse(errorText);
+            if (errorData.success === false) {
+              throw new Error(errorData.message || 'Đăng nhập thất bại');
+            }
+          } catch (parseError) {
+            // If not JSON, use the text as error message
+            throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
+          }
+        }
+        
+        const data = await response.json();
+        console.log('Login API success response:', data);
+        return data;
+      } catch (error: any) {
+        console.error('Login API error:', error);
+        
+        // Handle timeout errors
+        if (error.name === 'AbortError') {
+          throw new Error('Request timeout. Server is taking too long to respond. Please try again.');
+        }
+        
+        // Handle network errors
+        if (error.message?.includes('Failed to fetch') || error.message?.includes('NetworkError')) {
+          throw new Error('Network error. Please check your internet connection.');
+        }
+        
+        throw error;
+      }
+    },
+    register: async (userData: { name: string; email: string; password: string }) => {
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+        
+        const response = await fetch(`${API_URL}/api/users/register`, {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          mode: 'cors',
+          signal: controller.signal,
+          body: JSON.stringify(userData),
+        });
+        
+        clearTimeout(timeoutId);
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('Register API error response:', errorText);
+          
+          // If endpoint doesn't exist, return a helpful message
+          if (response.status === 404) {
+            throw new Error('Chức năng đăng ký chưa được hỗ trợ. Vui lòng liên hệ quản trị viên.');
+          }
+          
+          // Try to parse as JSON for better error handling
+          try {
+            const errorData = JSON.parse(errorText);
+            if (errorData.success === false) {
+              throw new Error(errorData.message || 'Đăng ký thất bại');
+            }
+          } catch (parseError) {
+            // If not JSON, use the text as error message
+            throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
+          }
+        }
+        
+        const data = await response.json();
+        console.log('Register API success response:', data);
+        return data;
+      } catch (error: any) {
+        console.error('Register API error:', error);
+        
+        // Handle timeout errors
+        if (error.name === 'AbortError') {
+          throw new Error('Request timeout. Server is taking too long to respond. Please try again.');
+        }
+        
+        // Handle network errors
+        if (error.message?.includes('Failed to fetch') || error.message?.includes('NetworkError')) {
+          throw new Error('Network error. Please check your internet connection.');
+        }
+        
+        throw error;
+      }
+    },
   },
 };
 
