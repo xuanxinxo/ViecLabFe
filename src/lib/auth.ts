@@ -8,20 +8,23 @@ const adminUsers = [
   {
     id: 1,
     username: 'admin',
-    password: '123456', 
-    role: 'admin'
+    password: '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', // password: password
+    role: 'admin',
+    permissions: ['read', 'write', 'delete', 'approve', 'manage_users']
   },
   {
     id: 2,
     username: 'admin2',
-    password: '123456', 
-    role: 'admin'
+    password: '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', // password: password
+    role: 'admin',
+    permissions: ['read', 'write', 'delete', 'approve']
   },
   {
     id: 3,
     username: 'admin3',
-    password: '123456',
-    role: 'admin'
+    password: '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', // password: password
+    role: 'admin',
+    permissions: ['read', 'write']
   }
 ];
 
@@ -29,12 +32,14 @@ export interface AdminUser {
   userId: number;
   username: string;
   role: string;
+  permissions?: string[];
 }
 
 export interface JWTPayload {
   userId: number;
-  email: string;
+  username: string;
   role: string;
+  permissions?: string[];
 }
 
 // Verify JWT token
@@ -51,10 +56,12 @@ export function verifyToken(token: string): JWTPayload | null {
 export function verifyAdminToken(token: string): AdminUser | null {
   try {
     const decoded = jwt.verify(token, JWT_SECRET) as any;
+    const user = adminUsers.find(u => u.id === decoded.userId);
     return {
       userId: decoded.userId,
       username: decoded.username,
-      role: decoded.role
+      role: decoded.role,
+      permissions: user?.permissions || []
     };
   } catch (error) {
     return null;
@@ -87,7 +94,7 @@ export function getUserFromRequest(request: NextRequest): JWTPayload | null {
 // Get admin user from request
 export function getAdminFromRequest(request: NextRequest): AdminUser | null {
   // Lấy từ cookie trước
-  const cookieToken = request.cookies.get('adminToken')?.value;
+  const cookieToken = request.cookies.get('admin-token')?.value;
   if (cookieToken) {
     const user = verifyAdminToken(cookieToken);
     if (user) return user;
@@ -119,7 +126,8 @@ export function authenticateAdmin(username: string, password: string): AdminUser
         return {
           userId: user.id,
           username: user.username,
-          role: user.role
+          role: user.role,
+          permissions: user.permissions
         };
       } else {
         console.log('❌ [AUTH] Password verification failed with bcrypt');
@@ -129,7 +137,8 @@ export function authenticateAdmin(username: string, password: string): AdminUser
       return {
         userId: user.id,
         username: user.username,
-        role: user.role
+        role: user.role,
+        permissions: user.permissions
       };
     } else {
       console.log('❌ [AUTH] Password verification failed with plain text comparison');
@@ -159,4 +168,43 @@ export function requireRole(request: NextRequest, roles: string[]): JWTPayload {
     throw new Error('Forbidden');
   }
   return user;
+}
+
+// Middleware để check admin authentication
+export function requireAdmin(request: NextRequest): AdminUser {
+  const admin = getAdminFromRequest(request);
+  if (!admin || admin.role !== 'admin') {
+    throw new Error('Unauthorized - Admin access required');
+  }
+  return admin;
+}
+
+// Middleware để check admin permissions
+export function requireAdminPermission(request: NextRequest, permission: string): AdminUser {
+  const admin = requireAdmin(request);
+  if (!admin.permissions || !admin.permissions.includes(permission)) {
+    throw new Error(`Forbidden - Permission '${permission}' required`);
+  }
+  return admin;
+}
+
+// Rate limiting helper
+const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
+
+export function checkRateLimit(identifier: string, maxRequests: number = 10, windowMs: number = 60000): boolean {
+  const now = Date.now();
+  const key = identifier;
+  const current = rateLimitMap.get(key);
+
+  if (!current || now > current.resetTime) {
+    rateLimitMap.set(key, { count: 1, resetTime: now + windowMs });
+    return true;
+  }
+
+  if (current.count >= maxRequests) {
+    return false;
+  }
+
+  current.count++;
+  return true;
 } 

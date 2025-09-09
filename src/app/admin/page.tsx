@@ -5,6 +5,9 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { apiClient } from '../../lib/api';
 import ApiStatus from '../../components/ui/ApiStatus';
+import { getFeaturedNews, NewsItem } from '../../lib/api/news';
+import { getFeaturedApplications, Application } from '../../lib/api/applications';
+import { getReviews, Review } from '../../lib/api/reviews';
 
 interface DashboardStats {
   totalJobs: number;
@@ -14,6 +17,15 @@ interface DashboardStats {
   pendingJobs: number;
   totalApplications: number;
   totalNews: number;
+}
+
+interface HomeData {
+  hirings: any[];
+  newJobs: any[];
+  jobs: any[];
+  applications: Application[];
+  news: NewsItem[];
+  reviews: Review[];
 }
 
 export default function AdminDashboard() {
@@ -26,7 +38,16 @@ export default function AdminDashboard() {
     totalApplications: 0,
     totalNews: 0,
   });
+  const [homeData, setHomeData] = useState<HomeData>({
+    hirings: [],
+    newJobs: [],
+    jobs: [],
+    applications: [],
+    news: [],
+    reviews: [],
+  });
   const [loading, setLoading] = useState(true);
+  const [dataLoading, setDataLoading] = useState(true);
   const router = useRouter();
 
   useEffect(() => {
@@ -36,53 +57,172 @@ export default function AdminDashboard() {
         
         console.log("Loading dashboard stats...");
         
-        // Fetch stats from the API with better error handling
-        const [jobsResponse, newsResponse, applicationsResponse, hiringsResponse] = await Promise.allSettled([
-          apiClient.jobs.getAll({}),
-          apiClient.news.getAll({}),
-          apiClient.applications.getAll({}),
-          apiClient.hirings.getAll({})
-        ]);
-        
-        // Process the responses with fallback
-        const jobs = jobsResponse.status === 'fulfilled' ? ((jobsResponse.value as any).data || []) : [];
-        const news = newsResponse.status === 'fulfilled' ? ((newsResponse.value as any).data || []) : [];
-        const applications = applicationsResponse.status === 'fulfilled' ? ((applicationsResponse.value as any).data || []) : [];
-        const hirings = hiringsResponse.status === 'fulfilled' ? ((hiringsResponse.value as any).data || []) : [];
-        
-        console.log("Dashboard data loaded:", { jobs: jobs.length, news: news.length, applications: applications.length, hirings: hirings.length });
-        
-        // Calculate stats
-        const activeJobs = jobs.filter((job: any) => job.status === 'active' || job.status === 'published').length;
-        const pendingJobs = jobs.filter((job: any) => job.status === 'pending' || job.status === 'draft').length;
-        const totalJobCount = jobs.length + hirings.length; // Include hirings in total count
-        
-        setStats({
-          totalJobs: totalJobCount,
-          totalFreelancers: applications.length, // Use applications as freelancer count
-          totalReviews: 0, // This needs a dedicated reviews endpoint
-          activeJobs,
-          pendingJobs,
-          totalApplications: applications.length,
-          totalNews: news.length,
+        // Fetch stats from admin dashboard API
+        const response = await fetch('/api/admin/dashboard', {
+          method: 'GET',
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json',
+          },
         });
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && data.data) {
+            const dashboardData = data.data;
+            setStats({
+              totalJobs: dashboardData.overview?.totalJobs || 0,
+              totalFreelancers: dashboardData.overview?.totalApplications || 0,
+              totalReviews: 0, // Reviews endpoint not implemented yet
+              activeJobs: dashboardData.jobs?.active || 0,
+              pendingJobs: dashboardData.jobs?.pending || 0,
+              totalApplications: dashboardData.overview?.totalApplications || 0,
+              totalNews: dashboardData.overview?.totalNews || 0,
+            });
+            console.log("Dashboard stats loaded successfully:", dashboardData);
+          } else {
+            throw new Error(data.message || 'Failed to load dashboard data');
+          }
+        } else {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
       } catch (error) {
-        console.error("Error loading stats:", error);
-        // Set default stats if all API calls fail
-        setStats({
-          totalJobs: 0,
-          totalFreelancers: 0,
-          totalReviews: 0,
-          activeJobs: 0,
-          pendingJobs: 0,
-          totalApplications: 0,
-          totalNews: 0,
-        });
+        console.error("Error loading dashboard stats:", error);
+        
+        // Fallback: Try to fetch individual data
+        try {
+          console.log("Trying fallback method...");
+          const [jobsResponse, newsResponse, applicationsResponse, hiringsResponse, newJobsResponse] = await Promise.allSettled([
+            fetch('/api/admin/jobs', { credentials: 'include' }),
+            fetch('/api/admin/news', { credentials: 'include' }),
+            fetch('/api/admin/applications', { credentials: 'include' }),
+            fetch('/api/admin/hirings', { credentials: 'include' }),
+            fetch('/api/admin/newjobs', { credentials: 'include' })
+          ]);
+          
+          const jobs = jobsResponse.status === 'fulfilled' && jobsResponse.value.ok 
+            ? (await jobsResponse.value.json()).data || [] : [];
+          const news = newsResponse.status === 'fulfilled' && newsResponse.value.ok 
+            ? (await newsResponse.value.json()).data || [] : [];
+          const applications = applicationsResponse.status === 'fulfilled' && applicationsResponse.value.ok 
+            ? (await applicationsResponse.value.json()).data || [] : [];
+          const hirings = hiringsResponse.status === 'fulfilled' && hiringsResponse.value.ok 
+            ? (await hiringsResponse.value.json()).data || [] : [];
+          const newJobs = newJobsResponse.status === 'fulfilled' && newJobsResponse.value.ok 
+            ? (await newJobsResponse.value.json()).data || [] : [];
+          
+          console.log("Fallback data loaded:", { 
+            jobs: jobs.length, 
+            news: news.length, 
+            applications: applications.length, 
+            hirings: hirings.length,
+            newJobs: newJobs.length
+          });
+          
+          // Tính toán chính xác các số liệu
+          const activeJobs = jobs.filter((job: any) => job.status === 'active' || job.status === 'published').length;
+          const pendingJobs = jobs.filter((job: any) => job.status === 'pending' || job.status === 'draft').length;
+          
+          // Tổng việc làm = jobs + hirings + newJobs (không trùng lặp)
+          const totalJobCount = jobs.length + hirings.length + newJobs.length;
+          
+          // Tính tổng reviews từ dữ liệu thực tế
+          const totalReviewsCount = 0; // Sẽ được cập nhật khi có API reviews
+          
+          setStats({
+            totalJobs: totalJobCount,
+            totalFreelancers: applications.length,
+            totalReviews: totalReviewsCount,
+            activeJobs,
+            pendingJobs,
+            totalApplications: applications.length,
+            totalNews: news.length,
+          });
+        } catch (fallbackError) {
+          console.error("Fallback method also failed:", fallbackError);
+          setStats({
+            totalJobs: 0,
+            totalFreelancers: 0,
+            totalReviews: 0,
+            activeJobs: 0,
+            pendingJobs: 0,
+            totalApplications: 0,
+            totalNews: 0,
+          });
+        }
       } finally {
         setLoading(false);
       }
     };
+
+    const loadHomeData = async () => {
+      try {
+        setDataLoading(true);
+        console.log("Loading home data (similar to home page)...");
+        
+        // Load all data similar to home page
+        const [hiringsData, newJobsData, jobsData, applicationsData, newsData, reviewsData] = await Promise.allSettled([
+          apiClient.hirings.getAll({}),
+          apiClient.newJobs.getAll({ limit: 4, page: 1 }),
+          apiClient.jobs.getAll({}),
+          getFeaturedApplications(8),
+          getFeaturedNews(4, Date.now()),
+          getReviews({ limit: 20, status: 'approved' })
+        ]);
+
+        const hirings = hiringsData.status === 'fulfilled' && hiringsData.value?.data 
+          ? hiringsData.value.data : [];
+        const newJobs = newJobsData.status === 'fulfilled' && newJobsData.value?.data 
+          ? newJobsData.value.data : [];
+        const jobs = jobsData.status === 'fulfilled' && jobsData.value?.data 
+          ? jobsData.value.data : [];
+        const applications = applicationsData.status === 'fulfilled' 
+          ? applicationsData.value : [];
+        const news = newsData.status === 'fulfilled' 
+          ? newsData.value : [];
+        const reviews = reviewsData.status === 'fulfilled' && reviewsData.value?.data
+          ? reviewsData.value.data : [];
+
+        console.log("Home data loaded:", { 
+          hirings: hirings.length, 
+          newJobs: newJobs.length, 
+          jobs: jobs.length,
+          applications: applications.length, 
+          news: news.length,
+          reviews: reviews.length
+        });
+
+        setHomeData({
+          hirings,
+          newJobs,
+          jobs,
+          applications,
+          news,
+          reviews
+        });
+
+        // Cập nhật stats từ dữ liệu thực tế nếu dashboard API không hoạt động
+        if (stats.totalJobs === 0) {
+          const totalJobCount = hirings.length + newJobs.length + jobs.length;
+          const totalReviewsCount = reviews.length;
+          
+          setStats(prevStats => ({
+            ...prevStats,
+            totalJobs: totalJobCount,
+            totalReviews: totalReviewsCount,
+            totalApplications: applications.length,
+            totalNews: news.length,
+          }));
+        }
+      } catch (error) {
+        console.error("Error loading home data:", error);
+      } finally {
+        setDataLoading(false);
+      }
+    };
+
     loadDashboardStats();
+    loadHomeData();
   }, []);
 
   const handleLogout = async () => {
@@ -102,12 +242,14 @@ export default function AdminDashboard() {
     }
   };
 
-  if (loading) {
+  if (loading || dataLoading) {
     return (
       <div className="min-h-screen bg-gray-100 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <div className="text-xl text-gray-600">Đang tải dữ liệu dashboard...</div>
+          <div className="text-xl text-gray-600">
+            {loading ? 'Đang tải dữ liệu dashboard...' : 'Đang tải dữ liệu trang chủ...'}
+          </div>
         </div>
       </div>
     );
@@ -181,7 +323,10 @@ export default function AdminDashboard() {
                   Tổng việc làm
                 </p>
                 <p className="text-xl font-semibold text-gray-900">
-                  {stats.totalJobs}
+                  {stats.totalJobs || (homeData.hirings.length + homeData.newJobs.length + homeData.jobs.length)}
+                </p>
+                <p className="text-xs text-gray-500">
+                  (Jobs: {homeData.jobs.length}, Hiring: {homeData.hirings.length}, NewJobs: {homeData.newJobs.length})
                 </p>
               </div>
             </div>
@@ -205,9 +350,9 @@ export default function AdminDashboard() {
                 </svg>
               </div>
               <div className="ml-3">
-                <p className="text-xs font-medium text-gray-600">Freelancers</p>
+                <p className="text-xs font-medium text-gray-600">Ứng viên</p>
                 <p className="text-xl font-semibold text-gray-900">
-                  {stats.totalFreelancers}
+                  {stats.totalApplications || homeData.applications.length}
                 </p>
               </div>
             </div>
@@ -233,7 +378,7 @@ export default function AdminDashboard() {
               <div className="ml-3">
                 <p className="text-xs font-medium text-gray-600">Đánh giá</p>
                 <p className="text-xl font-semibold text-gray-900">
-                  {stats.totalReviews}
+                  {stats.totalReviews || homeData.reviews.length}
                 </p>
               </div>
             </div>
@@ -311,9 +456,9 @@ export default function AdminDashboard() {
                 </svg>
               </div>
               <div className="ml-3">
-                <p className="text-xs font-medium text-gray-600">Ứng viên</p>
+                <p className="text-xs font-medium text-gray-600">Tin tức</p>
                 <p className="text-xl font-semibold text-gray-900">
-                  {stats.totalApplications}
+                  {stats.totalNews || homeData.news.length}
                 </p>
               </div>
             </div>
@@ -525,6 +670,268 @@ export default function AdminDashboard() {
           </Link>
         </div>
 
+        {/* Data Overview Section */}
+        <div className="bg-white rounded-lg shadow p-6 mb-8">
+          <h2 className="text-2xl font-bold text-gray-900 mb-6">Tổng quan dữ liệu hệ thống</h2>
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+            <div className="text-center p-4 bg-indigo-50 rounded-lg">
+              <div className="text-3xl font-bold text-indigo-600">{homeData.jobs.length}</div>
+              <div className="text-sm text-gray-600">Việc làm Jobs</div>
+            </div>
+            <div className="text-center p-4 bg-blue-50 rounded-lg">
+              <div className="text-3xl font-bold text-blue-600">{homeData.hirings.length}</div>
+              <div className="text-sm text-gray-600">Việc làm Hiring</div>
+            </div>
+            <div className="text-center p-4 bg-green-50 rounded-lg">
+              <div className="text-3xl font-bold text-green-600">{homeData.newJobs.length}</div>
+              <div className="text-sm text-gray-600">Việc làm NewJobs</div>
+            </div>
+            <div className="text-center p-4 bg-purple-50 rounded-lg">
+              <div className="text-3xl font-bold text-purple-600">{homeData.applications.length}</div>
+              <div className="text-sm text-gray-600">Ứng viên</div>
+            </div>
+            <div className="text-center p-4 bg-orange-50 rounded-lg">
+              <div className="text-3xl font-bold text-orange-600">{homeData.news.length}</div>
+              <div className="text-sm text-gray-600">Tin tức</div>
+            </div>
+          </div>
+          <div className="mt-4 text-center">
+            <div className="text-lg font-semibold text-gray-700">
+              Tổng việc làm: <span className="text-blue-600">{homeData.jobs.length + homeData.hirings.length + homeData.newJobs.length}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Home Data Sections - Similar to Home Page */}
+        <div className="space-y-8">
+          {/* Jobs Section */}
+          <div className="bg-white rounded-lg shadow p-6">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold text-gray-900">
+                Việc làm Jobs ({homeData.jobs.length})
+              </h2>
+              <Link href="/admin/jobs" className="text-blue-600 hover:text-blue-800">
+                Xem tất cả →
+              </Link>
+            </div>
+            {homeData.jobs.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {homeData.jobs.slice(0, 6).map((job: any) => (
+                  <div key={job._id || job.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
+                    <h3 className="font-semibold text-gray-900 mb-2">{job.title}</h3>
+                    <p className="text-sm text-gray-600 mb-2">🏢 {job.company}</p>
+                    {job.location && (
+                      <p className="text-sm text-gray-600 mb-2">📍 {job.location}</p>
+                    )}
+                    {job.salary && (
+                      <p className="text-sm text-green-600 font-medium">💰 {job.salary}</p>
+                    )}
+                    {job.status && (
+                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                        job.status === 'active' || job.status === 'published'
+                          ? 'bg-green-100 text-green-800'
+                          : job.status === 'pending' || job.status === 'draft'
+                          ? 'bg-yellow-100 text-yellow-800'
+                          : 'bg-gray-100 text-gray-800'
+                      }`}>
+                        {job.status}
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-gray-500 text-center py-8">Chưa có việc làm Jobs nào</p>
+            )}
+          </div>
+
+          {/* Hirings Section */}
+          <div className="bg-white rounded-lg shadow p-6">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold text-gray-900">
+                Việc làm Hiring ({homeData.hirings.length})
+                <span className="text-sm font-normal text-gray-500 ml-2">
+                  (Tổng: {stats.totalJobs} việc làm)
+                </span>
+              </h2>
+              <Link href="/admin/hirings" className="text-blue-600 hover:text-blue-800">
+                Xem tất cả →
+              </Link>
+            </div>
+            {homeData.hirings.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {homeData.hirings.slice(0, 6).map((hiring: any) => (
+                  <div key={hiring._id || hiring.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
+                    <h3 className="font-semibold text-gray-900 mb-2">{hiring.title}</h3>
+                    <p className="text-sm text-gray-600 mb-2">🏢 {hiring.company}</p>
+                    {hiring.location && (
+                      <p className="text-sm text-gray-600 mb-2">📍 {hiring.location}</p>
+                    )}
+                    {hiring.salary && (
+                      <p className="text-sm text-green-600 font-medium">💰 {hiring.salary}</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-gray-500 text-center py-8">Chưa có việc làm hiring nào</p>
+            )}
+          </div>
+
+          {/* New Jobs Section */}
+          <div className="bg-white rounded-lg shadow p-6">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold text-gray-900">Việc làm NewJobs ({homeData.newJobs.length})</h2>
+              <Link href="/admin/newjobs" className="text-blue-600 hover:text-blue-800">
+                Xem tất cả →
+              </Link>
+            </div>
+            {homeData.newJobs.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {homeData.newJobs.slice(0, 4).map((job: any) => (
+                  <div key={job._id || job.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
+                    <h3 className="font-semibold text-gray-900 mb-2">{job.title}</h3>
+                    <p className="text-sm text-gray-600 mb-2">🏢 {job.company}</p>
+                    {job.location && (
+                      <p className="text-sm text-gray-600 mb-2">📍 {job.location}</p>
+                    )}
+                    {job.salary && (
+                      <p className="text-sm text-green-600 font-medium">💰 {job.salary}</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-gray-500 text-center py-8">Chưa có việc làm newJobs nào</p>
+            )}
+          </div>
+
+          {/* Applications Section */}
+          <div className="bg-white rounded-lg shadow p-6">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold text-gray-900">Ứng viên mới nhất ({homeData.applications.length})</h2>
+              <Link href="/admin/applications" className="text-blue-600 hover:text-blue-800">
+                Xem tất cả →
+              </Link>
+            </div>
+            {homeData.applications.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {homeData.applications.slice(0, 8).map((application: Application) => {
+                  const job = application.job || application.hiring;
+                  return (
+                    <div key={application._id} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
+                      <h3 className="font-semibold text-gray-900 mb-2">{application.name}</h3>
+                      <p className="text-sm text-gray-600 mb-2">📧 {application.email}</p>
+                      {application.phone && (
+                        <p className="text-sm text-gray-600 mb-2">📞 {application.phone}</p>
+                      )}
+                      {job && (
+                        <div className="mt-2 p-2 bg-gray-50 rounded">
+                          <p className="text-sm font-medium">{job.title}</p>
+                          <p className="text-xs text-gray-600">🏢 {job.company}</p>
+                        </div>
+                      )}
+                      <p className="text-xs text-gray-500 mt-2">
+                        📅 {new Date(application.createdAt).toLocaleDateString('vi-VN')}
+                      </p>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <p className="text-gray-500 text-center py-8">Chưa có ứng viên nào</p>
+            )}
+          </div>
+
+          {/* News Section */}
+          <div className="bg-white rounded-lg shadow p-6">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold text-gray-900">Tin tức mới nhất ({homeData.news.length})</h2>
+              <Link href="/admin/news" className="text-blue-600 hover:text-blue-800">
+                Xem tất cả →
+              </Link>
+            </div>
+            {homeData.news.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {homeData.news.slice(0, 4).map((news: NewsItem) => (
+                  <div key={news._id} className="border rounded-lg overflow-hidden hover:shadow-md transition-shadow">
+                    {news.image && (
+                      <div className="h-32 bg-gray-200 relative">
+                        <img 
+                          src={news.image} 
+                          alt={news.title}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    )}
+                    <div className="p-4">
+                      <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2">{news.title}</h3>
+                      {news.content && (
+                        <p className="text-sm text-gray-600 line-clamp-3">
+                          {news.content.substring(0, 100)}...
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-gray-500 text-center py-8">Chưa có tin tức nào</p>
+            )}
+          </div>
+
+          {/* Reviews Section */}
+          <div className="bg-white rounded-lg shadow p-6">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold text-gray-900">Đánh giá mới nhất ({homeData.reviews.length})</h2>
+              <Link href="/reviews" className="text-blue-600 hover:text-blue-800">
+                Xem tất cả →
+              </Link>
+            </div>
+            {homeData.reviews.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {homeData.reviews.slice(0, 6).map((review: Review) => (
+                  <div key={review.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
+                    <div className="flex items-center gap-3 mb-3">
+                      <img
+                        src={review.avatar || '/img/ava.jpg'}
+                        alt={review.name}
+                        className="w-12 h-12 rounded-full object-cover border-2 border-gray-200"
+                      />
+                      <div>
+                        <h3 className="font-semibold text-gray-900">{review.name}</h3>
+                        <div className="flex items-center gap-1">
+                          {Array.from({ length: review.rating }).map((_, i) => (
+                            <span key={i} className="text-yellow-500">★</span>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="mb-2">
+                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                        review.category === 'talent' 
+                          ? 'bg-blue-100 text-blue-800' 
+                          : 'bg-green-100 text-green-800'
+                      }`}>
+                        {review.category === 'talent' ? '👥 Nhân sự' : '🏢 Doanh nghiệp'}
+                      </span>
+                    </div>
+                    {review.comment && (
+                      <p className="text-sm text-gray-600 line-clamp-3">
+                        {review.comment}
+                      </p>
+                    )}
+                    <p className="text-xs text-gray-500 mt-2">
+                      📅 {new Date(review.createdAt).toLocaleDateString('vi-VN')}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-gray-500 text-center py-8">Chưa có đánh giá nào</p>
+            )}
+          </div>
+        </div>
 
       </div>
     </div>

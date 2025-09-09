@@ -16,119 +16,76 @@ export async function GET(request: NextRequest) {
 
     console.log('✅ [ADMIN APPLICATIONS] Admin verified:', admin.username);
 
-    const page = request.nextUrl.searchParams.get('page') || '1';
-    const limit = request.nextUrl.searchParams.get('limit') || '10';
-    const status = request.nextUrl.searchParams.get('status') || '';
-    const search = request.nextUrl.searchParams.get('search') || '';
+    const { searchParams } = new URL(request.url);
+    const status = searchParams.get('status') || 'all';
+    const search = searchParams.get('search') || '';
+    const page = searchParams.get('page') || '1';
+    const limit = searchParams.get('limit') || '10';
 
-    console.log('🔍 [ADMIN APPLICATIONS] Query params:', { page, limit, status, search });
+    console.log('🔍 [ADMIN APPLICATIONS] Query params:', { status, search, page, limit });
 
-    // Sample applications data
-    const sampleApplications = [
-      {
-        id: 'app-1',
-        applicantName: 'Nguyễn Văn A',
-        email: 'nguyenvana@email.com',
-        phone: '0123456789',
-        jobTitle: 'Frontend Developer React',
-        jobId: 'job-1',
-        company: 'TechCorp Vietnam',
-        appliedDate: '2024-01-10',
-        status: 'pending',
-        resume: '/resumes/nguyenvana-cv.pdf',
-        coverLetter: 'Tôi rất quan tâm đến vị trí Frontend Developer tại công ty...',
-        experience: '3 năm',
-        skills: ['React', 'JavaScript', 'CSS', 'HTML'],
-        createdAt: new Date('2024-01-10').toISOString(),
-        updatedAt: new Date('2024-01-10').toISOString()
-      },
-      {
-        id: 'app-2',
-        applicantName: 'Trần Thị B',
-        email: 'tranthib@email.com',
-        phone: '0987654321',
-        jobTitle: 'Backend Developer Node.js',
-        jobId: 'job-2',
-        company: 'StartupHub',
-        appliedDate: '2024-01-08',
-        status: 'approved',
-        resume: '/resumes/tranthib-cv.pdf',
-        coverLetter: 'Với kinh nghiệm 4 năm làm việc với Node.js...',
-        experience: '4 năm',
-        skills: ['Node.js', 'MongoDB', 'Express', 'TypeScript'],
-        createdAt: new Date('2024-01-08').toISOString(),
-        updatedAt: new Date('2024-01-12').toISOString()
-      },
-      {
-        id: 'app-3',
-        applicantName: 'Lê Văn C',
-        email: 'levanc@email.com',
-        phone: '0369852147',
-        jobTitle: 'UI/UX Designer',
-        jobId: 'job-3',
-        company: 'Creative Studio',
-        appliedDate: '2024-01-05',
-        status: 'rejected',
-        resume: '/resumes/levanc-portfolio.pdf',
-        coverLetter: 'Tôi là một UI/UX Designer với đam mê tạo ra những sản phẩm...',
-        experience: '2 năm',
-        skills: ['Figma', 'Sketch', 'Adobe XD', 'UI Design'],
-        createdAt: new Date('2024-01-05').toISOString(),
-        updatedAt: new Date('2024-01-14').toISOString()
-      },
-      {
-        id: 'app-4',
-        applicantName: 'Phạm Thị D',
-        email: 'phamthid@email.com',
-        phone: '0741852963',
-        jobTitle: 'Mobile Developer Flutter',
-        jobId: 'job-4',
-        company: 'AppStudio',
-        appliedDate: '2024-01-12',
-        status: 'pending',
-        resume: '/resumes/phamthid-cv.pdf',
-        coverLetter: 'Với background về mobile development và Flutter...',
-        experience: '5 năm',
-        skills: ['Flutter', 'Dart', 'Firebase', 'React Native'],
-        createdAt: new Date('2024-01-12').toISOString(),
-        updatedAt: new Date('2024-01-12').toISOString()
+    // Get applications from backend API
+    try {
+      console.log('🔍 [ADMIN APPLICATIONS] Calling backend API...');
+      
+      const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'https://vieclabbe.onrender.com';
+      const queryParams = new URLSearchParams();
+      
+      if (status && status !== 'all') {
+        queryParams.append('status', status);
       }
-    ];
+      if (search) {
+        queryParams.append('search', search);
+      }
+      queryParams.append('page', page);
+      queryParams.append('limit', limit);
+      
+      const response = await fetch(`${backendUrl}/api/applications?${queryParams}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
 
-    // Filter by status and search
-    let filteredApplications = sampleApplications;
-    
-    if (status && status !== 'all') {
-      filteredApplications = filteredApplications.filter(app => app.status === status);
-    }
-    
-    if (search) {
-      filteredApplications = filteredApplications.filter(app => 
-        app.applicantName.toLowerCase().includes(search.toLowerCase()) ||
-        app.email.toLowerCase().includes(search.toLowerCase()) ||
-        app.jobTitle.toLowerCase().includes(search.toLowerCase()) ||
-        app.company.toLowerCase().includes(search.toLowerCase())
+      console.log('🔍 [ADMIN APPLICATIONS] Backend response status:', response.status);
+      
+      if (response.ok) {
+        const backendData = await response.json();
+        console.log('✅ [ADMIN APPLICATIONS] Backend response data:', backendData);
+        
+        // Handle different backend response formats
+        let applications = [];
+        if (backendData.success && backendData.data && Array.isArray(backendData.data)) {
+          applications = backendData.data;
+        } else if (Array.isArray(backendData)) {
+          applications = backendData;
+        }
+        
+        console.log('✅ [ADMIN APPLICATIONS] Processed', applications.length, 'applications');
+        
+        return NextResponse.json({
+          success: true,
+          data: applications,
+          pagination: backendData.pagination || {
+            page: parseInt(page),
+            limit: parseInt(limit),
+            total: applications.length,
+            totalPages: Math.ceil(applications.length / parseInt(limit))
+          }
+        });
+      } else {
+        throw new Error(`Backend API error: ${response.status}`);
+      }
+    } catch (apiError) {
+      console.error('💥 [ADMIN APPLICATIONS] Backend API error:', apiError);
+      
+      // Return error when backend is not available
+      console.log('❌ [ADMIN APPLICATIONS] Backend API not available');
+      return NextResponse.json(
+        { success: false, message: 'Backend API không khả dụng. Vui lòng kiểm tra kết nối database.' },
+        { status: 503 }
       );
     }
-
-    // Pagination
-    const pageNum = parseInt(page);
-    const limitNum = parseInt(limit);
-    const startIndex = (pageNum - 1) * limitNum;
-    const paginatedApplications = filteredApplications.slice(startIndex, startIndex + limitNum);
-
-    console.log('✅ [ADMIN APPLICATIONS] Returning applications:', paginatedApplications.length);
-    
-    return NextResponse.json({ 
-      success: true, 
-      data: paginatedApplications,
-      pagination: {
-        page: pageNum,
-        limit: limitNum,
-        total: filteredApplications.length,
-        totalPages: Math.ceil(filteredApplications.length / limitNum)
-      }
-    });
   } catch (err) {
     console.error('💥 [ADMIN APPLICATIONS] Error:', err);
     return NextResponse.json(
@@ -138,3 +95,60 @@ export async function GET(request: NextRequest) {
   }
 }
 
+// POST /api/admin/applications
+export async function POST(request: NextRequest) {
+  try {
+    console.log('🔍 [ADMIN APPLICATIONS] POST request received');
+    
+    const admin = getAdminFromRequest(request);
+    if (!admin || admin.role !== 'admin') {
+      console.log('❌ [ADMIN APPLICATIONS] Unauthorized access');
+      return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
+    }
+
+    console.log('✅ [ADMIN APPLICATIONS] Admin verified:', admin.username);
+
+    const body = await request.json();
+    console.log('📝 [ADMIN APPLICATIONS] Request body:', body);
+
+    if (!body.applicantName || !body.email || !body.jobId) {
+      console.log('❌ [ADMIN APPLICATIONS] Missing required fields');
+      return NextResponse.json(
+        { success: false, message: 'Applicant name, email, and job ID are required' },
+        { status: 400 }
+      );
+    }
+
+    // Create new application
+    const newApplication = {
+      id: `app-${Date.now()}`,
+      applicantName: body.applicantName,
+      email: body.email,
+      phone: body.phone || '',
+      jobTitle: body.jobTitle || 'Unknown Position',
+      jobId: body.jobId,
+      company: body.company || 'Unknown Company',
+      appliedDate: new Date().toISOString().split('T')[0],
+      status: body.status || 'pending',
+      resume: body.resume || '',
+      coverLetter: body.coverLetter || '',
+      experience: body.experience || '',
+      skills: body.skills || [],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+
+    console.log('✅ [ADMIN APPLICATIONS] Application created successfully:', newApplication.id);
+    
+    return NextResponse.json(
+      { success: true, data: newApplication, message: 'Application created successfully' },
+      { status: 201 }
+    );
+  } catch (err) {
+    console.error('💥 [ADMIN APPLICATIONS] Error:', err);
+    return NextResponse.json(
+      { success: false, message: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}

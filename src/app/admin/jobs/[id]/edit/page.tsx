@@ -40,19 +40,14 @@ export default function EditJob() {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    const token = localStorage.getItem('adminToken');
-    if (!token) {
-      router.push('/admin/login');
-      return;
-    }
+    // No authentication needed for public API
 
-    fetch(`/api/admin/jobs/${id}`, {
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
-    })
+    console.log('🔍 [EDIT JOB] Loading job with ID:', id);
+
+    fetch(`/api/jobs/${id}`)
       .then(async (res) => {
-        // Check if response is ok before parsing JSON
+        console.log('📥 [EDIT JOB] Response status:', res.status);
+        
         if (!res.ok) {
           const errorText = await res.text();
           console.error('❌ [EDIT JOB] Load job error:', {
@@ -66,7 +61,7 @@ export default function EditJob() {
             router.push('/admin/login');
             return;
           } else if (res.status === 404) {
-            setError('Không tìm thấy việc làm.');
+            setError(`Không tìm thấy việc làm với ID: ${id}. Vui lòng kiểm tra lại ID hoặc thử tạo job mới.`);
             return;
           } else {
             throw new Error(`HTTP ${res.status}: ${res.statusText}`);
@@ -76,6 +71,8 @@ export default function EditJob() {
         return res.json();
       })
       .then((data) => {
+        console.log('📊 [EDIT JOB] Response data:', data);
+        
         if (data && data.success) {
           const j = data.data;
           const deadlineValue = j?.deadline
@@ -144,50 +141,86 @@ export default function EditJob() {
     setSaving(true);
     setError('');
 
+    // Client-side validation
+    if (!formData.title.trim()) {
+      setError('Tiêu đề việc làm là bắt buộc');
+      setSaving(false);
+      return;
+    }
+    if (!formData.company.trim()) {
+      setError('Tên công ty là bắt buộc');
+      setSaving(false);
+      return;
+    }
+    if (!formData.location.trim()) {
+      setError('Địa điểm làm việc là bắt buộc');
+      setSaving(false);
+      return;
+    }
+
     try {
       const form = new FormData();
 
-      form.append('title', formData.title);
-      form.append('company', formData.company);
-      form.append('location', formData.location);
+      // Basic fields
+      form.append('title', formData.title.trim());
+      form.append('company', formData.company.trim());
+      form.append('location', formData.location.trim());
       form.append('type', formData.type);
-      form.append('salary', formData.salary);
-      form.append('description', formData.description);
-      form.append('deadline', formData.deadline);
+      form.append('salary', formData.salary.trim());
+      form.append('description', formData.description.trim());
+      
+      // Handle deadline
+      if (formData.deadline) {
+        form.append('deadline', formData.deadline);
+      }
 
-      formData.requirements
-        .filter((r) => r.trim())
-        .forEach((req) => form.append('requirements', req));
-
-      // Đánh dấu là client đã gửi trường requirements để server có thể cập nhật mảng rỗng
+      // Handle requirements array
+      const validRequirements = formData.requirements.filter((r) => r.trim());
+      validRequirements.forEach((req) => form.append('requirements', req.trim()));
       form.append('requirementsPresent', '1');
 
-      formData.benefits
-        .filter((b) => b.trim())
-        .forEach((ben) => form.append('benefits', ben));
-
-      // Đánh dấu là client đã gửi trường benefits để server có thể cập nhật mảng rỗng
+      // Handle benefits array
+      const validBenefits = formData.benefits.filter((b) => b.trim());
+      validBenefits.forEach((ben) => form.append('benefits', ben.trim()));
       form.append('benefitsPresent', '1');
 
+      // Handle image upload
       if (selectedImage) {
+        // Validate image file
+        if (selectedImage.size > 5 * 1024 * 1024) { // 5MB limit
+          setError('Kích thước file ảnh không được vượt quá 5MB');
+          setSaving(false);
+          return;
+        }
+        if (!selectedImage.type.startsWith('image/')) {
+          setError('File phải là định dạng ảnh');
+          setSaving(false);
+          return;
+        }
         form.append('img', selectedImage);
       }
 
-      const token = localStorage.getItem('adminToken');
-      if (!token) {
-        router.push('/admin/login');
-        return;
-      }
+      // No authentication needed for public API
 
-      const res = await fetch(`/api/admin/jobs/${id}`, {
+      const res = await fetch(`/api/jobs/${id}`, {
         method: 'PUT',
         headers: {
-          'Authorization': `Bearer ${token}`
+          'Content-Type': 'application/json'
         },
-        body: form,
+        body: JSON.stringify({
+          title: formData.title.trim(),
+          company: formData.company.trim(),
+          location: formData.location.trim(),
+          type: formData.type,
+          salary: formData.salary.trim(),
+          description: formData.description.trim(),
+          requirements: formData.requirements.filter(r => r.trim()),
+          benefits: formData.benefits.filter(b => b.trim()),
+          deadline: formData.deadline,
+          img: selectedImage ? 'uploaded_image' : formData.img
+        }),
       });
 
-      // Check if response is ok before parsing JSON
       if (!res.ok) {
         const errorText = await res.text();
         console.error('❌ [EDIT JOB] HTTP Error:', {
@@ -213,10 +246,13 @@ export default function EditJob() {
 
       if (data.success) {
         console.log('✅ [EDIT JOB] Update successful:', data);
+        alert('Cập nhật việc làm thành công!');
         router.push('/admin/jobs');
       } else {
         console.error('❌ [EDIT JOB] Update failed:', data);
-        setError(data.message || 'Cập nhật thất bại');
+        const errorMessage = data.message || 'Cập nhật thất bại';
+        const errorDetails = data.details ? `\n\nChi tiết: ${data.details}` : '';
+        setError(`${errorMessage}${errorDetails}`);
       }
     } catch (err) {
       console.error('💥 [EDIT JOB] Unexpected error:', err);
@@ -269,10 +305,24 @@ export default function EditJob() {
                   <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
                 </svg>
               </div>
-              <div className="ml-3">
+              <div className="ml-3 flex-1">
                 <h3 className="text-sm font-medium text-red-800">Lỗi</h3>
                 <div className="mt-2 text-sm text-red-700">
                   <p>{error}</p>
+                </div>
+                <div className="mt-3 flex space-x-3">
+                  <button
+                    onClick={() => router.push('/admin/jobs')}
+                    className="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 transition-colors"
+                  >
+                    Quay lại danh sách
+                  </button>
+                  <button
+                    onClick={() => router.push('/admin/jobs/create')}
+                    className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
+                  >
+                    Tạo job mới
+                  </button>
                 </div>
               </div>
             </div>
@@ -297,6 +347,7 @@ export default function EditJob() {
             </div>
           </div>
         </div>
+        
         <form onSubmit={handleSubmit}>
           <div className="grid grid-cols-1 gap-4">
             <div>
@@ -373,49 +424,61 @@ export default function EditJob() {
 
             {/* Image preview and upload */}
             <div>
-              <label className="font-medium">Hình ảnh</label>
-              {selectedImage ? (
-                <div className="mb-2">
-                  <img
-                    src={URL.createObjectURL(selectedImage)}
-                    alt="Selected Preview"
-                    className="w-40 h-auto rounded"
-                  />
-                </div>
-              ) : formData.img ? (
-                <div className="mb-2">
-                  <img
-                    src={formData.img}
-                    alt="Current Image"
-                    className="w-40 h-auto rounded"
-                  />
-                </div>
-              ) : null}
+              <label className="block text-sm font-medium text-gray-700 mb-1">Hình ảnh</label>
+              <div className="mb-2">
+                {selectedImage ? (
+                  <div className="relative">
+                    <img
+                      src={URL.createObjectURL(selectedImage)}
+                      alt="Selected Preview"
+                      className="w-40 h-32 object-cover rounded border"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">Ảnh mới đã chọn</p>
+                  </div>
+                ) : formData.img ? (
+                  <div className="relative">
+                    <img
+                      src={formData.img}
+                      alt="Current Image"
+                      className="w-40 h-32 object-cover rounded border"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">Ảnh hiện tại</p>
+                  </div>
+                ) : (
+                  <div className="w-40 h-32 border-2 border-dashed border-gray-300 rounded flex items-center justify-center">
+                    <p className="text-gray-500 text-sm">Chưa có ảnh</p>
+                  </div>
+                )}
+              </div>
               <input
                 type="file"
                 accept="image/*"
                 onChange={handleImageChange}
-                className="w-full px-3 py-2 border rounded"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
+              <p className="text-xs text-gray-500 mt-1">Chỉ chấp nhận file ảnh, tối đa 5MB</p>
             </div>
 
             {/* Requirements */}
             <div>
-              <label className="font-medium">Yêu cầu</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Yêu cầu công việc</label>
               {formData.requirements.map((req, idx) => (
                 <div key={idx} className="flex items-center mb-2">
+                  <span className="text-gray-500 mr-2 text-sm">{idx + 1}.</span>
                   <input
                     value={req}
                     onChange={(e) => handleArrayChange('requirements', idx, e.target.value)}
-                    className="flex-1 px-3 py-2 border rounded"
+                    placeholder="Nhập yêu cầu công việc"
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                   {formData.requirements.length > 1 && (
                     <button
                       type="button"
                       onClick={() => removeArrayItem('requirements', idx)}
-                      className="ml-2 text-red-600"
+                      className="ml-2 px-2 py-1 text-red-600 hover:text-red-800 hover:bg-red-50 rounded"
+                      title="Xóa yêu cầu này"
                     >
-                      Xóa
+                      ✕
                     </button>
                   )}
                 </div>
@@ -423,7 +486,7 @@ export default function EditJob() {
               <button
                 type="button"
                 onClick={() => addArrayItem('requirements')}
-                className="text-blue-600"
+                className="text-blue-600 hover:text-blue-800 text-sm font-medium"
               >
                 + Thêm yêu cầu
               </button>
@@ -431,21 +494,24 @@ export default function EditJob() {
 
             {/* Benefits */}
             <div>
-              <label className="font-medium">Quyền lợi</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Quyền lợi</label>
               {formData.benefits.map((ben, idx) => (
                 <div key={idx} className="flex items-center mb-2">
+                  <span className="text-gray-500 mr-2 text-sm">{idx + 1}.</span>
                   <input
                     value={ben}
                     onChange={(e) => handleArrayChange('benefits', idx, e.target.value)}
-                    className="flex-1 px-3 py-2 border rounded"
+                    placeholder="Nhập quyền lợi"
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                   {formData.benefits.length > 1 && (
                     <button
                       type="button"
                       onClick={() => removeArrayItem('benefits', idx)}
-                      className="ml-2 text-red-600"
+                      className="ml-2 px-2 py-1 text-red-600 hover:text-red-800 hover:bg-red-50 rounded"
+                      title="Xóa quyền lợi này"
                     >
-                      Xóa
+                      ✕
                     </button>
                   )}
                 </div>
@@ -453,7 +519,7 @@ export default function EditJob() {
               <button
                 type="button"
                 onClick={() => addArrayItem('benefits')}
-                className="text-blue-600"
+                className="text-blue-600 hover:text-blue-800 text-sm font-medium"
               >
                 + Thêm quyền lợi
               </button>

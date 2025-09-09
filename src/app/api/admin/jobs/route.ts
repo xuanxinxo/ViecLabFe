@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
     const status = request.nextUrl.searchParams.get('status');
     console.log('🔍 [ADMIN JOBS] Status filter:', status);
     
-    // Get jobs from backend API
+    // Get jobs from backend API with fallback
     try {
       console.log('🔍 [ADMIN JOBS] Calling backend API...');
       
@@ -32,7 +32,9 @@ export async function GET(request: NextRequest) {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
-        }
+        },
+        timeout: 10000, // 10 seconds timeout
+        signal: AbortSignal.timeout(10000)
       });
 
       console.log('🔍 [ADMIN JOBS] Backend response status:', response.status);
@@ -92,8 +94,8 @@ export async function GET(request: NextRequest) {
         } catch (apiError) {
       console.error('💥 [ADMIN JOBS] Backend API error:', apiError);
       
-      // Return error instead of sample data
-      console.log('❌ [ADMIN JOBS] Backend API not available, returning error');
+      // Return error when backend is not available - no fallback to sample data
+      console.log('❌ [ADMIN JOBS] Backend API not available');
       return NextResponse.json(
         { success: false, message: 'Backend API không khả dụng. Vui lòng kiểm tra kết nối database.' },
         { status: 503 }
@@ -127,7 +129,7 @@ export async function POST(request: NextRequest) {
     if (!body.title || !body.company || !body.location) {
       console.log('❌ [ADMIN JOBS] Missing required fields');
       return NextResponse.json(
-        { success: false, message: 'Missing required fields' },
+        { success: false, message: 'Tiêu đề, công ty và địa điểm là bắt buộc' },
         { status: 400 }
       );
     }
@@ -175,7 +177,8 @@ export async function POST(request: NextRequest) {
     } catch (apiError) {
       console.error('💥 [ADMIN JOBS] Backend API error:', apiError);
       
-      // Return error if backend is not available
+      // Return error when backend is not available
+      console.log('❌ [ADMIN JOBS] Backend API not available');
       return NextResponse.json(
         { success: false, message: 'Backend API không khả dụng. Vui lòng kiểm tra kết nối database.' },
         { status: 503 }

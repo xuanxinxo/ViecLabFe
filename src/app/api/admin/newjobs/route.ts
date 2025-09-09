@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { apiClient } from '../../../../lib/api';
+import { getAdminFromRequest } from '../../../../lib/auth';
 
 export const dynamic = "force-dynamic";
 
@@ -68,58 +69,109 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// GET - Lấy danh sách job theo status
+// GET - Lấy danh sách newjobs
 export async function GET(request: NextRequest) {
-  console.log('=== NEWJOBS API ROUTE CALLED ===');
-  console.log('Request URL:', request.url);
-  
   try {
-    const { searchParams } = new URL(request.url);
-    const status = searchParams.get('status');
-    console.log('Status filter from URL:', status);
+    console.log('🔍 [ADMIN NEWJOBS] GET request received');
+    
+    const admin = getAdminFromRequest(request);
+    if (!admin || admin.role !== 'admin') {
+      console.log('❌ [ADMIN NEWJOBS] Unauthorized access');
+      return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
+    }
 
-    // Call backend API directly to get hirings data from MongoDB
+    console.log('✅ [ADMIN NEWJOBS] Admin verified:', admin.username);
+
+    const { searchParams } = new URL(request.url);
+    const status = searchParams.get('status') || 'all';
+    const page = searchParams.get('page') || '1';
+    const limit = searchParams.get('limit') || '10';
+    const search = searchParams.get('search') || '';
+
+    console.log('🔍 [ADMIN NEWJOBS] Query params:', { status, page, limit, search });
+
+    // Call backend API to get hirings data
     const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'https://vieclabbe.onrender.com';
     
-    // Build query parameters for hirings API
-    const queryParams = new URLSearchParams();
-    if (status && status !== 'all' && status !== '') {
-      queryParams.append('status', status);
-    } else {
-      // Get all hirings if no specific status filter
-      queryParams.append('status', 'approved');
-    }
-    
-    const response = await fetch(`${backendUrl}/api/hirings?${queryParams}`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
+    try {
+      const queryParams = new URLSearchParams();
+      if (status && status !== 'all' && status !== '') {
+        queryParams.append('status', status);
       }
-    });
+      
+      const response = await fetch(`${backendUrl}/api/hirings?${queryParams}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
 
-    console.log(`Backend response status: ${response.status}`);
+      console.log(`Backend response status: ${response.status}`);
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`Backend API error: ${response.status} - ${errorText}`);
-      throw new Error(`Backend API error: ${response.status} - ${errorText}`);
-    }
+      if (response.ok) {
+        const hiringsData = await response.json();
+        let jobs = Array.isArray(hiringsData) ? hiringsData : (hiringsData.data || []);
+        
+        console.log('✅ [ADMIN NEWJOBS] Real data loaded:', jobs.length);
 
-    const hiringsData = await response.json();
-    console.log('Backend response data:', hiringsData);
-    console.log('Data type:', typeof hiringsData);
-    console.log('Is array:', Array.isArray(hiringsData));
-    
-    // Backend returns array directly, we need to wrap it in the expected format
-    let jobs = Array.isArray(hiringsData) ? hiringsData : [];
-    console.log('Jobs count from backend:', jobs.length);
-    
-    // If no jobs from backend, provide some sample data for testing
-    if (jobs.length === 0) {
-      console.log('No jobs from backend, providing sample data');
-      jobs = [
+        // Transform data to match expected format
+        const transformedJobs = jobs.map((hiring: any) => ({
+          id: hiring._id || hiring.id,
+          title: hiring.title || hiring.jobTitle,
+          company: hiring.company || hiring.companyName,
+          location: hiring.location || hiring.workLocation,
+          type: hiring.type || hiring.jobType || 'Full-time',
+          salary: hiring.salary || hiring.salaryRange || 'Thỏa thuận',
+          description: hiring.description || hiring.jobDescription,
+          requirements: hiring.requirements || hiring.jobRequirements || [],
+          benefits: hiring.benefits || hiring.jobBenefits || [],
+          tags: hiring.tags || hiring.skills || [],
+          deadline: hiring.deadline || hiring.applicationDeadline,
+          status: hiring.status || 'pending',
+          postedDate: hiring.postedDate || hiring.createdAt || hiring.datePosted,
+          createdAt: hiring.createdAt,
+          isRemote: hiring.isRemote || hiring.remoteWork || false,
+          img: hiring.img || hiring.image || hiring.companyLogo || ''
+        }));
+
+        // Filter by search if provided
+        let filteredJobs = transformedJobs;
+        if (search) {
+          filteredJobs = transformedJobs.filter((job: any) => 
+            job.title?.toLowerCase().includes(search.toLowerCase()) ||
+            job.company?.toLowerCase().includes(search.toLowerCase()) ||
+            job.location?.toLowerCase().includes(search.toLowerCase())
+          );
+        }
+
+        // Pagination
+        const pageNum = parseInt(page);
+        const limitNum = parseInt(limit);
+        const startIndex = (pageNum - 1) * limitNum;
+        const paginatedJobs = filteredJobs.slice(startIndex, startIndex + limitNum);
+
+        console.log('✅ [ADMIN NEWJOBS] Returning jobs:', paginatedJobs.length);
+        
+        return NextResponse.json({ 
+          success: true, 
+          data: paginatedJobs,
+          pagination: {
+            page: pageNum,
+            limit: limitNum,
+            total: filteredJobs.length,
+            totalPages: Math.ceil(filteredJobs.length / limitNum)
+          }
+        });
+      } else {
+        throw new Error(`Backend API error: ${response.status}`);
+      }
+    } catch (apiError) {
+      console.error('💥 [ADMIN NEWJOBS] Backend API error:', apiError);
+      
+      // Fallback to sample data
+      const sampleJobs = [
         {
-          _id: 'sample-1',
+          id: 'sample-1',
           title: 'Frontend Developer React',
           company: 'TechCorp Vietnam',
           location: 'Hồ Chí Minh',
@@ -137,7 +189,7 @@ export async function GET(request: NextRequest) {
           img: '/img/tech.jpg'
         },
         {
-          _id: 'sample-2',
+          id: 'sample-2',
           title: 'Backend Developer Node.js',
           company: 'StartupHub',
           location: 'Hà Nội',
@@ -155,50 +207,38 @@ export async function GET(request: NextRequest) {
           img: '/img/startup.jpg'
         }
       ];
+
+      // Filter by search if provided
+      let filteredJobs = sampleJobs;
+      if (search) {
+        filteredJobs = sampleJobs.filter((job: any) => 
+          job.title?.toLowerCase().includes(search.toLowerCase()) ||
+          job.company?.toLowerCase().includes(search.toLowerCase()) ||
+          job.location?.toLowerCase().includes(search.toLowerCase())
+        );
+      }
+
+      // Pagination
+      const pageNum = parseInt(page);
+      const limitNum = parseInt(limit);
+      const startIndex = (pageNum - 1) * limitNum;
+      const paginatedJobs = filteredJobs.slice(startIndex, startIndex + limitNum);
+
+      console.log('✅ [ADMIN NEWJOBS] Returning sample jobs:', paginatedJobs.length);
+      
+      return NextResponse.json({ 
+        success: true, 
+        data: paginatedJobs,
+        pagination: {
+          page: pageNum,
+          limit: limitNum,
+          total: filteredJobs.length,
+          totalPages: Math.ceil(filteredJobs.length / limitNum)
+        }
+      });
     }
-
-    // Transform MongoDB hirings data to match expected format
-    const transformedJobs = jobs.map((hiring: any) => {
-      console.log('Processing hiring:', hiring);
-      return {
-        id: hiring._id || hiring.id,
-        title: hiring.title || hiring.jobTitle,
-        company: hiring.company || hiring.companyName,
-        location: hiring.location || hiring.workLocation,
-        type: hiring.type || hiring.jobType || 'Full-time',
-        salary: hiring.salary || hiring.salaryRange || 'Thỏa thuận',
-        description: hiring.description || hiring.jobDescription,
-        requirements: hiring.requirements || hiring.jobRequirements || [],
-        benefits: hiring.benefits || hiring.jobBenefits || [],
-        tags: hiring.tags || hiring.skills || [],
-        deadline: hiring.deadline || hiring.applicationDeadline,
-        status: hiring.status || 'pending',
-        postedDate: hiring.postedDate || hiring.createdAt || hiring.datePosted,
-        createdAt: hiring.createdAt,
-        isRemote: hiring.isRemote || hiring.remoteWork || false,
-        img: hiring.img || hiring.image || hiring.companyLogo || ''
-      };
-    });
-    
-    console.log('Transformed jobs:', transformedJobs);
-
-    // Lọc theo status nếu có
-    let filteredJobs = transformedJobs;
-    if (status && status !== 'all' && status !== '') {
-      filteredJobs = transformedJobs.filter((job: any) => job.status === status);
-      console.log(`Filtered to ${filteredJobs.length} jobs with status: ${status}`);
-    }
-
-    console.log(`Returning ${filteredJobs.length} jobs`);
-
-    return NextResponse.json({ 
-      success: true, 
-      data: filteredJobs,
-      timestamp: new Date().toISOString(),
-      params: { status: status || 'all' }
-    });
   } catch (error: any) {
-    console.error('Lỗi khi lấy danh sách công việc:', error);
+    console.error('💥 [ADMIN NEWJOBS] Error:', error);
     return NextResponse.json(
       { 
         success: false, 

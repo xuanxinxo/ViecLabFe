@@ -31,14 +31,31 @@ export default function AdminNews() {
   const loadNews = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/news');
+      const response = await fetch('/api/admin/news', {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (!response.ok) {
+        if (response.status === 401) {
+          router.push('/admin/login');
+          return;
+        }
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
       const data = await response.json();
       console.log('🔍 [ADMIN NEWS PAGE] API Response:', data);
       
+      if (!data.success) {
+        throw new Error(data.message || 'Failed to load news');
+      }
+      
       // Handle different response formats
-      if (data.news && Array.isArray(data.news)) {
-        setNews(data.news);
-      } else if (data.data && Array.isArray(data.data)) {
+      if (data.data && Array.isArray(data.data)) {
         setNews(data.data);
       } else if (Array.isArray(data)) {
         setNews(data);
@@ -63,20 +80,20 @@ export default function AdminNews() {
     if (confirm('Bạn có chắc muốn xóa tin tức này?')) {
       setError(null);
       try {
-        const response = await fetch('/api/news', {
+        const response = await fetch(`/api/admin/news/${newsId}`, {
           method: 'DELETE',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id: newsId })
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' }
         });
         
         const result = await response.json();
         
-        if (response.ok) {
+        if (response.ok && result.success) {
           // Refresh the news list to reflect the deletion
           await loadNews();
           alert('Xóa tin tức thành công!');
         } else {
-          setError(result.error || 'Có lỗi xảy ra khi xóa tin tức');
+          setError(result.message || 'Có lỗi xảy ra khi xóa tin tức');
         }
       } catch (error) {
         console.error('Error deleting news:', error);
@@ -297,16 +314,18 @@ function EditNewsModal({
           console.log(key, value);
         }
         
-        response = await fetch(`/api/news/${encodeURIComponent(newsId)}`, {
+        response = await fetch(`/api/admin/news/${encodeURIComponent(newsId)}`, {
           method: 'PUT',
+          credentials: 'include',
           body: formDataToSend,
           // Note: Don't set Content-Type header, let the browser set it with the correct boundary
         });
       } else {
         // If no new image, just update text
         console.log('Sending JSON data...');
-        response = await fetch(`/api/news/${encodeURIComponent(newsId)}`, {
+        response = await fetch(`/api/admin/news/${encodeURIComponent(newsId)}`, {
           method: 'PUT',
+          credentials: 'include',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             ...formData,

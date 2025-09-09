@@ -1,6 +1,6 @@
 // app/api/admin/login/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { authenticateAdmin } from '@/lib/auth';
+import { authenticateAdmin, checkRateLimit } from '@/lib/auth';
 import jwt from 'jsonwebtoken';
 import { serverCookieHelper } from '@/lib/cookieHelper';
 
@@ -12,6 +12,16 @@ const JWT_SECRET = process.env.JWT_SECRET || 'toredco-admin-secret-key-2024-supe
 export async function POST(request: NextRequest) {
   try {
     console.log('🔐 [ADMIN LOGIN] API called');
+    
+    // Rate limiting check
+    const clientIP = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown';
+    if (!checkRateLimit(`admin-login-${clientIP}`, 20, 300000)) { // 20 attempts per 5 minutes (increased for testing)
+      console.log('❌ [ADMIN LOGIN] Rate limit exceeded for IP:', clientIP);
+      return NextResponse.json(
+        { success: false, message: 'Too many login attempts. Please try again later.' },
+        { status: 429 },
+      );
+    }
     
     const { username, password } = await request.json();
     console.log('📝 [ADMIN LOGIN] Received credentials:', { username, password: password ? '***' : 'undefined' });

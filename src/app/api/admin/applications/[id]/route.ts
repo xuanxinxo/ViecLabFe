@@ -3,7 +3,7 @@ import { getAdminFromRequest } from '../../../../../lib/auth';
 
 export const dynamic = "force-dynamic";
 
-// GET /api/admin/news/[id] - Get news details
+// GET /api/admin/applications/[id] - Get application details
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -19,30 +19,35 @@ export async function GET(
 
     const { id } = params;
     if (!id) {
-      return NextResponse.json({ success: false, message: 'News ID is required' }, { status: 400 });
+      return NextResponse.json({ success: false, message: 'Application ID is required' }, { status: 400 });
     }
 
-    // For now, return a mock news item
+    // For now, return a mock application
     // In real implementation, fetch from backend
-    const news = {
+    const application = {
       id,
-      title: 'Sample News Title',
-      summary: 'Sample news summary...',
-      content: 'Sample news content...',
-      link: '/news/sample-news',
-      imageUrl: '/images/sample-news.jpg',
-      date: '2024-01-15',
-      author: 'TOREDCO Admin',
+      applicantName: 'Sample Applicant',
+      email: 'sample@email.com',
+      phone: '0123456789',
+      jobTitle: 'Sample Job',
+      jobId: 'job-1',
+      company: 'Sample Company',
+      appliedDate: '2024-01-10',
+      status: 'pending',
+      resume: '/resumes/sample.pdf',
+      coverLetter: 'Sample cover letter...',
+      experience: '2 years',
+      skills: ['React', 'JavaScript'],
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
 
     return NextResponse.json({ 
       success: true, 
-      data: news 
+      data: application 
     });
   } catch (err) {
-    console.error('Error fetching news:', err);
+    console.error('Error fetching application:', err);
     return NextResponse.json(
       { success: false, message: 'Internal server error' },
       { status: 500 }
@@ -50,7 +55,7 @@ export async function GET(
   }
 }
 
-// PUT /api/admin/news/[id] - Update news
+// PUT /api/admin/applications/[id] - Update application
 export async function PUT(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -66,36 +71,36 @@ export async function PUT(
 
     const { id } = params;
     if (!id) {
-      return NextResponse.json({ success: false, message: 'News ID is required' }, { status: 400 });
+      return NextResponse.json({ success: false, message: 'Application ID is required' }, { status: 400 });
     }
 
     const body = await request.json();
-    console.log('📝 [ADMIN NEWS] Update request:', { id, body });
+    console.log('📝 [ADMIN APPLICATIONS] Update request:', { id, body });
 
     // Validate required fields
-    if (!body.title || !body.summary) {
+    if (!body.applicantName || !body.email) {
       return NextResponse.json(
-        { success: false, message: 'Title and summary are required' },
+        { success: false, message: 'Applicant name and email are required' },
         { status: 400 }
       );
     }
 
-    // Update news
-    const updatedNews = {
+    // Update application
+    const updatedApplication = {
       id,
       ...body,
       updatedAt: new Date().toISOString()
     };
 
-    console.log('✅ [ADMIN NEWS] News updated successfully:', id);
+    console.log('✅ [ADMIN APPLICATIONS] Application updated successfully:', id);
     
     return NextResponse.json({
       success: true,
-      data: updatedNews,
-      message: 'News updated successfully'
+      data: updatedApplication,
+      message: 'Application updated successfully'
     });
   } catch (err) {
-    console.error('Error updating news:', err);
+    console.error('Error updating application:', err);
     return NextResponse.json(
       { success: false, message: 'Internal server error' },
       { status: 500 }
@@ -103,7 +108,7 @@ export async function PUT(
   }
 }
 
-// DELETE /api/admin/news/[id] - Delete news
+// DELETE /api/admin/applications/[id] - Delete application
 export async function DELETE(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -119,25 +124,28 @@ export async function DELETE(
 
     const { id } = params;
     if (!id) {
-      return NextResponse.json({ success: false, message: 'News ID is required' }, { status: 400 });
+      return NextResponse.json({ success: false, message: 'Application ID is required' }, { status: 400 });
     }
 
-    console.log('🗑️ [ADMIN NEWS] Deleting news:', id);
+    console.log('🗑️ [ADMIN APPLICATIONS] Deleting application:', id);
 
     // In real implementation, delete from backend
     // For now, just return success
 
-    console.log('✅ [ADMIN NEWS] News deleted successfully:', id);
+    console.log('✅ [ADMIN APPLICATIONS] Application deleted successfully:', id);
     
     return NextResponse.json({
       success: true,
-      message: 'News deleted successfully'
+      message: 'Application deleted successfully'
     });
   } catch (err) {
-    console.error('Error deleting news:', err);
+    console.error('Error deleting application:', err);
     return NextResponse.json(
       { success: false, message: 'Internal server error' },
       { status: 500 }
     );
   }
 }
+
+
+

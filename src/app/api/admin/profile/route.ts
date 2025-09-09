@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
       name: `Admin ${admin.username}`,
       avatar: null,
       lastLogin: new Date().toISOString(),
-      permissions: ['read', 'write', 'delete', 'approve']
+      permissions: admin.permissions || ['read', 'write', 'delete', 'approve']
     };
 
     return NextResponse.json({ 

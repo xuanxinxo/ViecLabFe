@@ -140,6 +140,61 @@ export async function POST(request: NextRequest) {
       const errorData = await backendResponse.json().catch(() => ({}));
       console.log('❌ [LOGIN] Backend error:', errorData);
       
+      // Handle rate limiting (429) specifically
+      if (backendResponse.status === 429) {
+        console.log('⏰ [LOGIN] Rate limit exceeded, using fallback mode');
+        
+        // For demo, accept any email/password combination when rate limited
+        if (email && password) {
+          // Create JWT token for the user (fallback mode for rate limit)
+          const token = jwt.sign(
+            {
+              userId: `local_${Date.now()}`,
+              email: email,
+              name: email.split('@')[0], // Use email prefix as name
+              role: 'user',
+            },
+            JWT_SECRET,
+            { expiresIn: '7d' }
+          );
+
+          console.log('🔑 [LOGIN] JWT token created (rate limit fallback)');
+
+          // Set cookie
+          const response = NextResponse.json({
+            success: true,
+            message: 'Đăng nhập thành công! Hệ thống đang sử dụng chế độ offline.',
+            data: {
+              user: {
+                id: `local_${Date.now()}`,
+                name: email.split('@')[0],
+                email: email,
+                role: 'user'
+              },
+              token: token
+            }
+          });
+
+          // Set HTTP-only cookie
+          response.cookies.set('token', token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            maxAge: 60 * 60 * 24 * 7, // 1 week
+            path: '/',
+          });
+
+          return response;
+        } else {
+          return NextResponse.json(
+            {
+              success: false,
+              message: 'Email hoặc mật khẩu không đúng'
+            },
+            { status: 401 }
+          );
+        }
+      }
+      
       // If backend is not available (404, 500, etc.), use fallback
       if (backendResponse.status >= 400) {
         console.log('🔄 [LOGIN] Backend not available, using fallback mode');

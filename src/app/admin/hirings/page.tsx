@@ -2,7 +2,6 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Modal from '../../../components/ui/Modal';
-import { apiClient } from '../../../lib/api';
 
 interface Hiring {
   id: string;
@@ -31,7 +30,8 @@ export default function AdminHiringPage() {
   const [showModal, setShowModal] = useState(false);
   const [form, setForm] = useState(initialForm);
   const [submitting, setSubmitting] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null); // 👈 Thêm để biết đang sửa cái nào
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const router = useRouter();
 
   useEffect(() => {
     loadData();
@@ -40,8 +40,30 @@ export default function AdminHiringPage() {
   const loadData = async () => {
     setLoading(true);
     try {
-      const response = await apiClient.admin.hirings.getAll();
-      const hiringsData = (response as any).data || [];
+      const response = await fetch('/api/admin/hirings', {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (!response.ok) {
+        if (response.status === 401) {
+          router.push('/admin/login');
+          return;
+        }
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log('🔍 [ADMIN HIRINGS PAGE] API Response:', data);
+      
+      if (!data.success) {
+        throw new Error(data.message || 'Failed to load hirings');
+      }
+      
+      const hiringsData = data.data || [];
       setHirings(hiringsData);
     } catch (error) {
       console.error('Error loading hirings:', error);
@@ -73,16 +95,30 @@ export default function AdminHiringPage() {
     try {
       let response;
       if (editingId) {
-        response = await apiClient.admin.hirings.update(editingId, form);
+        response = await fetch(`/api/admin/hirings/${editingId}`, {
+          method: 'PUT',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(form)
+        });
       } else {
-        response = await apiClient.admin.hirings.create(form);
+        response = await fetch('/api/admin/hirings', {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(form)
+        });
       }
 
-      if (response.data) {
+      const data = await response.json();
+      if (response.ok && data.success) {
         setShowModal(false);
         setForm(initialForm);
         setEditingId(null);
         await loadData();
+        alert(editingId ? 'Cập nhật thành công!' : 'Đăng Hiring thành công!');
+      } else {
+        throw new Error(data.message || 'Operation failed');
       }
     } catch (error) {
       console.error('Error saving hiring:', error);
@@ -102,8 +138,19 @@ export default function AdminHiringPage() {
     if (!confirm('Bạn có chắc chắn muốn xóa?')) return;
     
     try {
-      await apiClient.admin.hirings.delete(id);
-      await loadData();
+      const response = await fetch(`/api/admin/hirings/${id}`, {
+        method: 'DELETE',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      
+      const data = await response.json();
+      if (response.ok && data.success) {
+        await loadData();
+        alert('Xóa thành công!');
+      } else {
+        throw new Error(data.message || 'Delete failed');
+      }
     } catch (error) {
       console.error('Error deleting hiring:', error);
       alert('Xóa thất bại!');

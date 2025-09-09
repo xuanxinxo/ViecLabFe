@@ -3,7 +3,7 @@ import { getAdminFromRequest } from '../../../../../lib/auth';
 
 export const dynamic = "force-dynamic";
 
-// GET /api/admin/news/[id] - Get news details
+// GET /api/admin/newjobs/[id] - Get newjob details
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -19,30 +19,36 @@ export async function GET(
 
     const { id } = params;
     if (!id) {
-      return NextResponse.json({ success: false, message: 'News ID is required' }, { status: 400 });
+      return NextResponse.json({ success: false, message: 'NewJob ID is required' }, { status: 400 });
     }
 
-    // For now, return a mock news item
+    // For now, return a mock newjob
     // In real implementation, fetch from backend
-    const news = {
+    const newjob = {
       id,
-      title: 'Sample News Title',
-      summary: 'Sample news summary...',
-      content: 'Sample news content...',
-      link: '/news/sample-news',
-      imageUrl: '/images/sample-news.jpg',
-      date: '2024-01-15',
-      author: 'TOREDCO Admin',
+      title: 'Sample NewJob Position',
+      company: 'Sample Company',
+      location: 'Sample Location',
+      type: 'Full-time',
+      salary: 'Sample Salary',
+      description: 'Sample job description...',
+      requirements: ['Sample requirement 1', 'Sample requirement 2'],
+      benefits: ['Sample benefit 1', 'Sample benefit 2'],
+      tags: ['Sample tag 1', 'Sample tag 2'],
+      deadline: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+      status: 'pending',
+      postedDate: new Date().toISOString(),
       createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
+      isRemote: false,
+      img: '/img/sample.jpg'
     };
 
     return NextResponse.json({ 
       success: true, 
-      data: news 
+      data: newjob 
     });
   } catch (err) {
-    console.error('Error fetching news:', err);
+    console.error('Error fetching newjob:', err);
     return NextResponse.json(
       { success: false, message: 'Internal server error' },
       { status: 500 }
@@ -50,7 +56,7 @@ export async function GET(
   }
 }
 
-// PUT /api/admin/news/[id] - Update news
+// PUT /api/admin/newjobs/[id] - Update newjob
 export async function PUT(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -66,36 +72,36 @@ export async function PUT(
 
     const { id } = params;
     if (!id) {
-      return NextResponse.json({ success: false, message: 'News ID is required' }, { status: 400 });
+      return NextResponse.json({ success: false, message: 'NewJob ID is required' }, { status: 400 });
     }
 
     const body = await request.json();
-    console.log('📝 [ADMIN NEWS] Update request:', { id, body });
+    console.log('📝 [ADMIN NEWJOBS] Update request:', { id, body });
 
     // Validate required fields
-    if (!body.title || !body.summary) {
+    if (!body.title || !body.company || !body.location) {
       return NextResponse.json(
-        { success: false, message: 'Title and summary are required' },
+        { success: false, message: 'Title, company, and location are required' },
         { status: 400 }
       );
     }
 
-    // Update news
-    const updatedNews = {
+    // Update newjob
+    const updatedNewjob = {
       id,
       ...body,
       updatedAt: new Date().toISOString()
     };
 
-    console.log('✅ [ADMIN NEWS] News updated successfully:', id);
+    console.log('✅ [ADMIN NEWJOBS] NewJob updated successfully:', id);
     
     return NextResponse.json({
       success: true,
-      data: updatedNews,
-      message: 'News updated successfully'
+      data: updatedNewjob,
+      message: 'NewJob updated successfully'
     });
   } catch (err) {
-    console.error('Error updating news:', err);
+    console.error('Error updating newjob:', err);
     return NextResponse.json(
       { success: false, message: 'Internal server error' },
       { status: 500 }
@@ -103,7 +109,7 @@ export async function PUT(
   }
 }
 
-// DELETE /api/admin/news/[id] - Delete news
+// DELETE /api/admin/newjobs/[id] - Delete newjob
 export async function DELETE(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -119,25 +125,28 @@ export async function DELETE(
 
     const { id } = params;
     if (!id) {
-      return NextResponse.json({ success: false, message: 'News ID is required' }, { status: 400 });
+      return NextResponse.json({ success: false, message: 'NewJob ID is required' }, { status: 400 });
     }
 
-    console.log('🗑️ [ADMIN NEWS] Deleting news:', id);
+    console.log('🗑️ [ADMIN NEWJOBS] Deleting newjob:', id);
 
     // In real implementation, delete from backend
     // For now, just return success
 
-    console.log('✅ [ADMIN NEWS] News deleted successfully:', id);
+    console.log('✅ [ADMIN NEWJOBS] NewJob deleted successfully:', id);
     
     return NextResponse.json({
       success: true,
-      message: 'News deleted successfully'
+      message: 'NewJob deleted successfully'
     });
   } catch (err) {
-    console.error('Error deleting news:', err);
+    console.error('Error deleting newjob:', err);
     return NextResponse.json(
       { success: false, message: 'Internal server error' },
       { status: 500 }
     );
   }
 }
+
+
+

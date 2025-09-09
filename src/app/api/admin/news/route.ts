@@ -16,79 +16,72 @@ export async function GET(request: NextRequest) {
 
     console.log('✅ [ADMIN NEWS] Admin verified:', admin.username);
 
-    const page = request.nextUrl.searchParams.get('page') || '1';
-    const limit = request.nextUrl.searchParams.get('limit') || '10';
-    const search = request.nextUrl.searchParams.get('search') || '';
+    const { searchParams } = new URL(request.url);
+    const search = searchParams.get('search') || '';
+    const page = searchParams.get('page') || '1';
+    const limit = searchParams.get('limit') || '10';
 
-    console.log('🔍 [ADMIN NEWS] Query params:', { page, limit, search });
+    console.log('🔍 [ADMIN NEWS] Query params:', { search, page, limit });
 
-    // Sample news data
-    const sampleNews = [
-      {
-        id: 'news-1',
-        title: 'Thị trường việc làm IT tăng trưởng mạnh trong năm 2024',
-        summary: 'Nhu cầu tuyển dụng nhân sự IT tiếp tục tăng cao với mức lương hấp dẫn.',
-        content: 'Theo báo cáo mới nhất, thị trường việc làm IT Việt Nam ghi nhận mức tăng trưởng 25% so với năm trước...',
-        link: '/news/thi-truong-viec-lam-it-2024',
-        imageUrl: '/images/it-market-2024.jpg',
-        date: '2024-01-15',
-        author: 'TOREDCO Admin',
-        createdAt: new Date('2024-01-15').toISOString(),
-        updatedAt: new Date('2024-01-15').toISOString()
-      },
-      {
-        id: 'news-2',
-        title: 'Xu hướng Remote Work phổ biến trong các công ty công nghệ',
-        summary: 'Làm việc từ xa trở thành xu hướng chính, mang lại nhiều lợi ích cho cả nhân viên và doanh nghiệp.',
-        content: 'Remote work không chỉ là xu hướng tạm thời mà đã trở thành một phần không thể thiếu...',
-        link: '/news/remote-work-trend',
-        imageUrl: '/images/remote-work.jpg',
-        date: '2024-01-10',
-        author: 'TOREDCO Admin',
-        createdAt: new Date('2024-01-10').toISOString(),
-        updatedAt: new Date('2024-01-10').toISOString()
-      },
-      {
-        id: 'news-3',
-        title: 'Kỹ năng AI và Machine Learning được săn đón nhất',
-        summary: 'Các kỹ năng về AI, ML đang trở thành must-have trong ngành công nghệ.',
-        content: 'Với sự phát triển nhanh chóng của AI, các công ty đang tìm kiếm nhân tài có kỹ năng...',
-        link: '/news/ai-ml-skills-demand',
-        imageUrl: '/images/ai-ml.jpg',
-        date: '2024-01-05',
-        author: 'TOREDCO Admin',
-        createdAt: new Date('2024-01-05').toISOString(),
-        updatedAt: new Date('2024-01-05').toISOString()
+    // Get news from backend API
+    try {
+      console.log('🔍 [ADMIN NEWS] Calling backend API...');
+      
+      const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'https://vieclabbe.onrender.com';
+      const queryParams = new URLSearchParams();
+      
+      if (search) {
+        queryParams.append('search', search);
       }
-    ];
+      queryParams.append('page', page);
+      queryParams.append('limit', limit);
+      
+      const response = await fetch(`${backendUrl}/api/news?${queryParams}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
 
-    // Filter by search if provided
-    let filteredNews = sampleNews;
-    if (search) {
-      filteredNews = sampleNews.filter(news => 
-        news.title.toLowerCase().includes(search.toLowerCase()) ||
-        news.summary.toLowerCase().includes(search.toLowerCase())
+      console.log('🔍 [ADMIN NEWS] Backend response status:', response.status);
+      
+      if (response.ok) {
+        const backendData = await response.json();
+        console.log('✅ [ADMIN NEWS] Backend response data:', backendData);
+        
+        // Handle different backend response formats
+        let news = [];
+        if (backendData.success && backendData.data && Array.isArray(backendData.data)) {
+          news = backendData.data;
+        } else if (Array.isArray(backendData)) {
+          news = backendData;
+        }
+        
+        console.log('✅ [ADMIN NEWS] Processed', news.length, 'news articles');
+        
+        return NextResponse.json({
+          success: true,
+          data: news,
+          pagination: backendData.pagination || {
+            page: parseInt(page),
+            limit: parseInt(limit),
+            total: news.length,
+            totalPages: Math.ceil(news.length / parseInt(limit))
+          }
+        });
+      } else {
+        throw new Error(`Backend API error: ${response.status}`);
+      }
+    } catch (apiError) {
+      console.error('💥 [ADMIN NEWS] Backend API error:', apiError);
+      
+      // Return error when backend is not available
+      console.log('❌ [ADMIN NEWS] Backend API not available');
+      return NextResponse.json(
+        { success: false, message: 'Backend API không khả dụng. Vui lòng kiểm tra kết nối database.' },
+        { status: 503 }
       );
     }
-
-    // Pagination
-    const pageNum = parseInt(page);
-    const limitNum = parseInt(limit);
-    const startIndex = (pageNum - 1) * limitNum;
-    const paginatedNews = filteredNews.slice(startIndex, startIndex + limitNum);
-
-    console.log('✅ [ADMIN NEWS] Returning news:', paginatedNews.length);
-    
-    return NextResponse.json({ 
-      success: true, 
-      data: paginatedNews,
-      pagination: {
-        page: pageNum,
-        limit: limitNum,
-        total: filteredNews.length,
-        totalPages: Math.ceil(filteredNews.length / limitNum)
-      }
-    });
   } catch (err) {
     console.error('💥 [ADMIN NEWS] Error:', err);
     return NextResponse.json(
@@ -101,40 +94,52 @@ export async function GET(request: NextRequest) {
 // POST /api/admin/news
 export async function POST(request: NextRequest) {
   try {
+    console.log('🔍 [ADMIN NEWS] POST request received');
+    
     const admin = getAdminFromRequest(request);
     if (!admin || admin.role !== 'admin') {
+      console.log('❌ [ADMIN NEWS] Unauthorized access');
       return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
     }
 
+    console.log('✅ [ADMIN NEWS] Admin verified:', admin.username);
+
     const body = await request.json();
-    
-    // Validate required fields
-    if (!body.title || !body.summary || !body.link) {
+    console.log('📝 [ADMIN NEWS] Request body:', body);
+
+    if (!body.title || !body.summary) {
+      console.log('❌ [ADMIN NEWS] Missing required fields');
       return NextResponse.json(
-        { success: false, message: 'Title, summary, and link are required' },
+        { success: false, message: 'Title and summary are required' },
         { status: 400 }
       );
     }
 
-    // Tạo news mới
-    const newsData = {
-      ...body,
+    // Create new news
+    const newNews = {
+      id: `news-${Date.now()}`,
+      title: body.title,
+      summary: body.summary,
+      content: body.content || '',
+      link: body.link || '',
+      imageUrl: body.imageUrl || '',
       date: body.date || new Date().toISOString().split('T')[0],
-      imageUrl: body.imageUrl || '/images/default-news.jpg'
+      author: body.author || 'TOREDCO Admin',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
     };
 
-    const response = await apiClient.news.create(newsData);
+    console.log('✅ [ADMIN NEWS] News created successfully:', newNews.id);
     
     return NextResponse.json(
-      { success: true, data: response.data, message: 'News created successfully' },
+      { success: true, data: newNews, message: 'News created successfully' },
       { status: 201 }
     );
   } catch (err) {
-    console.error('Error creating news:', err);
+    console.error('💥 [ADMIN NEWS] Error:', err);
     return NextResponse.json(
       { success: false, message: 'Internal server error' },
       { status: 500 }
     );
   }
 }
-

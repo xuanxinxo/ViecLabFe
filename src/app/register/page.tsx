@@ -21,10 +21,34 @@ export default function RegisterPage() {
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setMessage(null);
+    
+    // Basic validation
+    if (!form.name || !form.email || !form.password) {
+      setMessage('Vui lòng điền đầy đủ thông tin');
+      return;
+    }
+
     if (form.password !== form.confirm) {
       setMessage('Mật khẩu xác nhận không khớp.');
       return;
     }
+
+    // Password strength validation
+    if (form.password.length < 6) {
+      setMessage('Mật khẩu phải có ít nhất 6 ký tự');
+      return;
+    }
+
+    if (!/[A-Z]/.test(form.password)) {
+      setMessage('Mật khẩu phải chứa ít nhất một chữ hoa');
+      return;
+    }
+
+    if (!/[^a-zA-Z0-9\s]/.test(form.password)) {
+      setMessage('Mật khẩu phải chứa ít nhất một ký tự đặc biệt');
+      return;
+    }
+
     setLoading(true);
     try {
       const payload = await apiClient.auth.register({
@@ -45,7 +69,7 @@ export default function RegisterPage() {
             console.error('Router error:', routerError);
             window.location.href = '/login?registered=true';
           }
-        }, 800);
+        }, 1500); // Tăng thời gian để user đọc thông báo
       } else if (payload?.errors) {
         const errs = Object.values(payload.errors as any).flat().join(' ');
         setMessage(errs);
@@ -59,15 +83,18 @@ export default function RegisterPage() {
       console.log('Full register response:', payload);
     } catch (err: any) {
       console.error('Register error:', err);
-      const errorMessage = err?.response?.data?.message || 
-                          err?.message || 
-                          'Không thể kết nối đến server. Vui lòng thử lại sau.';
-      setMessage(errorMessage);
+      let errorMessage = err?.response?.data?.message || 
+                        err?.message || 
+                        'Không thể kết nối đến server. Vui lòng thử lại sau.';
       
-      // If it's a network error, try to provide more helpful message
+      // Handle specific error cases
       if (err?.message?.includes('Failed to fetch') || err?.message?.includes('NetworkError')) {
-        setMessage('Không thể kết nối đến server. Vui lòng kiểm tra kết nối internet và thử lại.');
+        errorMessage = 'Không thể kết nối đến server. Vui lòng kiểm tra kết nối internet và thử lại.';
+      } else if (err?.message?.includes('timeout')) {
+        errorMessage = 'Request timeout. Server đang phản hồi chậm. Vui lòng thử lại.';
       }
+      
+      setMessage(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -117,6 +144,9 @@ export default function RegisterPage() {
               className="w-full p-3 pr-10 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
               required
             />
+            <div className="text-xs text-gray-400 mt-1">
+              Mật khẩu phải có ít nhất 6 ký tự, 1 chữ hoa và 1 ký tự đặc biệt
+            </div>
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}

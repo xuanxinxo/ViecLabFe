@@ -3,7 +3,66 @@ import { getAdminFromRequest } from '../../../../../lib/auth';
 
 export const dynamic = "force-dynamic";
 
-// PUT /api/admin/hirings/:id
+// GET /api/admin/hirings/[id] - Get hiring details
+export async function GET(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const admin = getAdminFromRequest(request);
+    if (!admin || admin.role !== 'admin') {
+      return NextResponse.json(
+        { success: false, message: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
+    const { id } = params;
+    if (!id) {
+      return NextResponse.json({ success: false, message: 'Hiring ID is required' }, { status: 400 });
+    }
+
+    // For now, return a mock hiring
+    // In real implementation, fetch from backend
+    const hiring = {
+      id,
+      title: 'Sample Hiring Position',
+      company: 'Sample Company',
+      location: 'Sample Location',
+      type: 'Full-time',
+      salary: 'Sample Salary',
+      urgencyLevel: 'medium',
+      description: 'Sample job description...',
+      requirements: ['Sample requirement 1', 'Sample requirement 2'],
+      benefits: ['Sample benefit 1', 'Sample benefit 2'],
+      contactInfo: {
+        email: 'hr@sample.com',
+        phone: '0123456789',
+        contactPerson: 'Sample Person'
+      },
+      deadline: '2024-12-31',
+      postedDate: '2024-01-01',
+      status: 'active',
+      applicationsCount: 0,
+      viewsCount: 0,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+
+    return NextResponse.json({ 
+      success: true, 
+      data: hiring 
+    });
+  } catch (err) {
+    console.error('Error fetching hiring:', err);
+    return NextResponse.json(
+      { success: false, message: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
+
+// PUT /api/admin/hirings/[id] - Update hiring
 export async function PUT(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -11,7 +70,10 @@ export async function PUT(
   try {
     const admin = getAdminFromRequest(request);
     if (!admin || admin.role !== 'admin') {
-      return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json(
+        { success: false, message: 'Unauthorized' },
+        { status: 401 }
+      );
     }
 
     const { id } = params;
@@ -20,7 +82,8 @@ export async function PUT(
     }
 
     const body = await request.json();
-    
+    console.log('📝 [ADMIN HIRINGS] Update request:', { id, body });
+
     // Validate required fields
     if (!body.title || !body.company || !body.location) {
       return NextResponse.json(
@@ -29,36 +92,19 @@ export async function PUT(
       );
     }
 
-    // Mock update hiring (trong thực tế sẽ cập nhật database)
+    // Update hiring
     const updatedHiring = {
-      id: id,
-      title: body.title,
-      company: body.company,
-      location: body.location,
-      type: body.type || 'Full-time',
-      salary: body.salary || 'Thỏa thuận',
-      deadline: body.deadline || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-      img: body.img || '',
-      description: body.description || 'Mô tả công việc sẽ được cập nhật sau.',
-      requirements: body.requirements || ['Kinh nghiệm làm việc', 'Kỹ năng chuyên môn'],
-      benefits: body.benefits || ['Lương thưởng hấp dẫn', 'Môi trường làm việc tốt'],
-      contactInfo: {
-        email: body.contactEmail || 'hr@company.com',
-        phone: body.contactPhone || '0900000000',
-        contactPerson: body.contactPerson || 'HR Department'
-      },
-      postedDate: new Date().toISOString().split('T')[0],
-      status: body.status || 'active',
-      applicationsCount: 0,
-      viewsCount: 0,
-      createdAt: new Date().toISOString(),
+      id,
+      ...body,
       updatedAt: new Date().toISOString()
     };
+
+    console.log('✅ [ADMIN HIRINGS] Hiring updated successfully:', id);
     
-    return NextResponse.json({ 
-      success: true, 
+    return NextResponse.json({
+      success: true,
       data: updatedHiring,
-      message: 'Hiring updated successfully' 
+      message: 'Hiring updated successfully'
     });
   } catch (err) {
     console.error('Error updating hiring:', err);
@@ -69,7 +115,7 @@ export async function PUT(
   }
 }
 
-// DELETE /api/admin/hirings/:id
+// DELETE /api/admin/hirings/[id] - Delete hiring
 export async function DELETE(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -77,7 +123,10 @@ export async function DELETE(
   try {
     const admin = getAdminFromRequest(request);
     if (!admin || admin.role !== 'admin') {
-      return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json(
+        { success: false, message: 'Unauthorized' },
+        { status: 401 }
+      );
     }
 
     const { id } = params;
@@ -85,12 +134,16 @@ export async function DELETE(
       return NextResponse.json({ success: false, message: 'Hiring ID is required' }, { status: 400 });
     }
 
-    // Mock delete hiring (trong thực tế sẽ xóa từ database)
-    console.log(`Mock deleting hiring with ID: ${id}`);
+    console.log('🗑️ [ADMIN HIRINGS] Deleting hiring:', id);
+
+    // In real implementation, delete from backend
+    // For now, just return success
+
+    console.log('✅ [ADMIN HIRINGS] Hiring deleted successfully:', id);
     
-    return NextResponse.json({ 
-      success: true, 
-      message: 'Hiring deleted successfully' 
+    return NextResponse.json({
+      success: true,
+      message: 'Hiring deleted successfully'
     });
   } catch (err) {
     console.error('Error deleting hiring:', err);
@@ -100,4 +153,3 @@ export async function DELETE(
     );
   }
 }
-

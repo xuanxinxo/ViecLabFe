@@ -369,7 +369,7 @@ export const apiClient = {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
         
-        const response = await fetch(`${API_URL}/api/users/login`, {
+        const response = await fetch('/api/auth/login', {
           method: 'POST',
           headers: { 
             'Content-Type': 'application/json',
@@ -422,7 +422,7 @@ export const apiClient = {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
         
-        const response = await fetch(`${API_URL}/api/users/register`, {
+        const response = await fetch('/api/auth/register', {
           method: 'POST',
           headers: { 
             'Content-Type': 'application/json',

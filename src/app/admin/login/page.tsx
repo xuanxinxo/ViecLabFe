@@ -13,16 +13,21 @@ export default function AdminLogin() {
 
   // Check if user is already logged in
   useEffect(() => {
-    // Check if there's an adminToken cookie
+    // Check if there's an admin-token cookie
     const checkAuth = async () => {
       try {
         const response = await fetch('/api/admin/dashboard', {
           credentials: 'include'
         });
         if (response.ok) {
-          router.push('/admin');
+          const data = await response.json();
+          if (data.success) {
+            console.log('✅ Already authenticated, redirecting to admin');
+            router.push('/admin');
+          }
         }
       } catch (error) {
+        console.log('🔍 Not authenticated, staying on login page');
         // Not authenticated, stay on login page
       }
     };
@@ -71,9 +76,16 @@ export default function AdminLogin() {
       
       console.log('Parsed response data:', data);
       
-      if (!response.ok || data?.success === false) {
+      if (!response.ok) {
         const serverMsg = data?.message || data?.error;
+        console.error('❌ Login failed:', { status: response.status, message: serverMsg });
         throw new Error(serverMsg || `Đăng nhập thất bại (${response.status} ${response.statusText})`);
+      }
+      
+      if (data?.success === false) {
+        const serverMsg = data?.message || data?.error;
+        console.error('❌ Login failed (success: false):', serverMsg);
+        throw new Error(serverMsg || 'Đăng nhập thất bại');
       }
       
       console.log('Login response data:', data);

@@ -110,7 +110,7 @@ export default function Header() {
             </Link>
 
             <Link
-              href="/hirings"
+              href="/jobnew"
               className={`nav-link ${isScrolled
                   ? "text-gray-700 hover:text-blue-400"
                   : "text-gray-200 hover:text-blue-300"

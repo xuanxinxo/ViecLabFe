@@ -52,9 +52,19 @@ export default function AdminApplications() {
     setError("");
     try {
       console.log('[ADMIN APPLICATIONS] Fetching applications...');
-      const response = await fetch('/api/applications');
+      const response = await fetch('/api/admin/applications', {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
       
       if (!response.ok) {
+        if (response.status === 401) {
+          router.push('/admin/login');
+          return;
+        }
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.message || 'Failed to load applications');
       }
@@ -107,8 +117,12 @@ export default function AdminApplications() {
     if (!confirm("Bạn có chắc chắn muốn xóa ứng viên này?")) return;
     
     try {
-      const res = await fetch(`/api/applications/${id}`, {
+      const res = await fetch(`/api/admin/applications/${id}`, {
         method: "DELETE",
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
       });
       const json = await res.json();
       if (json.success) {
