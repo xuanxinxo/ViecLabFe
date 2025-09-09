@@ -15,7 +15,7 @@ export const revalidate = 60;
 async function getNews(): Promise<NewsItem[]> {
   try {
     console.log('[NEWS] Fetching news data from https://vieclabbe.onrender.com/api/news...');
-    const response = await fetch('https://vieclabbe.onrender.com/api/news', {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/news`, {
       cache: 'no-store', // Ensure fresh data on each request
       next: { revalidate: 60 } // Revalidate every 60 seconds
     });

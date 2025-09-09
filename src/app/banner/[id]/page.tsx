@@ -48,13 +48,12 @@ export default function BannerDetail() {
     async function loadJob() {
       try {
         setLoading(true);
-        const response = await fetch(`https://vieclabbe.onrender.com/api/jobs/${params.id}`, {
+        const response = await fetch(`/api/jobs/${params.id}`, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
             'Accept': 'application/json',
           },
-          mode: 'cors',
         });
         const data = await response.json();
         if (response.ok) {

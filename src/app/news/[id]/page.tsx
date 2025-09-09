@@ -21,8 +21,8 @@ export default async function NewsDetailPage({ params }: Props) {
   try {
     console.log(`[NEWS] Fetching news details for ID: ${params.id}`);
     
-    // Fetch news details directly from the API
-    const response = await fetch(`https://vieclabbe.onrender.com/api/news/${params.id}`, {
+    // Fetch news details through Next.js API route
+    const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/news/${params.id}`, {
       cache: 'no-store',
     });
 

@@ -49,13 +49,12 @@ export default function Detailjobs() {
     async function loadJob() {
       try {
         setLoading(true);
-        const res = await fetch(`https://vieclabbe.onrender.com/api/hirings/${params.id}`, {
+        const res = await fetch(`/api/hirings/${params.id}`, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
             'Accept': 'application/json',
           },
-          mode: 'cors',
         });
         const responseData = await res.json();
         

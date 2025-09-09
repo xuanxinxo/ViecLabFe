@@ -18,7 +18,7 @@ export default async function Page({ params }: { params: Params }) {
   if (![1, 2, 3, 4, 5].includes(star)) return notFound();
 
   /* fetch API */
-  const res = await fetch('https://vieclabbe.onrender.com/api/reviews', { 
+  const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/reviews`, { 
     next: { revalidate: 60 },
     headers: {
       'Content-Type': 'application/json',
