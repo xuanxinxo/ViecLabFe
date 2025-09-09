@@ -71,17 +71,36 @@ export default function CreateJob() {
     setError('');
 
     try {
-      // Simulate job creation without API call
-      // In a real app, you would call the API here
-      await new Promise(resolve => setTimeout(resolve, 2000)); // Simulate API delay
-      
-      // Simulate success response
-      setSuccess(true);
-      
-      // Redirect sau 2 giây
-      setTimeout(() => {
-        router.push('/admin/jobs');
-      }, 2000);
+      const token = localStorage.getItem('adminToken');
+      if (!token) {
+        router.push('/admin/login');
+        return;
+      }
+
+      const response = await fetch('/api/admin/jobs', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          ...formData,
+          requirements: formData.requirements.filter(req => req.trim() !== ''),
+          benefits: formData.benefits.filter(ben => ben.trim() !== '')
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setSuccess(true);
+        // Redirect sau 2 giây
+        setTimeout(() => {
+          router.push('/admin/jobs');
+        }, 2000);
+      } else {
+        setError(data.message || 'Có lỗi xảy ra');
+      }
     } catch (error) {
       setError('Có lỗi xảy ra, vui lòng thử lại');
     } finally {

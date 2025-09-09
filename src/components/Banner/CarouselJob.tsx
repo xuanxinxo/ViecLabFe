@@ -88,8 +88,26 @@ function ApplyModal({ open, onClose, job }: { open: boolean; onClose: () => void
 }
 
 export default function CarouselJob() {
-  const [jobs, setJobs] = useState<Job[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [jobs, setJobs] = useState<Job[]>(() => {
+    // Try to load from localStorage first
+    if (typeof window !== 'undefined') {
+      try {
+        const cached = localStorage.getItem('cachedJobs');
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            console.log('Loading cached jobs from localStorage');
+            return parsed.slice(0, 16);
+          }
+        }
+      } catch (e) {
+        console.warn('Failed to load cached jobs:', e);
+      }
+    }
+    return [];
+  });
+  const [loading, setLoading] = useState(false); // Don't show loading initially
+  const [retryCount, setRetryCount] = useState(0); // Track retry attempts
   const [currentPage, setCurrentPage] = useState(0);
   const [showApplyModal, setShowApplyModal] = useState(false);
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
@@ -98,69 +116,96 @@ export default function CarouselJob() {
   const jobsPerPage = 6;
   const bgImages = ['/img/slide-1.png', '/img/slide-2.png'];
 
-  const [error, setError] = useState<string | null>(null);
+  const fetchJobs = async () => {
+    try {
+      // Only show loading if we don't have any jobs
+      if (jobs.length === 0) {
+        setLoading(true);
+      }
+      console.log('Fetching jobs using API client...');
+      
+      // Use Promise.race to implement timeout at component level too
+      const fetchPromise = apiClient.jobs.getAll({});
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Component timeout')), 2000) // 2 second timeout
+      );
+      
+      const jobsData = await Promise.race([fetchPromise, timeoutPromise]) as any;
+      
+      // Handle API client response format
+      let jobsArray = [];
+      if (jobsData?.data && Array.isArray(jobsData.data)) {
+        jobsArray = jobsData.data;
+      } else if (Array.isArray(jobsData)) {
+        jobsArray = jobsData;
+      } else if (jobsData?.success && Array.isArray(jobsData.data)) {
+        jobsArray = jobsData.data;
+      }
+      
+      // Sort by date (newest first) and limit to 16 jobs
+      const sortedJobs = [...jobsArray]
+        .sort((a, b) => new Date(b.postedDate || b.createdAt).getTime() - new Date(a.postedDate || a.createdAt).getTime())
+        .slice(0, 16);
+      
+      console.log(`Setting ${sortedJobs.length} real jobs to state`);
+      setJobs(sortedJobs);
+      setRetryCount(0); // Reset retry count on success
+      if (jobs.length === 0) {
+        setLoading(false); // Stop loading only if we were showing loading
+      }
+      
+      // Cache to localStorage for instant loading next time
+      if (typeof window !== 'undefined' && sortedJobs.length > 0) {
+        try {
+          localStorage.setItem('cachedJobs', JSON.stringify(sortedJobs));
+          console.log('Jobs cached to localStorage');
+        } catch (e) {
+          console.warn('Failed to cache jobs:', e);
+        }
+      }
+    } catch (error: any) {
+      console.error('Error fetching jobs:', error);
+      
+      // Handle timeout specifically
+      if (error.message === 'Component timeout') {
+        console.warn('API call timed out after 2 seconds');
+        
+        // Retry up to 2 times
+        if (retryCount < 2) {
+          console.log(`Retrying... attempt ${retryCount + 1}/2`);
+          setRetryCount(prev => prev + 1);
+          setTimeout(() => {
+            fetchJobs();
+          }, 1000); // Wait 1 second before retry
+        } else {
+          console.log('Max retries reached, showing empty state');
+          setJobs([]);
+          if (jobs.length === 0) {
+            setLoading(false);
+          }
+        }
+      } else {
+        setJobs([]); // Set empty array on other errors
+        if (jobs.length === 0) {
+          setLoading(false);
+        }
+      }
+    }
+  };
 
   useEffect(() => {
-    const fetchJobs = async () => {
-      console.log('=== FETCHING FEATURED JOBS ===');
-      setLoading(true);
-      setError(null);
-      
-      try {
-        console.log('Fetching jobs using API client...');
-        const startTime = Date.now();
-        
-        // Use API client to fetch jobs
-        const jobsData = await apiClient.jobs.getAll({});
-        const responseTime = Date.now() - startTime;
-        
-        console.log(`Jobs fetched in ${responseTime}ms`, {
-          count: jobsData?.data?.length || jobsData?.length || 0,
-          sample: jobsData?.data?.[0] || jobsData?.[0] || 'No jobs found'
-        });
-        
-        // Handle API client response format
-        let jobsArray = [];
-        if (jobsData?.data && Array.isArray(jobsData.data)) {
-          jobsArray = jobsData.data;
-        } else if (Array.isArray(jobsData)) {
-          jobsArray = jobsData;
-        } else if (jobsData?.success && Array.isArray(jobsData.data)) {
-          jobsArray = jobsData.data;
-        }
-        
-        // Sort by date (newest first) and limit to 16 jobs
-        const sortedJobs = [...jobsArray]
-          .sort((a, b) => new Date(b.postedDate || b.createdAt).getTime() - new Date(a.postedDate || a.createdAt).getTime())
-          .slice(0, 16);
-        
-        console.log(`Setting ${sortedJobs.length} jobs to state`);
-        setJobs(sortedJobs);
-        
-        if (sortedJobs.length === 0) {
-          console.warn('No jobs found');
-          setError('Hiện chưa có việc làm nào đang tuyển dụng');
-        }
-      } catch (error: any) {
-        console.error('Error fetching jobs:', error);
-        
-        // Handle different types of errors
-        if (error.isTimeout) {
-          setError('Server đang phản hồi chậm. Vui lòng thử lại sau.');
-        } else if (error.isNetworkError) {
-          setError('Lỗi kết nối mạng. Vui lòng kiểm tra internet và thử lại.');
-        } else if (error.status === 404) {
-          setError('Không tìm thấy dữ liệu việc làm.');
-        } else {
-          setError('Không thể tải danh sách việc làm. Vui lòng thử lại sau.');
-        }
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchJobs();
+    // Only fetch if we don't have cached data
+    if (jobs.length === 0) {
+      fetchJobs();
+    } else {
+      // If we have cached data, refresh in background
+      console.log('Refreshing jobs in background...');
+      fetchJobs();
+    }
   }, []);
+
+  // Show loading only if we have no jobs and are actually loading
+  const shouldShowLoading = loading && jobs.length === 0;
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -182,34 +227,14 @@ export default function CarouselJob() {
     setShowApplyModal(true);
   };
 
-  if (loading) {
-    return (
-      <div className="w-full mt-14">
-        <div className="text-center py-10 text-gray-500 animate-pulse">Đang tải việc làm...</div>
-      </div>
-    );
-  }
-
-  if (error) {
+  if (shouldShowLoading) {
     return (
       <div className="w-full mt-14">
         <div className="text-center py-10">
-          <div className="text-red-500 mb-4">
-            <svg className="w-12 h-12 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-            </svg>
-            <p className="text-lg font-medium">{error}</p>
+          <div className="flex flex-col items-center gap-4">
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+            <p className="text-gray-500 text-sm">Đang tải...</p>
           </div>
-          <button 
-            onClick={() => {
-              setError(null);
-              setLoading(true);
-              fetchJobs();
-            }}
-            className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            Thử lại
-          </button>
         </div>
       </div>
     );
@@ -218,7 +243,15 @@ export default function CarouselJob() {
   if (jobs.length === 0) {
     return (
       <div className="w-full mt-14">
-        <div className="text-center py-10 text-gray-500">Hiện chưa có việc làm nào phù hợp.</div>
+        <div className="text-center py-10 text-gray-500">
+          <p>Hiện chưa có việc làm nào.</p>
+          <button 
+            onClick={fetchJobs}
+            className="mt-4 bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700"
+          >
+            Thử lại
+          </button>
+        </div>
       </div>
     );
   }

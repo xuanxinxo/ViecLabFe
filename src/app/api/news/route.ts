@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
         headers: {
           'Content-Type': 'application/json',
         },
-        signal: AbortSignal.timeout(10000), // 10 second timeout
+        // No timeout - let requests wait as long as needed
       });
       
       if (response.ok) {

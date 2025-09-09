@@ -132,6 +132,25 @@ function SearchContent() {
           console.error('Unexpected response format:', data);
           throw new Error(`Định dạng dữ liệu không hợp lệ từ máy chủ`);
         }
+        
+        // Additional client-side filtering if backend doesn't filter properly
+        if (searchQuery && jobsData.length > 0) {
+          const filteredJobs = jobsData.filter(job => 
+            job.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            job.company.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            (job.description && job.description.toLowerCase().includes(searchQuery.toLowerCase()))
+          );
+          jobsData = filteredJobs;
+          totalCount = filteredJobs.length;
+          console.log(`Client-side filtering: ${jobsData.length} jobs match "${searchQuery}"`);
+        }
+        
+        // If no search query, don't show any results
+        if (!searchQuery && !locationQuery) {
+          jobsData = [];
+          totalCount = 0;
+          console.log('No search terms provided, clearing results');
+        }
         const pagination = {
           page: pageNum.toString(),
           limit: '10',
@@ -149,9 +168,17 @@ function SearchContent() {
         setHasMore(hasMoreData);
         setCurrentPage(pageNum);
         
+        // Log the final results for debugging
+        console.log(`Final results: ${jobsData.length} jobs, total: ${totalCount}, hasMore: ${hasMoreData}`);
+        
         // Show no jobs message if no results on initial load
         if (isInitialLoad) {
           setShowNoJobsMessage(jobsData.length === 0);
+        }
+        
+        // If we have search terms but no results, show appropriate message
+        if (searchQuery && jobsData.length === 0) {
+          console.log(`No jobs found for search term: "${searchQuery}"`);
         }
       } catch (err) {
         console.error("Error fetching jobs:", err);
@@ -183,6 +210,11 @@ function SearchContent() {
   useEffect(() => {
     if (jobTitle || province) {
       debouncedSearch(jobTitle, province);
+    } else {
+      // If no search terms, clear the results
+      setJobs([]);
+      setShowNoJobsMessage(true);
+      setHasMore(false);
     }
     
     return () => {
@@ -228,8 +260,8 @@ function SearchContent() {
   useEffect(() => {
     isMounted.current = true;
     
-    // Only fetch if we don't have any jobs loaded yet
-    if (jobs.length === 0) {
+    // Only fetch if we have search terms and no jobs loaded yet
+    if ((jobTitle || province) && jobs.length === 0) {
       fetchJobs(1, jobTitle, province);
     }
     
@@ -276,7 +308,7 @@ function SearchContent() {
   };
 
   return (
-    <div className="max-w-6xl mx-auto py-10 px-4">
+    <div className="max-w-6xl mx-auto py-10 px-4 mt-20">
       {/* Search summary */}
       <div className="mb-6 p-4 bg-blue-50 rounded-lg">
         <h1 className="text-xl font-semibold text-gray-800 mb-2">

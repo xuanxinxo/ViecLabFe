@@ -10,14 +10,23 @@ const API_URL = (process.env.NEXT_PUBLIC_API_URL || 'https://vieclabbe.onrender.
 const apiCache = new Map<string, { data: any; timestamp: number }>();
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
-// Retry mechanism for failed requests
+// Retry mechanism for failed requests with improved error handling
 const retryRequest = async (fn: () => Promise<any>, maxRetries: number = 3, delay: number = 2000): Promise<any> => {
   for (let i = 0; i < maxRetries; i++) {
     try {
       return await fn();
-    } catch (error) {
+    } catch (error: any) {
       console.log(`[API Retry] Attempt ${i + 1}/${maxRetries} failed:`, error);
-      if (i === maxRetries - 1) throw error;
+      
+      // Don't retry for certain errors
+      if (error.status === 401 || error.status === 403 || error.status === 404) {
+        throw error;
+      }
+      
+      if (i === maxRetries - 1) {
+        throw error;
+      }
+      
       // Exponential backoff with jitter
       const backoffDelay = delay * Math.pow(2, i) + Math.random() * 1000;
       console.log(`[API Retry] Waiting ${Math.round(backoffDelay)}ms before retry...`);
@@ -49,7 +58,7 @@ const api: AxiosInstance = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 30000, // 30 seconds timeout
+  // No timeout - let requests wait as long as needed
   withCredentials: true, // This ensures cookies are sent with requests
 });
 
@@ -59,7 +68,7 @@ const localApi: AxiosInstance = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 10000, // 10 seconds timeout
+  // No timeout - let requests wait as long as needed
   withCredentials: true, // This ensures cookies are sent with requests
 });
 
@@ -130,16 +139,7 @@ api.interceptors.response.use(
       code: error.code
     });
 
-    // Handle timeout errors specifically
-    if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
-      console.warn('[API] Request timeout - server may be slow or overloaded');
-      return Promise.reject({
-        status: 408,
-        message: 'Request timeout. Server is taking too long to respond. Please try again.',
-        originalError: error,
-        isTimeout: true
-      });
-    }
+    // No timeout handling since we removed timeouts
 
     // Handle network errors
     if (error.message.includes('Network Error') || error.message.includes('ERR_NETWORK')) {
@@ -208,27 +208,46 @@ localApi.interceptors.response.use(
   }
 );
 
-// Generic API client
+// Generic API client with retry and fallback
 const createApiClient = <T>(endpoint: string, apiInstance: AxiosInstance = api) => ({
   getAll: async (params?: any): Promise<AxiosResponse<T[]>> => {
+    const cacheKey = `${endpoint}-${JSON.stringify(params)}`;
+    
     try {
-      const response = await apiInstance.get(`/${endpoint}`, { params });
-      console.log(`[API CLIENT] GET /${endpoint} response:`, response.data);
-      
-      // Handle different response formats from backend
-      if (response.data && typeof response.data === 'object') {
-        if (response.data.data && Array.isArray(response.data.data)) {
-          // Backend returns {data: [...], success: true}
-          return { ...response, data: response.data.data };
-        } else if (Array.isArray(response.data)) {
-          // Backend returns array directly
-          return response;
+      const response = await getCachedOrFetch(cacheKey, async () => {
+        const response = await apiInstance.get(`/${endpoint}`, { params });
+        console.log(`[API CLIENT] GET /${endpoint} response:`, response.data);
+        
+        // Handle different response formats from backend
+        if (response.data && typeof response.data === 'object') {
+          if (response.data.data && Array.isArray(response.data.data)) {
+            // Backend returns {data: [...], success: true}
+            return { ...response, data: response.data.data };
+          } else if (Array.isArray(response.data)) {
+            // Backend returns array directly
+            return response;
+          }
         }
-      }
+        
+        return response;
+      });
       
       return response;
-    } catch (error) {
+    } catch (error: any) {
       console.error(`[API CLIENT] GET /${endpoint} error:`, error);
+      
+      // Return fallback data for jobs endpoint to prevent complete failure
+      if (endpoint === 'jobs' || endpoint === 'newjobs') {
+        console.warn(`[API CLIENT] Returning fallback data for ${endpoint}`);
+        return {
+          data: [],
+          status: 200,
+          statusText: 'OK',
+          headers: {},
+          config: {} as any
+        };
+      }
+      
       throw error;
     }
   },
@@ -333,12 +352,12 @@ export const adminApi = {
 
 export const apiClient = {
   users: createApiClient<any>('users'),
-  jobs: createApiClient<any>('jobs'), // Use backend API directly
-  newJobs: createApiClient<any>('newjobs'), // Use backend API directly
+  jobs: createApiClient<any>('jobs', localApi), // Use local API proxy to backend
+  newJobs: createApiClient<any>('newjobs', localApi), // Use local API proxy to backend
   toredco: createApiClient<any>('toredco'),
-  applications: createApiClient<any>('applications'), // Use backend API directly
+  applications: createApiClient<any>('applications', localApi), // Use local API proxy to backend
   admin: adminApi, // Export admin API methods
-  hirings: createApiClient<any>('hirings'), // Use backend API directly
+  hirings: createApiClient<any>('hirings', localApi), // Use local API proxy to backend
   news: createApiClient<any>('news', localApi), // Use local API for news only
   
   
@@ -458,59 +477,3 @@ export const apiClient = {
     },
   },
 };
-
-// Legacy exports for backward compatibility (can be removed after updating all components)
-export const {
-  getAll: fetchJobs,
-  getById: fetchJobById,
-  create: createJob,
-  update: updateJob,
-  delete: deleteJob,
-} = apiClient.jobs;
-
-export const {
-  getAll: fetchHirings,
-  getById: fetchHiringById,
-  create: createHiring,
-  update: updateHiring,
-  delete: deleteHiring,
-} = apiClient.hirings;
-
-export const {
-  getAll: fetchNews,
-  getById: fetchNewsById,
-  create: createNews,
-  update: updateNews,
-  delete: deleteNews,
-} = apiClient.news;
-
-export const {
-  getAll: fetchApplications,
-  getById: fetchApplicationById,
-  create: createApplication,
-  update: updateApplication,
-  delete: deleteApplication,
-} = apiClient.applications;
-
-export const {
-  getAll: fetchUsers,
-  create: createUser,
-} = apiClient.users;
-
-export const {
-  getAll: fetchToredcos,
-  getById: fetchToredcoById,
-  create: createToredco,
-  update: updateToredco,
-  delete: deleteToredco,
-} = apiClient.toredco;
-
-// ...existing code...
-
-export const {
-  getAll: fetchNewJobs,
-  getById: fetchNewJobById,
-  create: createNewJob,
-  update: updateNewJob,
-  delete: deleteNewJob,
-} = apiClient.newJobs;

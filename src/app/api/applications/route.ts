@@ -1,127 +1,74 @@
-import { NextResponse } from "next/server";
-// import { apiClient } from "@/lib/api";
-import { apiClient } from '../../../lib/api';
-import { getUserFromRequest } from "../../../lib/auth";
+import { NextRequest, NextResponse } from 'next/server';
 
-export async function POST(req: Request) {
-  console.log('[APPLICATIONS] POST request received');
-  
-  // Tạm thời bỏ authentication để test
-  // const user = getUserFromRequest(req);
-  // if (!user) {
-  //   console.log('[APPLICATIONS] Unauthorized access attempt');
-  //   return NextResponse.json({ 
-  //     success: false, 
-  //     message: 'Bạn cần đăng nhập để ứng tuyển' 
-  //   }, { status: 401 });
-  // }
-  
-  try {
-    const requestData = await req.json();
-    console.log('[APPLICATIONS] Request data:', requestData);
-    
-    const { jobId, hiringId, name, email, phone, message, cv } = requestData;
-    
-    if (!jobId && !hiringId) {
-      console.error('[APPLICATIONS] Missing jobId and hiringId');
-      return NextResponse.json({ 
-        success: false, 
-        message: 'Thiếu jobId hoặc hiringId' 
-      }, { status: 400 });
-    }
-    
-    // Validate required fields
-    if (!name || !email) {
-      console.error('[APPLICATIONS] Missing required fields');
-      return NextResponse.json({
-        success: false,
-        message: 'Vui lòng điền đầy đủ thông tin bắt buộc'
-      }, { status: 400 });
-    }
-    
-    // Create application using the API client
-    console.log('[APPLICATIONS] Creating application with data:', {
-      jobId: jobId || undefined,
-      hiringId: hiringId || undefined,
-      name,
-      email,
-      phone: phone || '',
-      message: message || '',
-      cv: cv || ''
-    });
-    
-    const response = await apiClient.applications.create({
-      jobId: jobId || undefined,
-      hiringId: hiringId || undefined,
-      name,
-      email,
-      phone: phone || '',
-      message: message || '',
-      cv: cv || ''
-    });
-    
-    console.log('[APPLICATIONS] Application created successfully:', response.data);
-    return NextResponse.json({ 
-      success: true, 
-      data: response.data 
-    });
-    
-  } catch (err) {
-    console.error('[APPLICATIONS] Error creating application:', err);
-    return NextResponse.json({ 
-      success: false, 
-      message: 'Lỗi server khi tạo đơn ứng tuyển',
-      error: err instanceof Error ? err.message : 'Unknown error'
-    }, { status: 500 });
-  }
-}
+export const dynamic = "force-dynamic";
 
-export async function GET() {
-  console.log('[APPLICATIONS] GET request received');
-  
+// GET /api/applications - Proxy to backend
+export async function GET(request: NextRequest) {
   try {
-    // Call backend API to get real applications
-    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'https://vieclabbe.onrender.com';
-    console.log('[APPLICATIONS] Calling backend API:', `${backendUrl}/api/applications`);
+    console.log('🔍 [APPLICATIONS API] GET request received');
     
-    const response = await fetch(`${backendUrl}/api/applications`, {
+    // Get query parameters
+    const searchParams = request.nextUrl.searchParams;
+    const queryString = searchParams.toString();
+    
+    // Proxy to backend
+    const backendUrl = 'https://vieclabbe.onrender.com';
+    const backendApiUrl = `${backendUrl}/api/applications${queryString ? `?${queryString}` : ''}`;
+    
+    console.log(`Calling backend API: ${backendApiUrl}`);
+
+    const response = await fetch(backendApiUrl, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
-      }
+      },
     });
 
     if (!response.ok) {
-      console.error('[APPLICATIONS] Backend API error:', response.status, response.statusText);
       throw new Error(`Backend API error: ${response.status}`);
     }
 
-    const backendData = await response.json();
-    console.log('[APPLICATIONS] Backend response:', backendData);
+    const data = await response.json();
+    console.log('Backend response data:', data);
     
-    if (backendData.success && backendData.data) {
-      console.log(`[APPLICATIONS] Returning ${backendData.data.length} real applications from backend`);
-      return NextResponse.json({ 
-        success: true, 
-        data: backendData.data,
-        count: backendData.data.length
-      });
-    } else {
-      console.error('[APPLICATIONS] Backend response format invalid:', backendData);
-      throw new Error('Invalid backend response format');
-    }
+    return NextResponse.json(data);
+  } catch (error: any) {
+    console.error('💥 [APPLICATIONS API] Error:', error);
     
-  } catch (err) {
-    console.error('[APPLICATIONS] Error in GET handler:', err);
-    
-    // Return empty array if backend is not available
-    console.log('[APPLICATIONS] Backend not available, returning empty array');
     return NextResponse.json(
       { 
-        success: true, 
+        success: false,
         data: [],
-        count: 0
-      }
+        message: 'Không thể tải dữ liệu từ server'
+      },
+      { status: 500 }
     );
   }
-} 
+}
+
+// POST /api/applications - Proxy to backend
+export async function POST(req: NextRequest) {
+  try {
+    const body = await req.json();
+    
+    // Proxy to backend
+    const backendUrl = 'https://vieclabbe.onrender.com';
+    const response = await fetch(`${backendUrl}/api/applications`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Backend API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return NextResponse.json(data, { status: response.status });
+  } catch (error) {
+    return NextResponse.json({ error: 'Server error' }, { status: 500 });
+  }
+}
+

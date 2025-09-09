@@ -64,17 +64,29 @@ const Footer = () => {
               </a>
             </div>
 
-            {/* Facebook Page Embed */}
-            <iframe
-              src="https://www.facebook.com/plugins/page.php?href=https%3A%2F%2Fwww.facebook.com%2Fdichvutuvansetupnhahangquancafe&tabs=timeline&width=300&height=200&small_header=true&adapt_container_width=true&hide_cover=false&show_facepile=true&appId"
-              width="300"
-              height="200"
-              style={{ border: "none", overflow: "hidden" }}
-              scrolling="no"
-              frameBorder="0"
-              allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"
-              allowFullScreen
-            />
+            {/* Facebook Page Link */}
+            <div className="bg-blue-800 rounded-lg p-4 text-center">
+              <div className="mb-3">
+                <svg className="w-12 h-12 mx-auto text-blue-300 mb-2" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                </svg>
+              </div>
+              <h3 className="text-white font-semibold mb-2">Theo dõi chúng tôi</h3>
+              <p className="text-blue-200 text-sm mb-4">
+                Cập nhật tin tức và dịch vụ mới nhất
+              </p>
+              <a 
+                href="https://www.facebook.com/dichvutuvansetupnhahangquancafe"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg transition-colors duration-200 font-medium"
+              >
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                </svg>
+                Truy cập Fanpage
+              </a>
+            </div>
 
 
             <iframe

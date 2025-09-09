@@ -2,14 +2,14 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export const dynamic = "force-dynamic";
 
-// GET /api/newjobs/[id] - Proxy to backend
+// GET /api/applications/[id] - Proxy to backend
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   try {
-    console.log('🔍 [NEWJOBS API] GET request for ID:', params.id);
+    console.log('🔍 [APPLICATIONS API] GET request for ID:', params.id);
     
     // Proxy to backend
     const backendUrl = 'https://vieclabbe.onrender.com';
-    const backendApiUrl = `${backendUrl}/api/newjobs/${params.id}`;
+    const backendApiUrl = `${backendUrl}/api/applications/${params.id}`;
     
     console.log(`Calling backend API: ${backendApiUrl}`);
 
@@ -29,7 +29,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     
     return NextResponse.json(data);
   } catch (error: any) {
-    console.error('💥 [NEWJOBS API] Error:', error);
+    console.error('💥 [APPLICATIONS API] Error:', error);
     
     return NextResponse.json(
       { 
@@ -42,14 +42,14 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
   }
 }
 
-// DELETE /api/newjobs/[id] - Proxy to backend
+// DELETE /api/applications/[id] - Proxy to backend
 export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
   try {
-    console.log('🔍 [NEWJOBS API] DELETE request for ID:', params.id);
+    console.log('🔍 [APPLICATIONS API] DELETE request for ID:', params.id);
     
     // Proxy to backend
     const backendUrl = 'https://vieclabbe.onrender.com';
-    const backendApiUrl = `${backendUrl}/api/newjobs/${params.id}`;
+    const backendApiUrl = `${backendUrl}/api/applications/${params.id}`;
     
     console.log(`Calling backend API: ${backendApiUrl}`);
 
@@ -69,7 +69,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
     
     return NextResponse.json(data);
   } catch (error: any) {
-    console.error('💥 [NEWJOBS API] Error:', error);
+    console.error('💥 [APPLICATIONS API] Error:', error);
     
     return NextResponse.json(
       { 
@@ -80,3 +80,4 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
     );
   }
 }
+
