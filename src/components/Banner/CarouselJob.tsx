@@ -104,8 +104,8 @@ export default function CarouselJob() {
       setLoading(true); // Always show loading when fetching
       console.log('Fetching jobs directly from backend...');
       
-      // Fetch directly from backend API
-      const response = await fetch('https://vieclabbe.onrender.com/api/jobs?limit=50', {
+      // Fetch via local API proxy to avoid CORS issues
+      const response = await fetch('/api/jobs', {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
