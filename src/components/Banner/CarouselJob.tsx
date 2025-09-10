@@ -88,124 +88,92 @@ function ApplyModal({ open, onClose, job }: { open: boolean; onClose: () => void
 }
 
 export default function CarouselJob() {
-  const [jobs, setJobs] = useState<Job[]>(() => {
-    // Try to load from localStorage first
-    if (typeof window !== 'undefined') {
-      try {
-        const cached = localStorage.getItem('cachedJobs');
-        if (cached) {
-          const parsed = JSON.parse(cached);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            console.log('Loading cached jobs from localStorage');
-            return parsed.slice(0, 16);
-          }
-        }
-      } catch (e) {
-        console.warn('Failed to load cached jobs:', e);
-      }
-    }
-    return [];
-  });
-  const [loading, setLoading] = useState(false); // Don't show loading initially
+  const [jobs, setJobs] = useState<Job[]>([]);
+  const [loading, setLoading] = useState(true); // Show loading initially
   const [retryCount, setRetryCount] = useState(0); // Track retry attempts
   const [currentPage, setCurrentPage] = useState(0);
   const [showApplyModal, setShowApplyModal] = useState(false);
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const router = useRouter();
 
-  const jobsPerPage = 6;
+  const jobsPerPage = 6; // 6 jobs per page, 2 pages = 12 total jobs
   const bgImages = ['/img/slide-1.png', '/img/slide-2.png'];
 
   const fetchJobs = async () => {
     try {
-      // Only show loading if we don't have any jobs
-      if (jobs.length === 0) {
-        setLoading(true);
-      }
+      setLoading(true); // Always show loading when fetching
       console.log('Fetching jobs using API client...');
       
-      // Use Promise.race to implement timeout at component level too
-      const fetchPromise = apiClient.jobs.getAll({});
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Component timeout')), 2000) // 2 second timeout
-      );
-      
-      const jobsData = await Promise.race([fetchPromise, timeoutPromise]) as any;
+      // Fetch only jobs (already has 29 data) - request all to ensure we get 12
+      const jobsData = await apiClient.jobs.getAll({ limit: 50 });
+      console.log('Jobs API response:', jobsData);
       
       // Handle API client response format
       let jobsArray = [];
-      if (jobsData?.data && Array.isArray(jobsData.data)) {
+      if (jobsData?.data?.items && Array.isArray(jobsData.data.items)) {
+        // Response format: { success: true, data: { items: [...], pagination: {...} } }
+        jobsArray = jobsData.data.items;
+        console.log('Using jobsData.data.items:', jobsArray.length, 'jobs');
+      } else if (jobsData?.data && Array.isArray(jobsData.data)) {
+        // Response format: { data: [...] }
         jobsArray = jobsData.data;
+        console.log('Using jobsData.data:', jobsArray.length, 'jobs');
       } else if (Array.isArray(jobsData)) {
+        // Response format: [...]
         jobsArray = jobsData;
+        console.log('Using jobsData directly:', jobsArray.length, 'jobs');
       } else if (jobsData?.success && Array.isArray(jobsData.data)) {
+        // Response format: { success: true, data: [...] }
         jobsArray = jobsData.data;
+        console.log('Using jobsData.data (success format):', jobsArray.length, 'jobs');
+      } else {
+        console.warn('No valid jobs data found in response:', jobsData);
       }
       
-      // Sort by date (newest first) and limit to 16 jobs
+      console.log('Total jobs available:', jobsArray.length);
+      
+      // Sort by date (newest first) and limit to 12 jobs (6 per page × 2 pages)
       const sortedJobs = [...jobsArray]
         .sort((a, b) => new Date(b.postedDate || b.createdAt).getTime() - new Date(a.postedDate || a.createdAt).getTime())
-        .slice(0, 16);
+        .slice(0, 12);
+      
+      console.log('Sorted and limited to 12 jobs:', sortedJobs.length);
       
       console.log(`Setting ${sortedJobs.length} real jobs to state`);
       setJobs(sortedJobs);
       setRetryCount(0); // Reset retry count on success
-      if (jobs.length === 0) {
-        setLoading(false); // Stop loading only if we were showing loading
-      }
+      setLoading(false); // Always stop loading when data is loaded
       
-      // Cache to localStorage for instant loading next time
-      if (typeof window !== 'undefined' && sortedJobs.length > 0) {
-        try {
-          localStorage.setItem('cachedJobs', JSON.stringify(sortedJobs));
-          console.log('Jobs cached to localStorage');
-        } catch (e) {
-          console.warn('Failed to cache jobs:', e);
-        }
-      }
+      // Don't cache to localStorage to avoid mock data issues
     } catch (error: any) {
-      console.error('Error fetching jobs:', error);
+      console.error('Error fetching jobs and newjobs:', error);
       
-      // Handle timeout specifically
-      if (error.message === 'Component timeout') {
-        console.warn('API call timed out after 2 seconds');
-        
-        // Retry up to 2 times
-        if (retryCount < 2) {
-          console.log(`Retrying... attempt ${retryCount + 1}/2`);
-          setRetryCount(prev => prev + 1);
-          setTimeout(() => {
-            fetchJobs();
-          }, 1000); // Wait 1 second before retry
-        } else {
-          console.log('Max retries reached, showing empty state');
-          setJobs([]);
-          if (jobs.length === 0) {
-            setLoading(false);
-          }
-        }
+      // Retry up to 2 times
+      if (retryCount < 2) {
+        console.log(`Retrying... attempt ${retryCount + 1}/2`);
+        setRetryCount(prev => prev + 1);
+        setTimeout(() => {
+          fetchJobs();
+        }, 1000); // Wait 1 second before retry
       } else {
-        setJobs([]); // Set empty array on other errors
-        if (jobs.length === 0) {
-          setLoading(false);
-        }
+        console.log('Max retries reached, showing empty state');
+        setJobs([]);
+        setLoading(false); // Always stop loading on error
       }
     }
   };
 
   useEffect(() => {
-    // Only fetch if we don't have cached data
-    if (jobs.length === 0) {
-      fetchJobs();
-    } else {
-      // If we have cached data, refresh in background
-      console.log('Refreshing jobs in background...');
-      fetchJobs();
+    // Clear any cached mock data and fetch fresh data
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('cachedJobs');
+      console.log('Cleared cached jobs from localStorage');
     }
+    fetchJobs();
   }, []);
 
-  // Show loading only if we have no jobs and are actually loading
-  const shouldShowLoading = loading && jobs.length === 0;
+  // Show loading when loading is true
+  const shouldShowLoading = loading;
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -269,7 +237,12 @@ export default function CarouselJob() {
       {/* Content */}
       <div className="relative z-10">
         <div className="max-w-7xl mx-auto px-4 py-2">
-          <h2 className="text-2xl font-bold text-blue-700 mb-6">Việc làm nổi bật</h2>
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-2xl font-bold text-blue-700">Việc làm nổi bật</h2>
+            <div className="text-sm text-gray-600">
+              Trang {currentPage + 1}/2 • {jobs.length} việc làm
+            </div>
+          </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {currentJobs.map((job) => (
@@ -290,7 +263,9 @@ export default function CarouselJob() {
                   <p className="text-gray-700 text-sm">{job.company}</p>
                   <p className="text-blue-600 text-sm font-medium">{job.salary}</p>
                   <p className="text-xs text-gray-500">{job.location}</p>
-                  <span className="text-xs text-gray-400 block">{new Date(job.postedDate).toLocaleDateString("vi-VN")}</span>
+                  <span className="text-xs text-gray-400 block">
+                    {job.postedDate ? new Date(job.postedDate).toLocaleDateString("vi-VN") : 'N/A'}
+                  </span>
                 </div>
 
                 {/* Actions */}
@@ -327,7 +302,7 @@ export default function CarouselJob() {
 
           {/* View More */}
           <div className="flex justify-center mt-8">
-            <Link href={`/jobs?page=${currentPage + 1}`} className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white px-8 py-3 rounded-full font-semibold hover:shadow-lg hover:scale-105 transition-all duration-300">
+            <Link href="/jobs" className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white px-8 py-3 rounded-full font-semibold hover:shadow-lg hover:scale-105 transition-all duration-300">
               Xem thêm việc làm →
             </Link>
           </div>

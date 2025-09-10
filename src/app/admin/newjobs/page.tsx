@@ -53,13 +53,23 @@ export default function AdminNewJobs() {
       const jobsData = await response.json();
       console.log('[ADMIN NEWJOBS] API response:', jobsData);
 
-      if (jobsData.data) {
-        console.log(`[ADMIN NEWJOBS] Fetched ${jobsData.data.length} new jobs`);
-        setNewJobs(jobsData.data);
+      // Handle backend response format: { success: true, data: { items: [...], pagination: {...} } }
+      let newJobsArray = [];
+      if (jobsData.success && jobsData.data && jobsData.data.items && Array.isArray(jobsData.data.items)) {
+        newJobsArray = jobsData.data.items;
+        console.log(`[ADMIN NEWJOBS] Using data.data.items: ${newJobsArray.length} new jobs`);
+      } else if (jobsData.data && Array.isArray(jobsData.data)) {
+        newJobsArray = jobsData.data;
+        console.log(`[ADMIN NEWJOBS] Using data.data: ${newJobsArray.length} new jobs`);
+      } else if (Array.isArray(jobsData)) {
+        newJobsArray = jobsData;
+        console.log(`[ADMIN NEWJOBS] Using direct array: ${newJobsArray.length} new jobs`);
       } else {
         console.error('[ADMIN NEWJOBS] Invalid API response format:', jobsData);
         throw new Error('Invalid API response format');
       }
+      
+      setNewJobs(newJobsArray);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to load new jobs';
       console.error('[ADMIN NEWJOBS] Error:', errorMessage, err);
@@ -108,7 +118,7 @@ export default function AdminNewJobs() {
     }
   };
 
-  const filteredNewJobs = newJobs.filter(job => {
+  const filteredNewJobs = (Array.isArray(newJobs) ? newJobs : []).filter(job => {
     const matchesSearch = 
       job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       job.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -134,8 +144,10 @@ export default function AdminNewJobs() {
   return (
     <div className="min-h-screen bg-gray-100">
       {/* Header */}
-      <header className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <header className="bg-white shadow-sm border-b mt-10">
+       
+      </header>
+ <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-20">
           <div className="flex justify-between items-center py-4">
             <div className="flex items-center space-x-4">
               <Link href="/admin" className="text-blue-600 hover:text-blue-800">
@@ -162,8 +174,6 @@ export default function AdminNewJobs() {
             </div>
           </div>
         </div>
-      </header>
-
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Filters and Search */}
         <div className="bg-white rounded-lg shadow p-6 mb-6">

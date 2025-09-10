@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { adminApi } from '../../../lib/backendApi';
 
 export default function CreateNews() {
   const [formData, setFormData] = useState({
@@ -32,19 +33,15 @@ export default function CreateNews() {
         formDataToSend.append('image', imageFile);
       }
 
-      const response = await fetch('/api/news', {
-        method: 'POST',
-        body: formDataToSend,
-      });
+      const result = await adminApi.news.create(formDataToSend);
 
-      if (response.ok) {
+      if (result.success) {
         setMessage({ type: 'success', text: 'Tạo tin tức thành công!' });
         setTimeout(() => {
           router.push('/admin/news');
         }, 1500);
       } else {
-        const errorData = await response.json();
-        setMessage({ type: 'error', text: errorData.error || 'Có lỗi xảy ra' });
+        setMessage({ type: 'error', text: result.message || 'Có lỗi xảy ra' });
       }
     } catch (error) {
       console.error('Error creating news:', error);

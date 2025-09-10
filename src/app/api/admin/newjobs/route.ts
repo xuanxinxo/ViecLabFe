@@ -168,72 +168,17 @@ export async function GET(request: NextRequest) {
     } catch (apiError) {
       console.error('💥 [ADMIN NEWJOBS] Backend API error:', apiError);
       
-      // Fallback to sample data
-      const sampleJobs = [
-        {
-          id: 'sample-1',
-          title: 'Frontend Developer React',
-          company: 'TechCorp Vietnam',
-          location: 'Hồ Chí Minh',
-          type: 'Full-time',
-          salary: '25.000.000 - 35.000.000 VND',
-          description: 'Chúng tôi đang tìm kiếm một Frontend Developer có kinh nghiệm với React để tham gia vào dự án phát triển ứng dụng web.',
-          requirements: ['Kinh nghiệm 2+ năm với React', 'Thành thạo JavaScript/TypeScript', 'Hiểu biết về CSS/SCSS'],
-          benefits: ['Lương thưởng hấp dẫn', 'Bảo hiểm y tế', 'Môi trường làm việc trẻ trung'],
-          tags: ['React', 'JavaScript', 'TypeScript'],
-          deadline: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-          status: 'pending',
-          postedDate: new Date().toISOString(),
-          createdAt: new Date().toISOString(),
-          isRemote: false,
-          img: '/img/tech.jpg'
-        },
-        {
-          id: 'sample-2',
-          title: 'Backend Developer Node.js',
-          company: 'StartupHub',
-          location: 'Hà Nội',
-          type: 'Full-time',
-          salary: '20.000.000 - 30.000.000 VND',
-          description: 'Tham gia phát triển backend cho ứng dụng fintech với Node.js và MongoDB.',
-          requirements: ['Kinh nghiệm Node.js/Express', 'Hiểu biết về MongoDB', 'Kiến thức về RESTful API'],
-          benefits: ['Stock options', 'Flexible working hours', 'Remote work'],
-          tags: ['Node.js', 'MongoDB', 'Express'],
-          deadline: new Date(Date.now() + 45 * 24 * 60 * 60 * 1000).toISOString(),
-          status: 'active',
-          postedDate: new Date().toISOString(),
-          createdAt: new Date().toISOString(),
-          isRemote: true,
-          img: '/img/startup.jpg'
-        }
-      ];
-
-      // Filter by search if provided
-      let filteredJobs = sampleJobs;
-      if (search) {
-        filteredJobs = sampleJobs.filter((job: any) => 
-          job.title?.toLowerCase().includes(search.toLowerCase()) ||
-          job.company?.toLowerCase().includes(search.toLowerCase()) ||
-          job.location?.toLowerCase().includes(search.toLowerCase())
-        );
-      }
-
-      // Pagination
-      const pageNum = parseInt(page);
-      const limitNum = parseInt(limit);
-      const startIndex = (pageNum - 1) * limitNum;
-      const paginatedJobs = filteredJobs.slice(startIndex, startIndex + limitNum);
-
-      console.log('✅ [ADMIN NEWJOBS] Returning sample jobs:', paginatedJobs.length);
+      // Return empty array instead of mock data
+      console.log('✅ [ADMIN NEWJOBS] Returning empty array due to backend error');
       
       return NextResponse.json({ 
         success: true, 
-        data: paginatedJobs,
+        data: [],
         pagination: {
-          page: pageNum,
-          limit: limitNum,
-          total: filteredJobs.length,
-          totalPages: Math.ceil(filteredJobs.length / limitNum)
+          page: parseInt(page),
+          limit: parseInt(limit),
+          total: 0,
+          totalPages: 0
         }
       });
     }

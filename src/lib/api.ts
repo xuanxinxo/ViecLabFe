@@ -220,7 +220,10 @@ const createApiClient = <T>(endpoint: string, apiInstance: AxiosInstance = api) 
         
         // Handle different response formats from backend
         if (response.data && typeof response.data === 'object') {
-          if (response.data.data && Array.isArray(response.data.data)) {
+          if (response.data.data && response.data.data.items && Array.isArray(response.data.data.items)) {
+            // Backend returns {success: true, data: {items: [...], pagination: {...}}}
+            return { ...response, data: response.data.data.items };
+          } else if (response.data.data && Array.isArray(response.data.data)) {
             // Backend returns {data: [...], success: true}
             return { ...response, data: response.data.data };
           } else if (Array.isArray(response.data)) {
@@ -352,7 +355,7 @@ export const adminApi = {
 
 export const apiClient = {
   users: createApiClient<any>('users'),
-  jobs: createApiClient<any>('jobs', localApi), // Use local API proxy to backend
+  jobs: createApiClient<any>('jobs', api), // Use direct backend API
   newJobs: createApiClient<any>('newjobs', localApi), // Use local API proxy to backend
   toredco: createApiClient<any>('toredco'),
   applications: createApiClient<any>('applications', localApi), // Use local API proxy to backend

@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { apiClient } from '../../lib/api';
+import { adminApi } from '../../lib/backendApi';
 import ApiStatus from '../../components/ui/ApiStatus';
 import { getFeaturedNews, NewsItem } from '../../lib/api/news';
 import { getFeaturedApplications, Application } from '../../lib/api/applications';
@@ -89,29 +90,29 @@ export default function AdminDashboard() {
       } catch (error) {
         console.error("Error loading dashboard stats:", error);
         
-        // Fallback: Try to fetch individual data
+        // Fallback: Try to fetch individual data from backend directly
         try {
-          console.log("Trying fallback method...");
-          const [jobsResponse, newsResponse, applicationsResponse, hiringsResponse, newJobsResponse] = await Promise.allSettled([
-            fetch('/api/admin/jobs', { credentials: 'include' }),
-            fetch('/api/admin/news', { credentials: 'include' }),
-            fetch('/api/admin/applications', { credentials: 'include' }),
-            fetch('/api/admin/hirings', { credentials: 'include' }),
-            fetch('/api/admin/newjobs', { credentials: 'include' })
+          console.log("Trying fallback method with backend API...");
+          const [jobsData, newsData, applicationsData, hiringsData, newJobsData] = await Promise.allSettled([
+            adminApi.jobs.getAll(),
+            adminApi.news.getAll(),
+            adminApi.applications.getAll(),
+            adminApi.hirings.getAll(),
+            adminApi.newJobs.getAll()
           ]);
           
-          const jobs = jobsResponse.status === 'fulfilled' && jobsResponse.value.ok 
-            ? (await jobsResponse.value.json()).data || [] : [];
-          const news = newsResponse.status === 'fulfilled' && newsResponse.value.ok 
-            ? (await newsResponse.value.json()).data || [] : [];
-          const applications = applicationsResponse.status === 'fulfilled' && applicationsResponse.value.ok 
-            ? (await applicationsResponse.value.json()).data || [] : [];
-          const hirings = hiringsResponse.status === 'fulfilled' && hiringsResponse.value.ok 
-            ? (await hiringsResponse.value.json()).data || [] : [];
-          const newJobs = newJobsResponse.status === 'fulfilled' && newJobsResponse.value.ok 
-            ? (await newJobsResponse.value.json()).data || [] : [];
+          const jobs = jobsData.status === 'fulfilled' && jobsData.value?.data?.items 
+            ? jobsData.value.data.items : [];
+          const news = newsData.status === 'fulfilled' && newsData.value?.data?.items 
+            ? newsData.value.data.items : [];
+          const applications = applicationsData.status === 'fulfilled' && applicationsData.value?.data?.items 
+            ? applicationsData.value.data.items : [];
+          const hirings = hiringsData.status === 'fulfilled' && hiringsData.value?.data?.items 
+            ? hiringsData.value.data.items : [];
+          const newJobs = newJobsData.status === 'fulfilled' && newJobsData.value?.data?.items 
+            ? newJobsData.value.data.items : [];
           
-          console.log("Fallback data loaded:", { 
+          console.log("Backend data loaded:", { 
             jobs: jobs.length, 
             news: news.length, 
             applications: applications.length, 
@@ -119,7 +120,7 @@ export default function AdminDashboard() {
             newJobs: newJobs.length
           });
           
-          // Tính toán chính xác các số liệu
+          // Tính toán chính xác các số liệu theo yêu cầu
           const activeJobs = jobs.filter((job: any) => job.status === 'active' || job.status === 'published').length;
           const pendingJobs = jobs.filter((job: any) => job.status === 'pending' || job.status === 'draft').length;
           
@@ -580,19 +581,6 @@ export default function AdminDashboard() {
             className="bg-white rounded-lg shadow p-4 hover:shadow-md transition-shadow"
           >
             <div className="flex flex-col items-center text-center">
-              <div className="p-2 bg-orange-100 rounded-lg mb-2">
-                <span className="text-2xl">📋</span>
-              </div>
-              <h3 className="text-sm font-semibold text-gray-900 mb-1">Quản lý Hiring</h3>
-              <p className="text-xs text-gray-600">Xem và chỉnh sửa</p>
-            </div>
-          </Link>
-
-          <Link
-            href="/admin/jobnew"
-            className="bg-white rounded-lg shadow p-4 hover:shadow-md transition-shadow"
-          >
-            <div className="flex flex-col items-center text-center">
               <div className="p-2 bg-yellow-100 rounded-lg mb-2">
                 <svg
                   className="w-5 h-5 text-yellow-600"
@@ -806,42 +794,6 @@ export default function AdminDashboard() {
             )}
           </div>
 
-          {/* Applications Section */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold text-gray-900">Ứng viên mới nhất ({homeData.applications.length})</h2>
-              <Link href="/admin/applications" className="text-blue-600 hover:text-blue-800">
-                Xem tất cả →
-              </Link>
-            </div>
-            {homeData.applications.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                {homeData.applications.slice(0, 8).map((application: Application) => {
-                  const job = application.job || application.hiring;
-                  return (
-                    <div key={application._id} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
-                      <h3 className="font-semibold text-gray-900 mb-2">{application.name}</h3>
-                      <p className="text-sm text-gray-600 mb-2">📧 {application.email}</p>
-                      {application.phone && (
-                        <p className="text-sm text-gray-600 mb-2">📞 {application.phone}</p>
-                      )}
-                      {job && (
-                        <div className="mt-2 p-2 bg-gray-50 rounded">
-                          <p className="text-sm font-medium">{job.title}</p>
-                          <p className="text-xs text-gray-600">🏢 {job.company}</p>
-                        </div>
-                      )}
-                      <p className="text-xs text-gray-500 mt-2">
-                        📅 {new Date(application.createdAt).toLocaleDateString('vi-VN')}
-                      </p>
-                    </div>
-                  );
-                })}
-              </div>
-            ) : (
-              <p className="text-gray-500 text-center py-8">Chưa có ứng viên nào</p>
-            )}
-          </div>
 
           {/* News Section */}
           <div className="bg-white rounded-lg shadow p-6">

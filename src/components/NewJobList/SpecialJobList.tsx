@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import NewJobApplyModal from '@/src/components/NewJobApplyModal';
+import UnifiedApplyModal from '../UnifiedApplyModal';
 import { apiClient } from '../../lib/api';
 
 export interface SpecialJob {
@@ -106,7 +106,7 @@ export default function SpecialJobList() {
             </div>
           )}
           {job.createdAt && (
-            <div className="mt-2 text-xs text-gray-400">Ngày tạo: {new Date(job.createdAt).toLocaleDateString('vi-VN')}</div>
+            <div className="mt-2 text-xs text-gray-400">Ngày tạo: {job.createdAt ? new Date(job.createdAt).toLocaleDateString('vi-VN') : 'N/A'}</div>
           )}
           <button
             className="mt-3 bg-green-700 text-white px-4 py-2 rounded hover:bg-green-800"
@@ -114,7 +114,7 @@ export default function SpecialJobList() {
           >
             Ứng tuyển
           </button>
-          <NewJobApplyModal open={showModal === job._id} onClose={() => setShowModal(null)} job={job} />
+          <UnifiedApplyModal open={showModal === job._id} onClose={() => setShowModal(null)} job={job} type="newjob" />
         </div>
       ))}
     </div>

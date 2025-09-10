@@ -2,16 +2,51 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { getFeaturedApplications, Application } from '@/lib/api/applications';
+import { apiClient } from '../../lib/api';
+import ClientOnly from '../ui/ClientOnly';
+// Helper function to extract data array from API response
+const extractDataArray = (responseData: any) => {
+  if (responseData.success && responseData.data && responseData.data.items && Array.isArray(responseData.data.items)) {
+    // Handle format: { success: true, data: { items: [...], pagination: {...} } }
+    return responseData.data.items;
+  } else if (responseData.success && Array.isArray(responseData.data)) {
+    // Handle format: { success: true, data: [...] }
+    return responseData.data;
+  } else if (Array.isArray(responseData.data)) {
+    return responseData.data;
+  } else if (Array.isArray(responseData)) {
+    return responseData;
+  }
+  return [];
+};
 import HiringFilter from '../HiringFilter';
 
-// Application interface is now imported from the API service
+interface Application {
+  id?: string;
+  _id?: string;
+  name: string;
+  email: string;
+  phone: string;
+  message?: string;
+  cv?: string;
+  jobId?: string;
+  hiringId?: string;
+  createdAt?: string;
+  job?: {
+    id: string;
+    title: string;
+    company: string;
+    location?: string;
+    salary?: string;
+    type?: string;
+  };
+}
 
 export function HiringList() {
   const [applications, setApplications] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [visibleCount, setVisibleCount] = useState(8); // Show first 8 applications
+  const [visibleCount, setVisibleCount] = useState(4); // Show first 4 applications
 
   useEffect(() => {
     const fetchApplications = async () => {
@@ -20,26 +55,21 @@ export function HiringList() {
         setError('');
         
         console.log('[HiringList] Fetching applications...');
-        const data = await getFeaturedApplications(8);
-        console.log(`[HiringList] Received ${data.length} applications`);
-        setApplications(Array.isArray(data) ? data : []);
+        const responseData = await apiClient.applications.getAll({});
+        const applicationsData = extractDataArray(responseData);
+        console.log(`[HiringList] Received ${applicationsData.length} applications`);
+        setApplications(Array.isArray(applicationsData) ? applicationsData.slice(0, 4) : []);
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-        console.error('[HiringList] Error loading applications:', errorMessage, err);
+        console.error('[HiringList] Error loading applications:', errorMessage);
         setError(`Không tải được danh sách ứng viên: ${errorMessage}`);
       } finally {
         setLoading(false);
       }
     };
 
-    console.log('[HiringList] Component mounted, starting data fetch');
     fetchApplications();
-    
-    // Clean up function
-    return () => {
-      console.log('[HiringList] Component unmounted');
-    };
-  }, []);
+  }, []); // Only run once when component mounts
 
   useEffect(() => {
     if (applications.length > 0) {
@@ -75,11 +105,9 @@ export function HiringList() {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {applications.slice(0, visibleCount).map((application) => {
-            const job = application.job || application.hiring;
-            if (!job) return null;
             return (
               <div
-                key={application._id}
+                key={application.id || application._id}
                 className="relative bg-gradient-to-r from-blue-50 to-purple-50 border border-gray-200 rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1 overflow-hidden"
               >
                 <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 to-purple-500/5 opacity-0 hover:opacity-100 transition-opacity duration-300"></div>
@@ -88,68 +116,60 @@ export function HiringList() {
                     <div>
                       <h4 className="text-xl font-bold text-gray-800 mb-1">{application.name}</h4>
                       <p className="text-sm text-gray-600 mb-1">📧 {application.email}</p>
-                      {application.phone && (
+                      <p className="text-sm text-gray-600 mb-1">📞 {application.phone}</p>
+                      {application.job && (
                         <p className="text-sm text-gray-600 mb-3">
-                          📞 {application.phone.replace(/(\d{3})\d{4}(\d{3})/, '$1****$2')}
+                          🏢 {application.job.company}
                         </p>
                       )}
                     </div>
-                    <span className={`text-xs px-2 py-1 rounded-full ${
-                      application.status === 'pending' 
-                        ? 'bg-yellow-100 text-yellow-800' 
-                        : application.status === 'approved'
-                        ? 'bg-green-100 text-green-800'
-                        : 'bg-red-100 text-red-800'
-                    }`}>
-                      {application.status === 'pending' ? 'Đang chờ' : application.status === 'approved' ? 'Đã duyệt' : 'Từ chối'}
+                    <span className="text-xs px-2 py-1 rounded-full bg-green-100 text-green-800">
+                      Ứng viên
                     </span>
                   </div>
 
                   <div className="mb-3 p-3 bg-white rounded-lg border border-gray-100">
-                    <h5 className="font-semibold text-gray-800 mb-1">{job.title}</h5>
-                    <p className="text-sm text-gray-600">🏢 {job.company}</p>
-                    {job.location && (
-                      <p className="text-sm text-gray-600">📍 {job.location}</p>
+                    <h5 className="font-semibold text-gray-800 mb-1">Vị trí ứng tuyển</h5>
+                    {application.job ? (
+                      <div className="mt-2">
+                        <p className="text-sm font-medium text-blue-600 mb-1">{application.job.title}</p>
+                        <div className="flex flex-wrap gap-2">
+                          {application.job.type && (
+                            <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                              {application.job.type}
+                            </span>
+                          )}
+                          {application.job.salary && (
+                            <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
+                              💰 {application.job.salary}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-sm text-gray-500">Không có thông tin việc làm</p>
                     )}
-                    <div className="mt-2 flex flex-wrap gap-2">
-                      {job.type && (
-                        <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
-                          {job.type}
-                        </span>
-                      )}
-                      {job.salary && (
-                        <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
-                          💰 {job.salary}
-                        </span>
-                      )}
-                    </div>
                   </div>
 
                   {application.message && (
-                    <div className="mb-4">
-                      <h5 className="text-sm font-semibold text-gray-700 mb-1">Lời nhắn:</h5>
-                      <p className="text-sm text-gray-700 bg-gray-50 p-3 rounded-lg border border-gray-100">
-                        {application.message.length > 100 
-                          ? `${application.message.substring(0, 100)}...` 
-                          : application.message}
-                      </p>
+                    <div className="mb-3 p-3 bg-gray-50 rounded-lg">
+                      <h6 className="text-xs font-medium text-gray-700 mb-1">Tin nhắn:</h6>
+                      <p className="text-xs text-gray-600 line-clamp-2">{application.message}</p>
                     </div>
                   )}
 
                   <div className="flex justify-between items-center mt-4 pt-3 border-t border-gray-100">
                     <span className="text-xs text-gray-500">
-                      📅 {new Date(application.createdAt).toLocaleDateString('vi-VN')}
+                      📅 <ClientOnly fallback="Loading...">
+                        {application.createdAt ? new Date(application.createdAt).toLocaleDateString('vi-VN') : 'N/A'}
+                      </ClientOnly>
                     </span>
-                    {application.cv && (
-                      <a
-                        href={application.cv}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-blue-600 hover:underline text-sm flex items-center"
-                      >
-                        <span className="mr-1">📄</span> Xem CV
-                      </a>
-                    )}
+                    <Link
+                      href={`/jobnew/${application.jobId || application.job?.id}`}
+                      className="text-blue-600 hover:underline text-sm flex items-center"
+                    >
+                      <span className="mr-1">👁️</span> Xem chi tiết
+                    </Link>
                   </div>
                 </div>
               </div>

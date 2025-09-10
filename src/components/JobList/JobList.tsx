@@ -3,7 +3,10 @@
 // import { Job } from "@/types/job";
 import { Job } from "@/types/job";
 import JobCard from "./JobCard";
-import JobApplyModal from "../JobApplyModal";
+import UnifiedApplyModal from "../UnifiedApplyModal";
+
+
+
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { apiClient } from "../../lib/api";
@@ -139,10 +142,11 @@ export default function JobList({
       </div>
 
       {selectedJob && (
-        <JobApplyModal
+        <UnifiedApplyModal
           open={true}
           onClose={() => setSelectedJob(null)}
           job={selectedJob}
+          type="job"
         />
       )}
     </section>

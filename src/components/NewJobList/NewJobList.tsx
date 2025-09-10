@@ -171,7 +171,7 @@ function Header() {
         Việc làm mới nhất cho các bạn 
       </h3>
       <Link
-        href="/jobs"
+        href="/jobnew"
         className="inline-flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-2 sm:px-8 sm:py-3 rounded-full font-semibold hover:shadow-lg hover:scale-105 transition-all duration-300"
       >
         Xem tất cả việc làm →

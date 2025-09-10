@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Modal from '../../../components/ui/Modal';
+import { adminApi } from '../../../lib/backendApi';
 
 interface Hiring {
   id: string;
@@ -40,30 +41,23 @@ export default function AdminHiringPage() {
   const loadData = async () => {
     setLoading(true);
     try {
-      const response = await fetch('/api/admin/hirings', {
-        method: 'GET',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-      
-      if (!response.ok) {
-        if (response.status === 401) {
-          router.push('/admin/login');
-          return;
-        }
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      
-      const data = await response.json();
+      const data = await adminApi.hirings.getAll();
       console.log('🔍 [ADMIN HIRINGS PAGE] API Response:', data);
       
       if (!data.success) {
         throw new Error(data.message || 'Failed to load hirings');
       }
       
-      const hiringsData = data.data || [];
+      // Handle response format: { success: true, data: { items: [...], pagination: {...} } }
+      let hiringsData = [];
+      if (data.data && data.data.items && Array.isArray(data.data.items)) {
+        hiringsData = data.data.items;
+      } else if (data.data && Array.isArray(data.data)) {
+        hiringsData = data.data;
+      } else if (Array.isArray(data)) {
+        hiringsData = data;
+      }
+      
       setHirings(hiringsData);
     } catch (error) {
       console.error('Error loading hirings:', error);
@@ -93,32 +87,21 @@ export default function AdminHiringPage() {
     setSubmitting(true);
 
     try {
-      let response;
+      let result;
       if (editingId) {
-        response = await fetch(`/api/admin/hirings/${editingId}`, {
-          method: 'PUT',
-          credentials: 'include',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(form)
-        });
+        result = await adminApi.hirings.update(editingId, form);
       } else {
-        response = await fetch('/api/admin/hirings', {
-          method: 'POST',
-          credentials: 'include',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(form)
-        });
+        result = await adminApi.hirings.create(form);
       }
 
-      const data = await response.json();
-      if (response.ok && data.success) {
+      if (result.success) {
         setShowModal(false);
         setForm(initialForm);
         setEditingId(null);
         await loadData();
         alert(editingId ? 'Cập nhật thành công!' : 'Đăng Hiring thành công!');
       } else {
-        throw new Error(data.message || 'Operation failed');
+        throw new Error(result.message || 'Operation failed');
       }
     } catch (error) {
       console.error('Error saving hiring:', error);
@@ -138,18 +121,13 @@ export default function AdminHiringPage() {
     if (!confirm('Bạn có chắc chắn muốn xóa?')) return;
     
     try {
-      const response = await fetch(`/api/admin/hirings/${id}`, {
-        method: 'DELETE',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' }
-      });
+      const result = await adminApi.hirings.delete(id);
       
-      const data = await response.json();
-      if (response.ok && data.success) {
+      if (result.success) {
         await loadData();
         alert('Xóa thành công!');
       } else {
-        throw new Error(data.message || 'Delete failed');
+        throw new Error(result.message || 'Delete failed');
       }
     } catch (error) {
       console.error('Error deleting hiring:', error);
@@ -159,7 +137,7 @@ export default function AdminHiringPage() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex justify-between items-center mb-6 mt-20">
         <h1 className="text-2xl font-bold">Quản lý Hiring</h1>
         <button
           className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"

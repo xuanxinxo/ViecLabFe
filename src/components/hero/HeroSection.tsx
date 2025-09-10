@@ -161,31 +161,7 @@ export default function HeroSection({
               </div>
             </div>
 
-            {/* Job Category Select */}
-            <div className="relative flex-1">
-              <select
-                value={selectedCategory}
-                onChange={(e) => setSelectedCategory(e.target.value)}
-                className="w-full h-full px-3 py-2 border rounded-md text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none bg-white"
-              >
-                <option
-                  value=""
-                  className="font-semibold text-blue-600 bg-blue-50"
-                >
-                  Tất cả ngành nghề
-                </option>
-                <div className="border-t border-gray-200 my-1"></div>
-                {jobCategories.map((category) => (
-                  <option
-                    key={category}
-                    value={category}
-                    className="hover:bg-blue-50"
-                  >
-                    {category}
-                  </option>
-                ))}
-              </select>
-            </div>
+ 
 
             {/* Location Select */}
             <div className="relative flex-1">

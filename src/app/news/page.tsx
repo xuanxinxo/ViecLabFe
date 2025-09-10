@@ -14,8 +14,8 @@ export const revalidate = 60;
 
 async function getNews(): Promise<NewsItem[]> {
   try {
-    console.log('[NEWS] Fetching news data from https://vieclabbe.onrender.com/api/news...');
-    const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/news`, {
+    console.log('[NEWS] Fetching news data from backend...');
+    const response = await fetch('https://vieclabbe.onrender.com/api/news', {
       cache: 'no-store', // Ensure fresh data on each request
       next: { revalidate: 60 } // Revalidate every 60 seconds
     });
@@ -25,19 +25,25 @@ async function getNews(): Promise<NewsItem[]> {
     }
 
     const data = await response.json();
+    console.log('[NEWS] Backend response:', data);
     
-    // Handle different response formats
+    // Handle backend response format: { success: true, data: { items: [...], pagination: {...} } }
     let newsItems: NewsItem[] = [];
     
-    if (data.news && Array.isArray(data.news)) {
-      // Format: { news: [...] }
-      newsItems = data.news;
+    if (data.success && data.data && data.data.items && Array.isArray(data.data.items)) {
+      // Backend format: { success: true, data: { items: [...], pagination: {...} } }
+      newsItems = data.data.items;
+      console.log(`[NEWS] Using data.data.items: ${newsItems.length} items`);
+    } else if (data.data && Array.isArray(data.data)) {
+      // Format: { data: [...] }
+      newsItems = data.data;
+      console.log(`[NEWS] Using data.data: ${newsItems.length} items`);
     } else if (Array.isArray(data)) {
       // Format: [...]
       newsItems = data;
-    } else if (data.data) {
-      // Format: { data: [...] }
-      newsItems = Array.isArray(data.data) ? data.data : [];
+      console.log(`[NEWS] Using direct array: ${newsItems.length} items`);
+    } else {
+      console.warn('[NEWS] No valid news data found in response:', data);
     }
     
     console.log(`[NEWS] Fetched ${newsItems.length} news items`);

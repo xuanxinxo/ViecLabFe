@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
+import { adminApi } from '../../../lib/backendApi';
 
 interface NewsItem {
   _id?: string;
@@ -31,38 +32,24 @@ export default function AdminNews() {
   const loadNews = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/admin/news', {
-        method: 'GET',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-      
-      if (!response.ok) {
-        if (response.status === 401) {
-          router.push('/admin/login');
-          return;
-        }
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      
-      const data = await response.json();
+      const data = await adminApi.news.getAll();
       console.log('🔍 [ADMIN NEWS PAGE] API Response:', data);
-      
+
       if (!data.success) {
         throw new Error(data.message || 'Failed to load news');
       }
-      
-      // Handle different response formats
-      if (data.data && Array.isArray(data.data)) {
-        setNews(data.data);
+
+      // Handle response format: { success: true, data: { items: [...], pagination: {...} } }
+      let newsData = [];
+      if (data.data && data.data.items && Array.isArray(data.data.items)) {
+        newsData = data.data.items;
+      } else if (data.data && Array.isArray(data.data)) {
+        newsData = data.data;
       } else if (Array.isArray(data)) {
-        setNews(data);
-      } else {
-        console.error('Invalid news data format:', data);
-        setNews([]);
+        newsData = data;
       }
+
+      setNews(newsData);
     } catch (error) {
       console.error('Error loading news:', error);
       setNews([]);
@@ -76,19 +63,13 @@ export default function AdminNews() {
       setError('Không tìm thấy ID tin tức để xóa');
       return;
     }
-    
+
     if (confirm('Bạn có chắc muốn xóa tin tức này?')) {
       setError(null);
       try {
-        const response = await fetch(`/api/admin/news/${newsId}`, {
-          method: 'DELETE',
-          credentials: 'include',
-          headers: { 'Content-Type': 'application/json' }
-        });
-        
-        const result = await response.json();
-        
-        if (response.ok && result.success) {
+        const result = await adminApi.news.delete(newsId);
+
+        if (result.success) {
           // Refresh the news list to reflect the deletion
           await loadNews();
           alert('Xóa tin tức thành công!');
@@ -150,30 +131,30 @@ export default function AdminNews() {
     <div className="min-h-screen bg-gray-100 mt-20">
       {/* Header */}
       <header className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-4">
-            <div className="flex items-center space-x-4">
-              <Link href="/admin" className="text-blue-600 hover:text-blue-800">
-                ← Quay lại Dashboard
-              </Link>
-              <h1 className="text-2xl font-bold text-gray-900">Quản lý tin tức</h1>
-            </div>
-            <Link
-              href="/admin/news/create"
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              + Đăng tin tức mới
-            </Link>
-          </div>
-        </div>
-      </header>
 
+      </header>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-10">
+        <div className="flex justify-between items-center py-4">
+          <div className="flex items-center space-x-4">
+            <Link href="/admin" className="text-blue-600 hover:text-blue-800">
+              ← Quay lại Dashboard
+            </Link>
+            <h1 className="text-2xl font-bold text-gray-900">Quản lý tin tức</h1>
+          </div>
+          <Link
+            href="/admin/news/create"
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            + Đăng tin tức mới
+          </Link>
+        </div>
+      </div>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {error && (
           <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
             <strong className="font-bold">Lỗi! </strong>
             <span className="block sm:inline">{error}</span>
-            <button 
+            <button
               className="absolute top-0 bottom-0 right-0 px-4 py-3"
               onClick={() => setError(null)}
             >
@@ -205,9 +186,9 @@ export default function AdminNews() {
                 <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
                   <span>{new Date(item.date).toLocaleDateString('vi-VN')}</span>
                   {item.link && (
-                    <a 
-                      href={item.link} 
-                      target="_blank" 
+                    <a
+                      href={item.link}
+                      target="_blank"
                       rel="noopener noreferrer"
                       className="text-blue-600 hover:underline"
                     >
@@ -257,13 +238,13 @@ export default function AdminNews() {
 }
 
 // Edit Modal Component
-function EditNewsModal({ 
-  news, 
-  onClose, 
-  onUpdate 
-}: { 
-  news: NewsItem; 
-  onClose: () => void; 
+function EditNewsModal({
+  news,
+  onClose,
+  onUpdate
+}: {
+  news: NewsItem;
+  onClose: () => void;
   onUpdate: (news: NewsItem) => void;
 }) {
   const [formData, setFormData] = useState({
@@ -280,23 +261,23 @@ function EditNewsModal({
     e.preventDefault();
     setLoading(true);
     setError(null);
-    
+
     try {
       // Debug log to see the news object
       console.log('News object in handleSubmit:', news);
-      
+
       // Get the ID from either _id or id field
       const newsId = news._id || (news as any).id;
-      
+
       if (!newsId) {
         throw new Error('Không tìm thấy ID tin tức');
       }
-      
+
       console.log('Using news ID:', newsId);
       console.log('Image file:', imageFile);
-      
+
       let response;
-      
+
       if (imageFile) {
         // If there's a new image, send FormData
         const formDataToSend = new FormData();
@@ -307,13 +288,13 @@ function EditNewsModal({
           formDataToSend.append('link', formData.link);
         }
         formDataToSend.append('image', imageFile);
-        
+
         console.log('Sending FormData with image...');
         console.log('FormData entries:');
         for (let [key, value] of formDataToSend.entries()) {
           console.log(key, value);
         }
-        
+
         response = await fetch(`/api/admin/news/${encodeURIComponent(newsId)}`, {
           method: 'PUT',
           credentials: 'include',
@@ -333,16 +314,16 @@ function EditNewsModal({
           })
         });
       }
-      
+
       const result = await response.json();
-      
+
       if (!response.ok) {
         console.error('Error response:', result);
         const errorMessage = result.error || 'Có lỗi xảy ra khi cập nhật tin tức';
         setError(errorMessage);
         throw new Error(errorMessage);
       }
-      
+
       // Nếu cập nhật thành công
       console.log('Update successful:', result);
       onUpdate(result.news);
@@ -373,7 +354,7 @@ function EditNewsModal({
         <div className="fixed top-4 right-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded z-50">
           <div className="flex justify-between items-center">
             <span>{error}</span>
-            <button 
+            <button
               onClick={() => setError(null)}
               className="ml-4 text-red-700 font-bold"
             >
@@ -432,7 +413,7 @@ function EditNewsModal({
               className="w-full p-2 border border-gray-300 rounded-md"
             />
           </div>
-          
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Thay đổi hình ảnh (tùy chọn)
@@ -453,7 +434,23 @@ function EditNewsModal({
             )}
             {news.image && !imageFile && (
               <div className="mt-2">
-                <p className="text-sm text-gray-600">Ảnh hiện tại: {news.image.split('/').pop()}</p>
+                <p className="text-sm text-gray-600 mb-2">Ảnh hiện tại:</p>
+                <div className="relative w-40 h-32 border rounded">
+                  <Image
+                    src={news.image}
+                    alt="Current image"
+                    fill
+                    className="object-cover rounded"
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none';
+                      e.currentTarget.nextElementSibling.style.display = 'block';
+                    }}
+                  />
+                  <div className="absolute inset-0 flex items-center justify-center bg-gray-100 text-gray-500 text-sm" style={{ display: 'none' }}>
+                    Không thể tải ảnh
+                  </div>
+                </div>
+                <p className="text-xs text-gray-500 mt-1">{news.image.split('/').pop()}</p>
               </div>
             )}
           </div>

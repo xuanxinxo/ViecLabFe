@@ -41,41 +41,40 @@ export async function getNews(params?: PaginationParams): Promise<PaginatedRespo
 
 export async function getFeaturedNews(limit: number = 5, _cacheBuster?: number): Promise<NewsItem[]> {
   try {
-    const params: any = {
-      limit,
-      isFeatured: 'true',
-      status: 'published'
-    };
+    console.log('[getFeaturedNews] Fetching from backend...');
+    
+    // Call backend directly
+    const queryParams = new URLSearchParams({
+      limit: limit.toString(),
+      status: 'published',
+      sort: '-createdAt'
+    });
     if (_cacheBuster) {
-      params._t = _cacheBuster;
+      queryParams.append('_t', _cacheBuster.toString());
     }
-    const response = await getNews(params);
-    // Handle backend response format: /api/news returns array directly
+    
+    const response = await fetch(`${API_BASE_URL}/api/news?${queryParams.toString()}`);
+    if (!response.ok) {
+      throw new Error(`Backend API error: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    console.log('[getFeaturedNews] Backend response:', data);
+    
+    // Handle backend response format: { success: true, data: { items: [...], pagination: {...} } }
     let items: any[] = [];
-    if (Array.isArray(response)) {
-      items = response;
-    } else if (response.success && Array.isArray(response.data)) {
-      items = response.data;
-    } else if (Array.isArray((response as any)?.data)) {
-      items = (response as any).data;
-    } else if (Array.isArray((response as any)?.news)) {
-      items = (response as any).news;
-    }
-
-    // Nếu featured rỗng, fallback: lấy tin mới nhất (published)
-    if (!items || items.length === 0) {
-      const fallback = await getNews({ limit, status: 'published', sort: '-createdAt', _t: _cacheBuster });
-      if (Array.isArray(fallback)) {
-        items = fallback;
-      } else if (fallback.success && Array.isArray(fallback.data)) {
-        items = fallback.data;
-      } else if (Array.isArray((fallback as any)?.data)) {
-        items = (fallback as any).data;
-      } else if (Array.isArray((fallback as any)?.news)) {
-        items = (fallback as any).news;
-      } else {
-        items = [];
-      }
+    if (data.success && data.data && data.data.items && Array.isArray(data.data.items)) {
+      items = data.data.items;
+      console.log(`[getFeaturedNews] Using data.data.items: ${items.length} items`);
+    } else if (data.data && Array.isArray(data.data)) {
+      items = data.data;
+      console.log(`[getFeaturedNews] Using data.data: ${items.length} items`);
+    } else if (Array.isArray(data)) {
+      items = data;
+      console.log(`[getFeaturedNews] Using direct array: ${items.length} items`);
+    } else {
+      console.warn('[getFeaturedNews] No valid news data found in response:', data);
+      items = [];
     }
 
     // Đảm bảo mỗi phần tử có trường cần thiết và map an toàn

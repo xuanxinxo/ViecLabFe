@@ -37,7 +37,7 @@ export default function AllJobsPage() {
 
       console.log('Loading jobs with params:', queryParams.toString());
 
-      const response = await fetch(`/api/newjobs?${queryParams.toString()}`);
+      const response = await fetch(`/api/jobs?${queryParams.toString()}`);
       console.log('Response status:', response.status);
 
       if (!response.ok) {
@@ -48,12 +48,25 @@ export default function AllJobsPage() {
       console.log('Jobs data:', data);
 
       if (data.success && data.data) {
-        setJobs(data.data);
-        setPagination(prev => ({
-          ...prev,
-          total: data.count || data.data.length,
-          totalPages: Math.ceil((data.count || data.data.length) / pagination.limit),
-        }));
+        // Handle response format: { success: true, data: { items: [...], pagination: {...} } }
+        if (data.data.items && Array.isArray(data.data.items)) {
+          setJobs(data.data.items);
+          setPagination(prev => ({
+            ...prev,
+            total: data.data.pagination?.total || data.data.items.length,
+            totalPages: Math.ceil((data.data.pagination?.total || data.data.items.length) / pagination.limit),
+          }));
+        } else if (Array.isArray(data.data)) {
+          // Handle response format: { success: true, data: [...] }
+          setJobs(data.data);
+          setPagination(prev => ({
+            ...prev,
+            total: data.data.length,
+            totalPages: Math.ceil(data.data.length / pagination.limit),
+          }));
+        } else {
+          throw new Error('Định dạng dữ liệu không hợp lệ');
+        }
       } else if (Array.isArray(data)) {
         setJobs(data);
         setPagination(prev => ({

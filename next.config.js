@@ -11,6 +11,8 @@ const nextConfig = {
       'images2.thanhnien.vn',
       'res.cloudinary.com',
       'images.unsplash.com',
+      'via.placeholder.com',
+      'vieclabbe.onrender.com', // Backend domain for images
     ],
   },
   typescript: {

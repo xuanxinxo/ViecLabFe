@@ -1,25 +1,39 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-interface Hiring {
-  id: string;
+
+interface Job {
+  id?: string | number;
+  _id?: string;
   title: string;
   company: string;
-  location: string;
-  type: string;
-  salary: string;
+  location?: string;
+  type?: string;
+  salary?: string;
   description?: string;
   postedDate?: string;
 }
 
-type ApplyModalProps = {
+interface UnifiedApplyModalProps {
   open: boolean;
   onClose: () => void;
-  job: Hiring | null;
-};
+  job: Job | null;
+  type?: 'job' | 'hiring' | 'newjob'; // Type để phân biệt loại job
+}
 
-export default function ApplyModal({ open, onClose, job }: ApplyModalProps) {
-  const [form, setForm] = useState({ name: '', email: '', phone: '', cv: '', message: '' });
+export default function UnifiedApplyModal({ 
+  open, 
+  onClose, 
+  job, 
+  type = 'job' 
+}: UnifiedApplyModalProps) {
+  const [form, setForm] = useState({ 
+    name: '', 
+    email: '', 
+    phone: '', 
+    cv: '', 
+    message: '' 
+  });
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState('');
 
@@ -37,14 +51,27 @@ export default function ApplyModal({ open, onClose, job }: ApplyModalProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!job) return;
+    
     setSubmitting(true);
     setMessage('');
+    
     try {
+      // Xác định ID field dựa trên type
+      const jobId = job.id || job._id;
+      const requestBody = { ...form };
+      
+      if (type === 'hiring') {
+        requestBody.hiringId = jobId;
+      } else {
+        requestBody.jobId = jobId;
+      }
+
       const res = await fetch('/api/applications', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...form, hiringId: job.id }),
+        body: JSON.stringify(requestBody),
       });
+      
       const data = await res.json();
       console.log('Application response:', data);
       
@@ -67,31 +94,47 @@ export default function ApplyModal({ open, onClose, job }: ApplyModalProps) {
 
   if (!open || !job) return null;
 
+  const getModalTitle = () => {
+    switch (type) {
+      case 'hiring':
+        return `Ứng tuyển Việc làm nổi bật: ${job.title}`;
+      case 'newjob':
+        return `Ứng tuyển việc mới: ${job.title}`;
+      default:
+        return `Ứng tuyển: ${job.title}`;
+    }
+  };
+
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-      <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md relative">
+    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center px-4">
+      <div className="bg-white w-full max-w-md rounded-2xl shadow-xl p-6 relative animate-fadeIn">
         <button
-          className="absolute top-2 right-2 text-gray-400 hover:text-gray-700"
+          className="absolute top-3 right-4 text-gray-400 text-2xl hover:text-gray-700 transition"
           onClick={onClose}
         >
           &times;
         </button>
-        <h2 className="text-lg font-bold mb-4 text-blue-700">Ứng tuyển Việc làm nổi bật: {job.title}</h2>
-        <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+
+        <h2 className="text-xl font-semibold text-center text-blue-800 mb-4">
+          {getModalTitle()}
+        </h2>
+
+        <form onSubmit={handleSubmit} className="space-y-3">
           <input
             name="name"
             value={form.name}
             onChange={handleChange}
             placeholder="Họ tên"
-            className="border p-2 rounded"
+            className="w-full border p-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             required
           />
           <input
             name="email"
+            type="email"
             value={form.email}
             onChange={handleChange}
             placeholder="Email"
-            className="border p-2 rounded"
+            className="w-full border p-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             required
           />
           <input
@@ -99,7 +142,7 @@ export default function ApplyModal({ open, onClose, job }: ApplyModalProps) {
             value={form.phone}
             onChange={handleChange}
             placeholder="Số điện thoại"
-            className="border p-2 rounded"
+            className="w-full border p-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             required
           />
           <input
@@ -107,38 +150,42 @@ export default function ApplyModal({ open, onClose, job }: ApplyModalProps) {
             value={form.cv}
             onChange={handleChange}
             placeholder="Link CV"
-            className="border p-2 rounded"
+            className="w-full border p-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             required
           />
           <textarea
             name="message"
             value={form.message}
             onChange={handleChange}
-            placeholder="Tin nhắn"
-            className="border p-2 rounded"
+            placeholder="Tin nhắn (tùy chọn)"
+            className="w-full border p-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             rows={3}
           />
-          <div className="flex gap-2 mt-2">
+
+          <div className="flex flex-col sm:flex-row gap-2 pt-2">
             <button
               type="submit"
-              className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
               disabled={submitting}
+              className="w-full sm:w-auto bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition disabled:opacity-50"
             >
-              {submitting ? 'Đang gửi...' : 'Gửi ứng tuyển'}
+              {submitting ? "Đang gửi..." : "Gửi ứng tuyển"}
             </button>
             <button
               type="button"
-              className="bg-gray-300 px-4 py-2 rounded"
               onClick={onClose}
+              className="w-full sm:w-auto bg-gray-300 text-gray-800 px-4 py-2 rounded-md hover:bg-gray-400 transition"
             >
               Hủy
             </button>
           </div>
         </form>
+
         {message && (
-          <div className="mt-2 text-center text-sm text-green-700">{message}</div>
+          <p className="text-center mt-3 text-sm text-green-700">{message}</p>
         )}
       </div>
     </div>
   );
 }
+
+

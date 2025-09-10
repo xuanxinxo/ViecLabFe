@@ -3,7 +3,33 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { getFeaturedNews, NewsItem } from "../lib/api/news";
+import { apiClient } from "../lib/api";
+// Helper function to extract data array from API response
+const extractDataArray = (responseData: any) => {
+  if (responseData.success && responseData.data && responseData.data.items && Array.isArray(responseData.data.items)) {
+    // Handle format: { success: true, data: { items: [...], pagination: {...} } }
+    return responseData.data.items;
+  } else if (responseData.success && Array.isArray(responseData.data)) {
+    // Handle format: { success: true, data: [...] }
+    return responseData.data;
+  } else if (Array.isArray(responseData.data)) {
+    return responseData.data;
+  } else if (Array.isArray(responseData)) {
+    return responseData;
+  }
+  return [];
+};
+
+interface NewsItem {
+  id?: string;
+  _id?: string;
+  title: string;
+  summary?: string;
+  image?: string;
+  link?: string;
+  date?: string;
+  createdAt?: string;
+}
 
 export default function NewsSection() {
   const [news, setNews] = useState<NewsItem[]>([]);
@@ -16,33 +42,30 @@ export default function NewsSection() {
         setLoading(true);
         setError(null);
 
-        console.log("Fetching featured news...");
-        const data = await getFeaturedNews(4, Date.now());
-        console.log("Fetched news data:", data);
+        console.log("Fetching news...");
+        const responseData = await apiClient.news.getAll({});
+        const newsData = extractDataArray(responseData);
+        console.log("Fetched news data:", newsData);
 
-        if (!data || !Array.isArray(data)) {
+        if (!newsData || !Array.isArray(newsData)) {
           throw new Error("Invalid data format received");
         }
 
-        const validNews = data.filter(
-          (item) => item && item._id && item.title
+        const validNews = newsData.filter(
+          (item) => item && (item._id || item.id) && item.title
         ).slice(0, 4);
 
         setNews(validNews);
       } catch (err) {
         console.error("Error loading news:", err);
         setError("Không tải được tin tức. Vui lòng thử lại sau.");
-        // Retry after 3 seconds
-        setTimeout(() => {
-          fetchNews();
-        }, 3000);
       } finally {
         setLoading(false);
       }
     };
 
     fetchNews();
-  }, []); // 👈 chỉ fetch 1 lần khi component mount
+  }, []); // Only fetch once when component mounts
 
   if (loading)
     return (
@@ -102,10 +125,10 @@ export default function NewsSection() {
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
         {news.map((item) => (
           <div
-            key={item._id}
+            key={item.id || item._id}
             className="bg-white rounded-xl shadow hover:shadow-md transition-all duration-200"
           >
-            <Link href={`/news/${item._id}`} className="block">
+            <Link href={item.link || `/news/${item.id || item._id}`} className="block" target={item.link ? "_blank" : "_self"}>
               <div className="relative w-full h-40 rounded-t-xl overflow-hidden">
                 <Image
                   src={item.image || '/reparo-logo.png'}
@@ -118,6 +141,9 @@ export default function NewsSection() {
                 <h3 className="text-sm font-semibold leading-snug line-clamp-2">
                   {item.title}
                 </h3>
+                <p className="text-xs text-gray-600 mt-1">
+                  {item.date ? new Date(item.date).toLocaleDateString('vi-VN') : 'N/A'}
+                </p>
               </div>
             </Link>
           </div>

@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { adminApi } from '../../../lib/backendApi';
 
 interface Job {
   id: string;
@@ -43,46 +44,28 @@ export default function AdminJobs() {
       setLoading(true);
       setError('');
       
-      console.log('🔍 [ADMIN JOBS PAGE] Loading jobs from /api/jobs...');
+      console.log('🔍 [ADMIN JOBS PAGE] Loading jobs from backend API...');
       
-      // Call jobs API with authentication
-      const response = await fetch('/api/jobs', {
-        method: 'GET',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
+      // Call backend jobs API
+      const data = await adminApi.jobs.getAll();
       
-      console.log('🔍 [ADMIN JOBS PAGE] Response status:', response.status);
+      console.log('🔍 [ADMIN JOBS PAGE] API Response:', data);
       
-      if (!response.ok) {
-        if (response.status === 401) {
-          showToast('❌ Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.', 'error');
-          router.push('/admin/login');
-          return;
-        } else if (response.status === 503) {
-          const errorData = await response.json().catch(() => ({}));
-          throw new Error(errorData.message || 'Backend API không khả dụng');
-        }
-        throw new Error(`HTTP error! status: ${response.status}`);
+      if (!data.success) {
+        throw new Error(data.message || 'Failed to load jobs');
       }
       
-      const result = await response.json();
-      console.log('🔍 [ADMIN JOBS PAGE] API Response:', result);
-      
-      if (!result.success) {
-        throw new Error(result.message || 'Failed to load jobs');
-      }
-      
-      // Handle different response formats
+      // Handle response format: { success: true, data: { items: [...], pagination: {...} } }
       let jobsData = [];
-      if (result.data && Array.isArray(result.data)) {
-        jobsData = result.data;
-        console.log('✅ [ADMIN JOBS PAGE] Using result.data with', jobsData.length, 'jobs');
-      } else if (Array.isArray(result)) {
-        jobsData = result;
-        console.log('✅ [ADMIN JOBS PAGE] Using result array with', jobsData.length, 'jobs');
+      if (data.data && data.data.items && Array.isArray(data.data.items)) {
+        jobsData = data.data.items;
+        console.log('✅ [ADMIN JOBS PAGE] Using data.data.items with', jobsData.length, 'jobs');
+      } else if (data.data && Array.isArray(data.data)) {
+        jobsData = data.data;
+        console.log('✅ [ADMIN JOBS PAGE] Using data.data with', jobsData.length, 'jobs');
+      } else if (Array.isArray(data)) {
+        jobsData = data;
+        console.log('✅ [ADMIN JOBS PAGE] Using data array with', jobsData.length, 'jobs');
       } else {
         console.log('❌ [ADMIN JOBS PAGE] No valid jobs data found in response');
         jobsData = [];
@@ -299,7 +282,9 @@ export default function AdminJobs() {
       
       {/* Header */}
       <header className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      
+      </header>
+  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-10">
           <div className="flex justify-between items-center py-4">
             <div className="flex items-center space-x-4">
               <Link href="/admin" className="text-blue-600 hover:text-blue-800">
@@ -329,8 +314,6 @@ export default function AdminJobs() {
             </div>
           </div>
         </div>
-      </header>
-
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* API Status Info */}
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">

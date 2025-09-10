@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { adminApi } from '../../../lib/backendApi';
 
 // Toast notification function
 const showToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
@@ -156,66 +157,8 @@ export default function CreateJob() {
         form.append('img', selectedImage);
       }
 
-      // Always use JSON for now - image handling will be improved later
-      const res = await fetch('/api/jobs', {
-        method: 'POST',
-        credentials: 'include', // Include authentication cookies
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          title: formData.title.trim(),
-          company: formData.company.trim(),
-          location: formData.location.trim(),
-          type: formData.type,
-          salary: formData.salary.trim(),
-          description: formData.description.trim(),
-          requirements: formData.requirements.filter(r => r.trim()),
-          benefits: formData.benefits.filter(b => b.trim()),
-          deadline: formData.deadline,
-          img: selectedImage ? 'uploaded_image' : ''
-        }),
-      });
-
-      if (!res.ok) {
-        const errorText = await res.text();
-        console.error('❌ [CREATE JOB] HTTP Error:', {
-          status: res.status,
-          statusText: res.statusText,
-          error: errorText
-        });
-        
-        // Try to parse error response
-        let errorMessage = `Lỗi server: ${res.status} - ${res.statusText}`;
-        try {
-          const errorData = JSON.parse(errorText);
-          if (errorData.message) {
-            errorMessage = errorData.message;
-          }
-        } catch (parseError) {
-          // Use default error message if parsing fails
-        }
-        
-        if (res.status === 401) {
-          setError('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
-          router.push('/admin/login');
-          return;
-        } else if (res.status === 403) {
-          setError('Không có quyền tạo việc làm. Vui lòng kiểm tra quyền truy cập.');
-          return;
-        } else if (res.status === 408) {
-          setError('Request timeout. Server đang phản hồi chậm.');
-          return;
-        } else if (res.status === 503) {
-          setError('Không thể kết nối đến server. Vui lòng kiểm tra kết nối mạng.');
-          return;
-        } else {
-          setError(errorMessage);
-          return;
-        }
-      }
-
-      const data = await res.json();
+      // Send FormData to backend API
+      const data = await adminApi.jobs.create(form);
 
       if (data.success) {
         console.log('✅ [CREATE JOB] Create successful:', data);

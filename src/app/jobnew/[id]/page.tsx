@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import ApplyModal from '../../../components/ApplyModal';
+import UnifiedApplyModal from '../../../components/UnifiedApplyModal';
 
 interface NewJob {
   _id: string;
@@ -265,10 +265,11 @@ export default function NewJobDetail() {
       </main>
 
       {/* Modal ứng tuyển */}
-      <ApplyModal
+      <UnifiedApplyModal
         open={showApplyModal}
         onClose={() => setShowApplyModal(false)}
         job={selectedJob}
+        type="newjob"
       />
     </div>
   );

@@ -4,7 +4,7 @@ import { Job } from '@/types/job';
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import NewJobApplyModal from '../NewJobApplyModal';
+import UnifiedApplyModal from '../UnifiedApplyModal';
 
 export default function JobCardNew({ job }: { job: Job }) {
   const [showModal, setShowModal] = useState(false);
@@ -94,7 +94,7 @@ export default function JobCardNew({ job }: { job: Job }) {
           Xem chi tiết →
         </Link>
       </div>
-         <NewJobApplyModal open={showModal} onClose={() => setShowModal(false)} job={job} />
+         <UnifiedApplyModal open={showModal} onClose={() => setShowModal(false)} job={job} type="newjob" />
     </div>
   );
 }

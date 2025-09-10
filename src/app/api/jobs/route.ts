@@ -76,10 +76,25 @@ export async function POST(req: NextRequest) {
     
     console.log('✅ [JOBS API] Admin authenticated:', admin.username);
     
-    // Handle JSON request
-    console.log('🔍 [JOBS API] Processing JSON request');
-    const body = await req.json();
-    console.log('🔍 [JOBS API] JSON parsed:', body);
+    // Handle FormData request (for file upload)
+    console.log('🔍 [JOBS API] Processing FormData request');
+    const formData = await req.formData();
+    
+    // Extract form fields
+    const body = {
+      title: formData.get('title')?.toString() || '',
+      company: formData.get('company')?.toString() || '',
+      location: formData.get('location')?.toString() || '',
+      type: formData.get('type')?.toString() || '',
+      salary: formData.get('salary')?.toString() || '',
+      description: formData.get('description')?.toString() || '',
+      requirements: formData.getAll('requirements').map(r => r.toString()).filter(r => r.trim()),
+      benefits: formData.getAll('benefits').map(b => b.toString()).filter(b => b.trim()),
+      deadline: formData.get('deadline')?.toString() || '',
+      img: formData.get('img') ? 'uploaded_image' : ''
+    };
+    
+    console.log('🔍 [JOBS API] FormData parsed:', body);
     
     // Proxy to backend
     const backendUrl = 'https://vieclabbe.onrender.com';
@@ -106,13 +121,33 @@ export async function POST(req: NextRequest) {
     
     console.log('🔍 [JOBS API] Calling backend POST API with auth headers');
     
+    // Create FormData for backend
+    const backendFormData = new FormData();
+    backendFormData.append('title', body.title);
+    backendFormData.append('company', body.company);
+    backendFormData.append('location', body.location);
+    backendFormData.append('type', body.type);
+    backendFormData.append('salary', body.salary);
+    backendFormData.append('description', body.description);
+    backendFormData.append('deadline', body.deadline);
+    
+    // Add requirements and benefits
+    body.requirements.forEach(req => backendFormData.append('requirements', req));
+    body.benefits.forEach(ben => backendFormData.append('benefits', ben));
+    
+    // Add image if exists
+    const imageFile = formData.get('img') as File | null;
+    if (imageFile && imageFile.size > 0) {
+      backendFormData.append('img', imageFile);
+    }
+    
     const response = await fetch(`${backendUrl}/api/jobs`, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
         ...authHeaders
+        // Don't set Content-Type for FormData, let browser set it with boundary
       },
-      body: JSON.stringify(body),
+      body: backendFormData,
     });
 
     console.log('🔍 [JOBS API] Backend POST response status:', response.status);

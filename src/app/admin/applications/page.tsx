@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSearchParams } from "next/navigation";
-import { apiClient } from '../../../lib/api';
+import { adminApi } from '../../../lib/backendApi';
 
 interface Application {
   id: string;
@@ -51,31 +51,14 @@ export default function AdminApplications() {
     setLoading(true);
     setError("");
     try {
-      console.log('[ADMIN APPLICATIONS] Fetching applications...');
-      const response = await fetch('/api/admin/applications', {
-        method: 'GET',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-      
-      if (!response.ok) {
-        if (response.status === 401) {
-          router.push('/admin/login');
-          return;
-        }
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || 'Failed to load applications');
-      }
-      
-      const applicationsData = await response.json();
+      console.log('[ADMIN APPLICATIONS] Fetching applications from backend...');
+      const applicationsData = await adminApi.applications.getAll();
       console.log(`[ADMIN APPLICATIONS] API response:`, applicationsData);
 
-      // Handle different response formats
+      // Handle response format: { success: true, data: { items: [...], pagination: {...} } }
       let applications = [];
-      if (applicationsData.success && applicationsData.data && Array.isArray(applicationsData.data)) {
-        applications = applicationsData.data;
+      if (applicationsData.success && applicationsData.data && applicationsData.data.items && Array.isArray(applicationsData.data.items)) {
+        applications = applicationsData.data.items;
       } else if (applicationsData.data && Array.isArray(applicationsData.data)) {
         applications = applicationsData.data;
       } else if (Array.isArray(applicationsData)) {
