@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import UnifiedApplyModal from '../../../components/UnifiedApplyModal';
+import ErrorDisplay from '../../../components/ui/ErrorDisplay';
 
 interface Hiring {
   id: string;
@@ -58,9 +59,20 @@ export default function Detailjobs() {
           },
         });
         const responseData = await res.json();
+        console.log('Detail jobs response:', responseData);
         
-        if (res.ok && responseData.success) {
-          setJob(responseData.data);
+        if (res.ok) {
+          if (responseData.success && responseData.data) {
+            setJob(responseData.data);
+          } else if (responseData.data) {
+            // Handle case where data is directly in response
+            setJob(responseData.data);
+          } else if (responseData.id || responseData.title) {
+            // Handle case where job data is directly in response
+            setJob(responseData);
+          } else {
+            setError(responseData.message || 'Định dạng dữ liệu không hợp lệ từ máy chủ');
+          }
         } else {
           setError(responseData.message || 'Không tìm thấy việc làm');
         }
@@ -87,21 +99,22 @@ export default function Detailjobs() {
 
   if (error || !job) {
     return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center text-center">
-        <div>
-          <h2 className="text-2xl font-bold text-red-600 mb-4">Không tìm thấy việc làm</h2>
-          <Link href="/" className="text-blue-600 underline hover:text-blue-800">
-            ← Quay lại trang chủ
-          </Link>
-        </div>
-      </div>
+      <ErrorDisplay
+        title="Không tìm thấy việc làm"
+        message={error || "Việc làm này có thể đã bị xóa hoặc không tồn tại."}
+        onRetry={() => window.location.reload()}
+        showRetry={true}
+        showHome={true}
+      />
     );
   }
 
   return (
     <div className="min-h-screen bg-gray-50 pb-16 pt-20">
       <header className="bg-white shadow-sm border-b mb-8 fixed top-0 left-0 right-0 z-50">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+       
+      </header>
+ <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4 mt-10">
           <Link 
             href="/" 
             className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-50 hover:text-blue-600 hover:border-blue-300 transition-all duration-200 ease-in-out"
@@ -112,8 +125,6 @@ export default function Detailjobs() {
             Quay lại trang chủ
           </Link>
         </div>
-      </header>
-
       <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
         <div className="bg-white rounded-xl shadow-md overflow-hidden">
           {/* Banner */}

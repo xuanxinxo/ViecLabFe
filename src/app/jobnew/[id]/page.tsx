@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import UnifiedApplyModal from '../../../components/UnifiedApplyModal';
+import ErrorDisplay from '../../../components/ui/ErrorDisplay';
 
 interface NewJob {
   _id: string;
@@ -68,12 +69,16 @@ export default function NewJobDetail() {
           if (responseData.success && responseData.data) {
             setJob(responseData.data);
             console.log('Job loaded successfully:', responseData.data);
-          } else if (responseData.id) {
+          } else if (responseData.data) {
+            // Handle case where data is directly in response
+            setJob(responseData.data);
+            console.log('Job loaded from data field:', responseData.data);
+          } else if (responseData.id || responseData.title) {
             // Backend might return job directly without success wrapper
             setJob(responseData);
             console.log('Job loaded directly:', responseData);
           } else {
-            const errorMsg = responseData.message || responseData.error || 'Không tìm thấy việc làm';
+            const errorMsg = responseData.message || responseData.error || 'Định dạng dữ liệu không hợp lệ từ máy chủ';
             console.error('Error response:', errorMsg);
             setError(errorMsg);
           }
@@ -106,28 +111,13 @@ export default function NewJobDetail() {
 
   if (error || !job) {
     return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center text-center">
-        <div className="max-w-md mx-auto p-6">
-          <h2 className="text-2xl font-bold text-red-600 mb-4">Không tìm thấy việc làm</h2>
-          {error && (
-            <p className="text-gray-600 mb-4 text-sm">
-              Lỗi: {error}
-            </p>
-          )}
-          <p className="text-gray-500 mb-6 text-sm">
-            ID: {params.id}
-          </p>
-          <Link
-            href="/"
-            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-50 hover:text-blue-600 hover:border-blue-300 transition-all duration-200 ease-in-out"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-            </svg>
-            Quay lại trang chủ
-          </Link>
-        </div>
-      </div>
+      <ErrorDisplay
+        title="Không tìm thấy việc làm"
+        message={error || "Việc làm này có thể đã bị xóa hoặc không tồn tại."}
+        onRetry={() => window.location.reload()}
+        showRetry={true}
+        showHome={true}
+      />
     );
   }
 

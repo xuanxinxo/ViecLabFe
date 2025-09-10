@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAdminFromRequest } from '@/lib/auth';
+import { normalizeApiResponse, createErrorResponse } from '@/lib/apiResponseNormalizer';
 
 export const dynamic = "force-dynamic";
 
@@ -49,15 +50,15 @@ export async function GET(
     const data = await response.json();
     console.log('✅ [JOBS ID API] Job retrieved successfully:', data);
     
-    return NextResponse.json(data, { status: response.status });
+    // Normalize response format to ensure consistency
+    const normalizedResponse = normalizeApiResponse(data, 'Lấy dữ liệu việc làm thành công');
+    
+    return NextResponse.json(normalizedResponse, { status: response.status });
   } catch (error: any) {
     console.error('💥 [JOBS ID API] Error:', error);
     
     return NextResponse.json(
-      { 
-        success: false,
-        message: 'Không thể tải thông tin việc làm'
-      },
+      createErrorResponse('Không thể tải thông tin việc làm'),
       { status: 500 }
     );
   }

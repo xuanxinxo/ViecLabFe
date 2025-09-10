@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { normalizeApiResponse, createErrorResponse } from '@/lib/apiResponseNormalizer';
 
 export const dynamic = "force-dynamic";
 
@@ -27,16 +28,15 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     const data = await response.json();
     console.log('Backend response data:', data);
     
-    return NextResponse.json(data);
+    // Normalize response format to ensure consistency
+    const normalizedResponse = normalizeApiResponse(data, 'Lấy dữ liệu việc làm mới thành công');
+    
+    return NextResponse.json(normalizedResponse);
   } catch (error: any) {
     console.error('💥 [NEWJOBS API] Error:', error);
     
     return NextResponse.json(
-      { 
-        success: false,
-        data: null,
-        message: 'Không thể tải dữ liệu từ server'
-      },
+      createErrorResponse('Không thể tải dữ liệu từ server'),
       { status: 500 }
     );
   }

@@ -105,7 +105,8 @@ export default function CarouselJob() {
       console.log('Fetching jobs directly from backend...');
       
       // Fetch via local API proxy to avoid CORS issues
-      const response = await fetch('/api/jobs', {
+      // Request 12 items explicitly to ensure we have enough for 2 pages (6 x 2)
+      const response = await fetch('/api/jobs?limit=12&pageSize=12&per_page=12', {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',

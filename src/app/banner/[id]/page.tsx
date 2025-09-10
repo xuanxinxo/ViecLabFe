@@ -215,7 +215,12 @@ export default function BannerDetail() {
       </main>
 
       {/* Modal ứng tuyển */}
-      <ApplyModal open={showApplyModal} onClose={() => setShowApplyModal(false)} job={selectedJob} />
+      <UnifiedApplyModal
+        open={showApplyModal}
+        onClose={() => setShowApplyModal(false)}
+        job={selectedJob}
+        type="job"
+      />
     </div>
   );
 }
