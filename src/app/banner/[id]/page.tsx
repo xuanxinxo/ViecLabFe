@@ -4,7 +4,9 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import ApplyModal from '../../../components/ApplyModal';
+// import ApplyModal from '../../../components/ApplyModal';
+import UnifiedApplyModal from '../../../components/UnifiedApplyModal';
+
 
 interface Job {
   id: number | string;

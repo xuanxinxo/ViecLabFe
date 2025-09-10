@@ -2,7 +2,8 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { adminApi } from '../../../lib/backendApi';
+// import { adminApi } from '../../../lib/backendApi';
+import { adminApi } from '@/lib/api';
 
 // Toast notification function
 const showToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {

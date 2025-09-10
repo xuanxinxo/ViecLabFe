@@ -3,7 +3,8 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { adminApi } from '../../../lib/backendApi';
+// import { adminApi } from '../../../lib/backendApi';
+import { adminApi } from '@/lib/api';
 
 export default function CreateNews() {
   const [formData, setFormData] = useState({
