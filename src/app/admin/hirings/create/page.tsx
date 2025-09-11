@@ -1,9 +1,38 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { useRouter, useParams } from 'next/navigation';
+import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { adminApi } from '@/lib/api';
 
-interface JobFormData {
+// Toast notification function
+const showToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
+  // Create toast element
+  const toast = document.createElement('div');
+  toast.className = `fixed top-4 right-4 z-50 px-6 py-3 rounded-lg shadow-lg text-white font-medium transition-all duration-300 transform translate-x-full ${
+    type === 'success' ? 'bg-green-500' : 
+    type === 'error' ? 'bg-red-500' : 
+    'bg-blue-500'
+  }`;
+  toast.textContent = message;
+  
+  // Add to DOM
+  document.body.appendChild(toast);
+  
+  // Animate in
+  setTimeout(() => {
+    toast.classList.remove('translate-x-full');
+  }, 100);
+  
+  // Remove after 3 seconds
+  setTimeout(() => {
+    toast.classList.add('translate-x-full');
+    setTimeout(() => {
+      document.body.removeChild(toast);
+    }, 300);
+  }, 3000);
+};
+
+interface HiringFormData {
   title: string;
   company: string;
   location: string;
@@ -13,15 +42,12 @@ interface JobFormData {
   requirements: string[];
   benefits: string[];
   deadline: string;
-  img?: string;
 }
 
-export default function EditJob() {
+export default function CreateHiring() {
   const router = useRouter();
-  const params = useParams();
-  const id = params.id as string;
 
-  const [formData, setFormData] = useState<JobFormData>({
+  const [formData, setFormData] = useState<HiringFormData>({
     title: '',
     company: '',
     location: '',
@@ -31,78 +57,11 @@ export default function EditJob() {
     requirements: [''],
     benefits: [''],
     deadline: '',
-    img: '',
   });
 
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>('');
   const [saving, setSaving] = useState(false);
-
-  useEffect(() => {
-    // No authentication needed for public API
-
-    console.log('🔍 [EDIT JOB] Loading job with ID:', id);
-
-    fetch(`/api/jobs/${id}`)
-      .then(async (res) => {
-        console.log('📥 [EDIT JOB] Response status:', res.status);
-        
-        if (!res.ok) {
-          const errorText = await res.text();
-          console.error('❌ [EDIT JOB] Load job error:', {
-            status: res.status,
-            statusText: res.statusText,
-            error: errorText
-          });
-          
-          if (res.status === 401) {
-            setError('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
-            router.push('/admin/login');
-            return;
-          } else if (res.status === 404) {
-            setError(`Không tìm thấy việc làm với ID: ${id}. Vui lòng kiểm tra lại ID hoặc thử tạo job mới.`);
-            return;
-          } else {
-            throw new Error(`HTTP ${res.status}: ${res.statusText}`);
-          }
-        }
-        
-        return res.json();
-      })
-      .then((data) => {
-        console.log('📊 [EDIT JOB] Response data:', data);
-        
-        if (data && data.success) {
-          const j = data.data;
-          const deadlineValue = j?.deadline
-            ? new Date(j.deadline).toISOString().slice(0, 10)
-            : '';
-
-          setFormData({
-            title: j.title || '',
-            company: j.company || '',
-            location: j.location || '',
-            type: j.type || 'Full-time',
-            salary: j.salary || '',
-            description: j.description || '',
-            requirements: Array.isArray(j.requirements) && j.requirements.length ? j.requirements : [''],
-            benefits: Array.isArray(j.benefits) && j.benefits.length ? j.benefits : [''],
-            deadline: deadlineValue,
-            img: j.img || '',
-          });
-          
-          console.log('✅ [EDIT JOB] Job data loaded successfully:', j);
-        } else {
-          setError(data?.message || 'Không thể tải thông tin việc làm');
-        }
-      })
-      .catch((err) => {
-        console.error('💥 [EDIT JOB] Load job error:', err);
-        setError('Lỗi kết nối khi tải thông tin việc làm');
-      })
-      .finally(() => setLoading(false));
-  }, [id, router]);
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
@@ -159,167 +118,110 @@ export default function EditJob() {
     }
 
     try {
-      // Check if we have an image to upload
-      const hasImageUpload = selectedImage !== null;
+      const form = new FormData();
+
+      // Basic fields
+      form.append('title', formData.title.trim());
+      form.append('company', formData.company.trim());
+      form.append('location', formData.location.trim());
+      form.append('type', formData.type);
+      form.append('salary', formData.salary.trim());
+      form.append('description', formData.description.trim());
       
-      let requestBody: any;
-      let headers: Record<string, string> = {};
-      
-      if (hasImageUpload) {
-        // Use FormData for file upload
-        console.log('🔍 [EDIT JOB] Using FormData for image upload');
-        
-        const form = new FormData();
-        
-        // Basic fields
-        form.append('title', formData.title.trim());
-        form.append('company', formData.company.trim());
-        form.append('location', formData.location.trim());
-        form.append('type', formData.type);
-        form.append('salary', formData.salary.trim());
-        form.append('description', formData.description.trim());
-        
-        // Handle deadline
-        if (formData.deadline) {
-          form.append('deadline', formData.deadline);
-        }
-
-        // Handle requirements array
-        const validRequirements = formData.requirements.filter((r) => r.trim());
-        validRequirements.forEach((req) => form.append('requirements', req.trim()));
-        form.append('requirementsPresent', '1');
-
-        // Handle benefits array
-        const validBenefits = formData.benefits.filter((b) => b.trim());
-        validBenefits.forEach((ben) => form.append('benefits', ben.trim()));
-        form.append('benefitsPresent', '1');
-
-        // Handle image upload
-        if (selectedImage) {
-          // Validate image file
-          if (selectedImage.size > 5 * 1024 * 1024) { // 5MB limit
-            setError('Kích thước file ảnh không được vượt quá 5MB');
-            setSaving(false);
-            return;
-          }
-          if (!selectedImage.type.startsWith('image/')) {
-            setError('File phải là định dạng ảnh');
-            setSaving(false);
-            return;
-          }
-          form.append('img', selectedImage);
-          console.log('🔍 [EDIT JOB] Image file added to FormData:', {
-            name: selectedImage.name,
-            size: selectedImage.size,
-            type: selectedImage.type
-          });
-        }
-        
-        requestBody = form;
-        // Don't set Content-Type for FormData, let fetch set it automatically
-      } else {
-        // Use JSON for text-only updates
-        console.log('🔍 [EDIT JOB] Using JSON for text-only update');
-        
-        requestBody = JSON.stringify({
-          title: formData.title.trim(),
-          company: formData.company.trim(),
-          location: formData.location.trim(),
-          type: formData.type,
-          salary: formData.salary.trim(),
-          description: formData.description.trim(),
-          requirements: formData.requirements.filter(r => r.trim()),
-          benefits: formData.benefits.filter(b => b.trim()),
-          deadline: formData.deadline,
-          img: formData.img // Keep existing image
-        });
-        
-        headers['Content-Type'] = 'application/json';
+      // Handle deadline
+      if (formData.deadline) {
+        form.append('deadline', formData.deadline);
       }
 
-      console.log('🔍 [EDIT JOB] Sending request:', {
-        method: 'PUT',
-        url: `/api/jobs/${id}`,
-        hasFormData: hasImageUpload,
-        headers: Object.keys(headers)
-      });
+      // Handle requirements array
+      const validRequirements = formData.requirements.filter((r) => r.trim());
+      validRequirements.forEach((req) => form.append('requirements', req.trim()));
 
-      const res = await fetch(`/api/jobs/${id}`, {
-        method: 'PUT',
-        headers,
-        body: requestBody,
-      });
+      // Handle benefits array
+      const validBenefits = formData.benefits.filter((b) => b.trim());
+      validBenefits.forEach((ben) => form.append('benefits', ben.trim()));
 
-      if (!res.ok) {
-        const errorText = await res.text();
-        console.error('❌ [EDIT JOB] HTTP Error:', {
-          status: res.status,
-          statusText: res.statusText,
-          error: errorText
-        });
-        
-        if (res.status === 401) {
-          setError('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
-          router.push('/admin/login');
-          return;
-        } else if (res.status === 404) {
-          setError('Không tìm thấy việc làm để cập nhật.');
-          return;
-        } else {
-          setError(`Lỗi server: ${res.status} - ${res.statusText}`);
+      // Handle image upload
+      if (selectedImage) {
+        // Validate image file
+        if (selectedImage.size > 5 * 1024 * 1024) { // 5MB limit
+          setError('Kích thước file ảnh không được vượt quá 5MB');
+          setSaving(false);
           return;
         }
+        if (!selectedImage.type.startsWith('image/')) {
+          setError('File phải là định dạng ảnh');
+          setSaving(false);
+          return;
+        }
+        form.append('img', selectedImage);
       }
 
-      const data = await res.json();
+      // Send FormData to hirings API
+      const response = await adminApi.hirings.create(form);
+      console.log('🔍 [CREATE HIRING] Full response:', response);
+      console.log('🔍 [CREATE HIRING] Response data:', response.data);
+      console.log('🔍 [CREATE HIRING] Response status:', response.status);
+      
+      const data = response.data;
 
-      if (data.success) {
-        console.log('✅ [EDIT JOB] Update successful:', data);
-        alert('Cập nhật việc làm thành công!');
-        router.push('/admin/jobs');
+      if (data && data.success) {
+        console.log('✅ [CREATE HIRING] Create successful:', data);
+        showToast('🎉 Tạo việc làm thành công!', 'success');
+        
+        // Reset form
+        setFormData({
+          title: '',
+          company: '',
+          location: '',
+          type: 'Full-time',
+          salary: '',
+          description: '',
+          requirements: [''],
+          benefits: [''],
+          deadline: '',
+        });
+        setSelectedImage(null);
+        setError('');
+        
+        // Redirect after a short delay to show the success message
+        setTimeout(() => {
+          router.push('/admin/hirings');
+        }, 1500);
       } else {
-        console.error('❌ [EDIT JOB] Update failed:', data);
-        const errorMessage = data.message || 'Cập nhật thất bại';
-        const errorDetails = data.details ? `\n\nChi tiết: ${data.details}` : '';
-        setError(`${errorMessage}${errorDetails}`);
+        console.error('❌ [CREATE HIRING] Create failed:', data);
+        setError(data.message || 'Tạo việc làm thất bại');
+        showToast('❌ Tạo việc làm thất bại!', 'error');
       }
     } catch (err) {
-      console.error('💥 [EDIT JOB] Unexpected error:', err);
+      console.error('💥 [CREATE HIRING] Unexpected error:', err);
+      
+      let errorMessage = 'Có lỗi xảy ra khi tạo việc làm.';
       
       if (err instanceof Error) {
         if (err.message.includes('fetch')) {
-          setError('Lỗi kết nối mạng. Vui lòng kiểm tra kết nối internet.');
+          errorMessage = 'Lỗi kết nối mạng. Vui lòng kiểm tra kết nối internet.';
         } else if (err.message.includes('JSON')) {
-          setError('Lỗi xử lý dữ liệu từ server.');
+          errorMessage = 'Lỗi xử lý dữ liệu từ server.';
         } else {
-          setError(`Lỗi không xác định: ${err.message}`);
+          errorMessage = `Lỗi không xác định: ${err.message}`;
         }
-      } else {
-        setError('Có lỗi xảy ra khi cập nhật việc làm.');
       }
+      
+      setError(errorMessage);
+      showToast('❌ Có lỗi xảy ra khi tạo việc làm!', 'error');
     } finally {
       setSaving(false);
     }
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <div className="text-xl text-gray-600">Đang tải thông tin việc làm...</div>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-gray-100 py-8 mt-20">
       <div className="max-w-3xl mx-auto bg-white p-6 rounded-lg shadow">
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-bold">Sửa việc làm</h1>
+          <h1 className="text-2xl font-bold">Tạo việc làm mới (Hirings)</h1>
           <button
-            onClick={() => router.push('/admin/jobs')}
+            onClick={() => router.push('/admin/hirings')}
             className="px-4 py-2 text-gray-600 hover:text-gray-800"
           >
             ← Quay lại
@@ -334,48 +236,15 @@ export default function EditJob() {
                   <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
                 </svg>
               </div>
-              <div className="ml-3 flex-1">
+              <div className="ml-3">
                 <h3 className="text-sm font-medium text-red-800">Lỗi</h3>
                 <div className="mt-2 text-sm text-red-700">
                   <p>{error}</p>
-                </div>
-                <div className="mt-3 flex space-x-3">
-                  <button
-                    onClick={() => router.push('/admin/jobs')}
-                    className="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 transition-colors"
-                  >
-                    Quay lại danh sách
-                  </button>
-                  <button
-                    onClick={() => router.push('/admin/jobs/create')}
-                    className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
-                  >
-                    Tạo job mới
-                  </button>
                 </div>
               </div>
             </div>
           </div>
         )}
-        
-        {/* Job Info Summary */}
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-          <h3 className="text-lg font-medium text-blue-800 mb-2">Thông tin việc làm hiện tại</h3>
-          <div className="grid grid-cols-2 gap-4 text-sm">
-            <div>
-              <span className="font-medium text-gray-700">Tiêu đề:</span> {formData.title || 'Chưa có'}
-            </div>
-            <div>
-              <span className="font-medium text-gray-700">Công ty:</span> {formData.company || 'Chưa có'}
-            </div>
-            <div>
-              <span className="font-medium text-gray-700">Địa điểm:</span> {formData.location || 'Chưa có'}
-            </div>
-            <div>
-              <span className="font-medium text-gray-700">Loại:</span> {formData.type || 'Chưa có'}
-            </div>
-          </div>
-        </div>
         
         <form onSubmit={handleSubmit}>
           <div className="grid grid-cols-1 gap-4">
@@ -451,7 +320,7 @@ export default function EditJob() {
               />
             </div>
 
-            {/* Image preview and upload */}
+            {/* Image upload */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Hình ảnh</label>
               <div className="mb-2">
@@ -462,16 +331,7 @@ export default function EditJob() {
                       alt="Selected Preview"
                       className="w-40 h-32 object-cover rounded border"
                     />
-                    <p className="text-xs text-gray-500 mt-1">Ảnh mới đã chọn</p>
-                  </div>
-                ) : formData.img ? (
-                  <div className="relative">
-                    <img
-                      src={formData.img}
-                      alt="Current Image"
-                      className="w-40 h-32 object-cover rounded border"
-                    />
-                    <p className="text-xs text-gray-500 mt-1">Ảnh hiện tại</p>
+                    <p className="text-xs text-gray-500 mt-1">Ảnh đã chọn</p>
                   </div>
                 ) : (
                   <div className="w-40 h-32 border-2 border-dashed border-gray-300 rounded flex items-center justify-center">
@@ -570,7 +430,7 @@ export default function EditJob() {
           <div className="mt-6 flex justify-end space-x-4">
             <button
               type="button"
-              onClick={() => router.push('/admin/jobs')}
+              onClick={() => router.push('/admin/hirings')}
               className="px-4 py-2 border rounded"
             >
               Hủy
@@ -580,7 +440,7 @@ export default function EditJob() {
               disabled={saving}
               className="px-4 py-2 bg-green-600 text-white rounded disabled:opacity-50"
             >
-              {saving ? 'Đang cập nhật...' : 'Cập nhậtt'}
+              {saving ? 'Đang tạo...' : 'Tạo việc làm'}
             </button>
           </div>
         </form>

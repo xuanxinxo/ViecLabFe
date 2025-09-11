@@ -28,10 +28,8 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     const data = await response.json();
     console.log('Backend response data:', data);
     
-    // Normalize response format to ensure consistency
-    const normalizedResponse = normalizeApiResponse(data, 'Lấy dữ liệu việc làm mới thành công');
-    
-    return NextResponse.json(normalizedResponse);
+    // For single item, return the data directly without normalization
+    return NextResponse.json(data);
   } catch (error: any) {
     console.error('💥 [NEWJOBS API] Error:', error);
     

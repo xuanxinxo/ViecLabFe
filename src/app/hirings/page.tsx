@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { MapPin, Clock } from "lucide-react";
+import { apiLoaders } from "../../lib/apiDataLoader";
 
 interface JobNew {
   id: string;
@@ -34,25 +35,14 @@ export default function HiringsJobNewList() {
       setError("");
       console.log('🔍 [HIRINGS] Fetching hirings data...');
 
-      const res = await fetch("/api/hirings?status=approved");
-      console.log('📡 [HIRINGS] Response status:', res.status);
+      const result = await apiLoaders.hirings.load({ status: 'approved' });
 
-      if (!res.ok) {
-        throw new Error(`HTTP error! status: ${res.status}`);
-      }
-
-      const json = await res.json();
-      console.log('📊 [HIRINGS] Response data:', json);
-
-      if (json.success && Array.isArray(json.data)) {
-        console.log(`✅ [HIRINGS] Loaded ${json.data.length} hirings`);
-        setJobs(json.data);
-      } else if (Array.isArray(json)) {
-        console.log(`✅ [HIRINGS] Loaded ${json.length} hirings (direct array)`);
-        setJobs(json);
+      if (result.success) {
+        console.log(`✅ [HIRINGS] Loaded ${result.data.length} hirings successfully`);
+        setJobs(result.data);
       } else {
-        console.error('❌ [HIRINGS] Unexpected response format:', json);
-        setError("Định dạng dữ liệu không hợp lệ từ máy chủ");
+        console.error('❌ [HIRINGS] Failed to load hirings:', result.error);
+        setError(result.error || "Định dạng dữ liệu không hợp lệ từ máy chủ");
       }
     } catch (err) {
       console.error('💥 [HIRINGS] Error loading hirings:', err);

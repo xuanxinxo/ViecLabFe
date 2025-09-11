@@ -100,23 +100,34 @@ export async function PUT(
 
 // GET: Lấy chi tiết tin tức theo ID
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    // Mock data - in real app, this would fetch from database
-    const mockNews = {
-      _id: params.id,
-      title: 'Sample News Title',
-      summary: 'This is a sample news summary for testing purposes.',
-      date: '2024-01-01',
-      image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=500&h=300&fit=crop',
-      link: 'https://example.com/news/sample',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
+    console.log('🔍 [NEWS ID API] GET request for ID:', params.id);
+    
+    // Proxy to backend
+    const backendUrl = 'https://vieclabbe.onrender.com';
+    const backendApiUrl = `${backendUrl}/api/news/${params.id}`;
+    
+    console.log(`Calling backend API: ${backendApiUrl}`);
 
-    return NextResponse.json({ success: true, news: mockNews });
+    const response = await fetch(backendApiUrl, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Backend API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    console.log('Backend response data:', data);
+    
+    // For single item, return the data directly
+    return NextResponse.json(data);
 
   } catch (error) {
     console.error('Error fetching news:', error);

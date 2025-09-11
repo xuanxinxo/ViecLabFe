@@ -1,5 +1,6 @@
 import Image from 'next/image';
 import Link from 'next/link';
+import { apiLoaders } from '../../lib/apiDataLoader';
 
 interface NewsItem {
   id: string;
@@ -15,47 +16,24 @@ export const revalidate = 60;
 async function getNews(): Promise<NewsItem[]> {
   try {
     console.log('[NEWS] Fetching news data from backend...');
-    const response = await fetch('https://vieclabbe.onrender.com/api/news', {
-      cache: 'no-store', // Ensure fresh data on each request
-      next: { revalidate: 60 } // Revalidate every 60 seconds
-    });
-
-    if (!response.ok) {
-      throw new Error(`API request failed with status ${response.status}`);
-    }
-
-    const data = await response.json();
-    console.log('[NEWS] Backend response:', data);
     
-    // Handle backend response format: { success: true, data: { items: [...], pagination: {...} } }
-    let newsItems: NewsItem[] = [];
+    const result = await apiLoaders.news.load({});
     
-    if (data.success && data.data && data.data.items && Array.isArray(data.data.items)) {
-      // Backend format: { success: true, data: { items: [...], pagination: {...} } }
-      newsItems = data.data.items;
-      console.log(`[NEWS] Using data.data.items: ${newsItems.length} items`);
-    } else if (data.data && Array.isArray(data.data)) {
-      // Format: { data: [...] }
-      newsItems = data.data;
-      console.log(`[NEWS] Using data.data: ${newsItems.length} items`);
-    } else if (Array.isArray(data)) {
-      // Format: [...]
-      newsItems = data;
-      console.log(`[NEWS] Using direct array: ${newsItems.length} items`);
+    if (result.success) {
+      console.log(`[NEWS] Fetched ${result.data.length} news items successfully`);
+      
+      // Transform and validate news items
+      return result.data.map((item: any) => ({
+        id: item._id?.toString() || item.id?.toString() || Math.random().toString(36).substring(2, 9),
+        title: item.title || item.headline || 'Không có tiêu đề',
+        content: item.content || item.summary || item.description || '',
+        image: item.imageUrl || item.image || item.thumbnail || '/default-news.jpg',
+        date: item.date || item.publishedAt || item.createdAt || new Date().toISOString(),
+      })).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()); // Sort by date, newest first
     } else {
-      console.warn('[NEWS] No valid news data found in response:', data);
+      console.error('[NEWS] Failed to load news:', result.error);
+      return [];
     }
-    
-    console.log(`[NEWS] Fetched ${newsItems.length} news items`);
-    
-    // Transform and validate news items
-    return newsItems.map((item: any) => ({
-      id: item._id?.toString() || item.id?.toString() || Math.random().toString(36).substring(2, 9),
-      title: item.title || item.headline || 'Không có tiêu đề',
-      content: item.content || item.summary || item.description || '',
-      image: item.imageUrl || item.image || item.thumbnail || '/default-news.jpg',
-      date: item.date || item.publishedAt || item.createdAt || new Date().toISOString(),
-    })).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()); // Sort by date, newest first
     
   } catch (error) {
     console.error('[NEWS] Error fetching news:', error);

@@ -295,7 +295,7 @@ function EditNewsModal({
           console.log(key, value);
         }
 
-        response = await fetch(`/api/admin/news/${encodeURIComponent(newsId)}`, {
+        response = await fetch(`/api/news/${encodeURIComponent(newsId)}`, {
           method: 'PUT',
           credentials: 'include',
           body: formDataToSend,
@@ -304,7 +304,7 @@ function EditNewsModal({
       } else {
         // If no new image, just update text
         console.log('Sending JSON data...');
-        response = await fetch(`/api/admin/news/${encodeURIComponent(newsId)}`, {
+        response = await fetch(`/api/news/${encodeURIComponent(newsId)}`, {
           method: 'PUT',
           credentials: 'include',
           headers: { 'Content-Type': 'application/json' },

@@ -58,8 +58,8 @@ export default function AdminDashboard() {
         
         console.log("Loading dashboard stats...");
         
-        // Fetch stats from admin dashboard API
-        const response = await fetch('/api/admin/dashboard', {
+        // Fetch stats from public APIs instead of admin dashboard
+        const response = await fetch('/api/jobs', {
           method: 'GET',
           credentials: 'include',
           headers: {
@@ -69,21 +69,9 @@ export default function AdminDashboard() {
 
         if (response.ok) {
           const data = await response.json();
-          if (data.success && data.data) {
-            const dashboardData = data.data;
-            setStats({
-              totalJobs: dashboardData.overview?.totalJobs || 0,
-              totalFreelancers: dashboardData.overview?.totalApplications || 0,
-              totalReviews: 0, // Reviews endpoint not implemented yet
-              activeJobs: dashboardData.jobs?.active || 0,
-              pendingJobs: dashboardData.jobs?.pending || 0,
-              totalApplications: dashboardData.overview?.totalApplications || 0,
-              totalNews: dashboardData.overview?.totalNews || 0,
-            });
-            console.log("Dashboard stats loaded successfully:", dashboardData);
-          } else {
-            throw new Error(data.message || 'Failed to load dashboard data');
-          }
+          console.log("Jobs data loaded successfully:", data);
+          // Skip admin dashboard logic, go directly to fallback method
+          throw new Error('Using fallback method with public APIs');
         } else {
           throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
@@ -228,18 +216,14 @@ export default function AdminDashboard() {
 
   const handleLogout = async () => {
     try {
-      const response = await fetch("/api/admin/logout", {
-        method: "POST",
-        credentials: "include", //phải có để gửi cookie
-      });
-      const data = await response.json();
-      if (data.success) {
-        router.push("/admin/login");
-      } else {
-        console.error("Logout failed:", data.message);
-      }
+      // Clear admin token from cookies
+      document.cookie = 'admin-token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+      // Redirect to login
+      router.push("/admin/login");
     } catch (error) {
       console.error("Logout failed:", error);
+      // Still redirect even if logout fails
+      router.push("/admin/login");
     }
   };
 

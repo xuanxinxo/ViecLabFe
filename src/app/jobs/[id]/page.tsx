@@ -4,21 +4,24 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import UnifiedApplyModal from '../../../components/UnifiedApplyModal';
+import { apiLoaders } from '../../../lib/apiDataLoader';
 
 interface Job {
-  id: number | string;
+  id?: number | string;
+  _id?: string;
   title: string;
   company: string;
   location: string;
   type: string;
   salary: string;
   description: string;
-  requirements: string[];
-  benefits: string[];
+  requirements?: string[];
+  benefits?: string[];
   postedDate: string;
-  deadline: string;
-  status: string;
+  deadline?: string;
+  status?: string;
   img?: string;
+  createdAt?: string;
 }
 
 export default function JobDetail() {
@@ -49,34 +52,14 @@ export default function JobDetail() {
         setLoading(true);
         console.log('Loading job with ID:', params.id);
         
-        const res = await fetch(`/api/jobs/${params.id}`, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-          },
-        });
+        const result = await apiLoaders.jobs.loadItem(params.id as string);
         
-        console.log('Response status:', res.status);
-        const responseData = await res.json();
-        console.log('Response data:', responseData);
-        
-        if (res.ok) {
-          if (responseData.success && responseData.data) {
-            setJob(responseData.data);
-            console.log('Job loaded successfully:', responseData.data);
-          } else if (responseData.id) {
-            // Backend might return job directly without success wrapper
-            setJob(responseData);
-            console.log('Job loaded directly:', responseData);
-          } else {
-            const errorMsg = responseData.message || responseData.error || 'Không tìm thấy việc làm';
-            console.error('Error response:', errorMsg);
-            setError(errorMsg);
-          }
+        if (result.success && result.data) {
+          setJob(result.data);
+          console.log('Job loaded successfully:', result.data);
         } else {
-          const errorMsg = responseData.message || responseData.error || 'Không tìm thấy việc làm';
-          console.error('Error response:', errorMsg);
+          const errorMsg = result.error || 'Không tìm thấy việc làm';
+          console.error('Error loading job:', errorMsg);
           setError(errorMsg);
         }
       } catch (err) {
@@ -159,7 +142,7 @@ export default function JobDetail() {
                 <div className="mt-3 text-sm text-blue-100">
                   Ngày đăng:{' '}
                   <span className="font-semibold">
-                    {new Date(job.postedDate).toLocaleDateString('vi-VN')}
+                    {new Date(job.postedDate || job.createdAt || new Date()).toLocaleDateString('vi-VN')}
                   </span>
                 </div>
               </div>
@@ -218,9 +201,11 @@ export default function JobDetail() {
                 >
                   Ứng tuyển
                 </button>
-                <p className="text-sm text-gray-600 text-center mt-2">
-                  Hạn nộp: {new Date(job.deadline).toLocaleDateString('vi-VN')}
-                </p>
+                {job.deadline && (
+                  <p className="text-sm text-gray-600 text-center mt-2">
+                    Hạn nộp: {new Date(job.deadline).toLocaleDateString('vi-VN')}
+                  </p>
+                )}
               </div>
 
               <div className="bg-gray-100 rounded-lg p-5">
@@ -240,11 +225,13 @@ export default function JobDetail() {
                   </p>
                   <p>
                     <strong>Ngày đăng:</strong>{' '}
-                    {new Date(job.postedDate).toLocaleDateString('vi-VN')}
+                    {new Date(job.postedDate || job.createdAt || new Date()).toLocaleDateString('vi-VN')}
                   </p>
-                  <p>
-                    <strong>Hạn nộp:</strong> {new Date(job.deadline).toLocaleDateString('vi-VN')}
-                  </p>
+                  {job.deadline && (
+                    <p>
+                      <strong>Hạn nộp:</strong> {new Date(job.deadline).toLocaleDateString('vi-VN')}
+                    </p>
+                  )}
                 </div>
               </div>
 

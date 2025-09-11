@@ -6,20 +6,24 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import UnifiedApplyModal from '../../../components/UnifiedApplyModal';
 import ErrorDisplay from '../../../components/ui/ErrorDisplay';
+import { apiLoaders } from '../../../lib/apiDataLoader';
 
 interface Hiring {
-  id: string;
+  id?: string;
+  _id?: string;
   title: string;
   company: string;
   location: string;
   type: string;
   salary: string;
   description: string;
-  requirements: string[];
-  benefits: string[];
-  postedDate: string;
-  deadline: string;
+  requirements?: string[];
+  benefits?: string[];
+  postedDate?: string;
+  createdAt?: string;
+  deadline?: string;
   img?: string;
+  status?: string;
 }
 
 export default function Detailjobs() {
@@ -51,34 +55,30 @@ export default function Detailjobs() {
     async function loadJob() {
       try {
         setLoading(true);
-        const res = await fetch(`/api/hirings/${params.id}`, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-          },
-        });
-        const responseData = await res.json();
-        console.log('Detail jobs response:', responseData);
+        setError('');
+        console.log('Loading hiring with ID:', params.id);
         
-        if (res.ok) {
-          if (responseData.success && responseData.data) {
-            setJob(responseData.data);
-          } else if (responseData.data) {
-            // Handle case where data is directly in response
-            setJob(responseData.data);
-          } else if (responseData.id || responseData.title) {
-            // Handle case where job data is directly in response
-            setJob(responseData);
-          } else {
-            setError(responseData.message || 'Định dạng dữ liệu không hợp lệ từ máy chủ');
-          }
-        } else {
-          setError(responseData.message || 'Không tìm thấy việc làm');
+        // Try hirings API first
+        let result = await apiLoaders.hirings.loadItem(params.id as string);
+        
+        // If hirings API fails, try jobs API as fallback
+        if (!result.success && !result.data) {
+          console.log('Hirings API failed, trying jobs API as fallback...');
+          result = await apiLoaders.jobs.loadItem(params.id as string);
         }
-      } catch (err) {
+        
+        if (result.success && result.data) {
+          setJob(result.data);
+          console.log('Job loaded successfully:', result.data);
+        } else {
+          const errorMsg = result.error || 'Không tìm thấy việc làm';
+          console.error('Error loading job:', errorMsg);
+          setError(errorMsg);
+        }
+      } catch (err: any) {
         console.error('Lỗi khi tải công việc:', err);
-        setError('Có lỗi xảy ra khi tải dữ liệu');
+        const errorMessage = err?.message || 'Có lỗi xảy ra khi tải dữ liệu';
+        setError(errorMessage);
       } finally {
         setLoading(false);
       }
@@ -112,19 +112,19 @@ export default function Detailjobs() {
   return (
     <div className="min-h-screen bg-gray-50 pb-16 pt-20">
       <header className="bg-white shadow-sm border-b mb-8 fixed top-0 left-0 right-0 z-50">
-       
+
       </header>
- <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4 mt-10">
-          <Link 
-            href="/" 
-            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-50 hover:text-blue-600 hover:border-blue-300 transition-all duration-200 ease-in-out"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-            </svg>
-            Quay lại trang chủ
-          </Link>
-        </div>
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4 mt-10">
+        <Link
+          href="/"
+          className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-50 hover:text-blue-600 hover:border-blue-300 transition-all duration-200 ease-in-out"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+          </svg>
+          Quay lại trang chủ
+        </Link>
+      </div>
       <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
         <div className="bg-white rounded-xl shadow-md overflow-hidden">
           {/* Banner */}
@@ -141,7 +141,7 @@ export default function Detailjobs() {
                 <div className="mt-3 text-sm text-blue-100">
                   Ngày đăng:{' '}
                   <span className="font-semibold">
-                    {new Date(job.postedDate).toLocaleDateString('vi-VN')}
+                    {new Date(job.postedDate || job.createdAt || new Date()).toLocaleDateString('vi-VN')}
                   </span>
                 </div>
               </div>
@@ -200,9 +200,11 @@ export default function Detailjobs() {
                 >
                   Ứng tuyển
                 </button>
-                <p className="text-sm text-gray-600 text-center mt-2">
-                  Hạn nộp: {new Date(job.deadline).toLocaleDateString('vi-VN')}
-                </p>
+                {job.deadline && (
+                  <p className="text-sm text-gray-600 text-center mt-2">
+                    Hạn nộp: {new Date(job.deadline).toLocaleDateString('vi-VN')}
+                  </p>
+                )}
               </div>
 
               <div className="bg-gray-100 rounded-lg p-5">
@@ -222,11 +224,13 @@ export default function Detailjobs() {
                   </p>
                   <p>
                     <strong>Ngày đăng:</strong>{' '}
-                    {new Date(job.postedDate).toLocaleDateString('vi-VN')}
+                    {new Date(job.postedDate || job.createdAt || new Date()).toLocaleDateString('vi-VN')}
                   </p>
-                  <p>
-                    <strong>Hạn nộp:</strong> {new Date(job.deadline).toLocaleDateString('vi-VN')}
-                  </p>
+                  {job.deadline && (
+                    <p>
+                      <strong>Hạn nộp:</strong> {new Date(job.deadline).toLocaleDateString('vi-VN')}
+                    </p>
+                  )}
                 </div>
               </div>
 

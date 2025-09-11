@@ -5,21 +5,24 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import UnifiedApplyModal from '../../../components/UnifiedApplyModal';
 import ErrorDisplay from '../../../components/ui/ErrorDisplay';
+import { apiLoaders } from '../../../lib/apiDataLoader';
 
 interface NewJob {
-  _id: string;
+  _id?: string;
+  id?: string;
   title: string;
   company: string;
   location: string;
   type: string;
   salary: string;
   description: string;
-  requirements: string[];
-  benefits: string[];
-  postedDate: string;
+  requirements?: string[];
+  benefits?: string[];
+  postedDate?: string;
+  createdAt?: string;
   deadline?: string;
   img?: string;
-  status: string;
+  status?: string;
 }
 
 export default function NewJobDetail() {
@@ -51,41 +54,16 @@ export default function NewJobDetail() {
     async function loadJob() {
       try {
         setLoading(true);
-        console.log('Loading job with ID:', params.id);
+        console.log('Loading newjob with ID:', params.id);
 
-        const res = await fetch(`/api/newjobs/${params.id}`, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-          },
-        });
+        const result = await apiLoaders.newjobs.loadItem(params.id as string);
 
-        console.log('Response status:', res.status);
-        const responseData = await res.json();
-        console.log('Response data:', responseData);
-
-        if (res.ok) {
-          if (responseData.success && responseData.data) {
-            setJob(responseData.data);
-            console.log('Job loaded successfully:', responseData.data);
-          } else if (responseData.data) {
-            // Handle case where data is directly in response
-            setJob(responseData.data);
-            console.log('Job loaded from data field:', responseData.data);
-          } else if (responseData.id || responseData.title) {
-            // Backend might return job directly without success wrapper
-            setJob(responseData);
-            console.log('Job loaded directly:', responseData);
-          } else {
-            const errorMsg = responseData.message || responseData.error || 'Định dạng dữ liệu không hợp lệ từ máy chủ';
-            console.error('Error response:', errorMsg);
-            setError(errorMsg);
-          }
+        if (result.success && result.data) {
+          setJob(result.data);
+          console.log('NewJob loaded successfully:', result.data);
         } else {
-          const errorMsg = responseData.message || responseData.error || 'Không tìm thấy việc làm';
-          console.error('Error response:', errorMsg);
-          console.error('Full response data:', responseData);
+          const errorMsg = result.error || 'Không tìm thấy việc làm';
+          console.error('Error loading newjob:', errorMsg);
           setError(`${errorMsg} (ID: ${params.id})`);
         }
       } catch (err) {
@@ -153,7 +131,7 @@ export default function NewJobDetail() {
                 <div className="mt-3 text-sm text-blue-100">
                   Ngày đăng:{' '}
                   <span className="font-semibold">
-                    {new Date(job.postedDate).toLocaleDateString('vi-VN')}
+                    {new Date(job.postedDate || job.createdAt || new Date()).toLocaleDateString('vi-VN')}
                   </span>
                 </div>
               </div>
@@ -236,7 +214,7 @@ export default function NewJobDetail() {
                   </p>
                   <p>
                     <strong>Ngày đăng:</strong>{' '}
-                    {new Date(job.postedDate).toLocaleDateString('vi-VN')}
+                    {new Date(job.postedDate || job.createdAt || new Date()).toLocaleDateString('vi-VN')}
                   </p>
                   {job.deadline && (
                     <p>

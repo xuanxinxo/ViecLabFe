@@ -158,10 +158,15 @@ export default function CreateJob() {
         form.append('img', selectedImage);
       }
 
-      // Send FormData to backend API
-      const data = await adminApi.jobs.create(form);
+      // Send FormData to hirings API (for approved jobs)
+      const response = await adminApi.hirings.create(form);
+      console.log('🔍 [CREATE JOB] Full response:', response);
+      console.log('🔍 [CREATE JOB] Response data:', response.data);
+      console.log('🔍 [CREATE JOB] Response status:', response.status);
+      
+      const data = response.data;
 
-      if (data.success) {
+      if (data && data.success) {
         console.log('✅ [CREATE JOB] Create successful:', data);
         showToast('🎉 Tạo việc làm thành công!', 'success');
         
@@ -182,7 +187,7 @@ export default function CreateJob() {
         
         // Redirect after a short delay to show the success message
         setTimeout(() => {
-          router.push('/admin/jobs');
+          router.push('/admin/jobs?refresh=true');
         }, 1500);
       } else {
         console.error('❌ [CREATE JOB] Create failed:', data);
@@ -212,10 +217,10 @@ export default function CreateJob() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 py-8">
+    <div className="min-h-screen bg-gray-100 py-8 mt-20">
       <div className="max-w-3xl mx-auto bg-white p-6 rounded-lg shadow">
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-bold">Tạo việc làm mới</h1>
+          <h1 className="text-2xl font-bold">Tạo việc làm mới (Jobs)</h1>
           <button
             onClick={() => router.push('/admin/jobs')}
             className="px-4 py-2 text-gray-600 hover:text-gray-800"

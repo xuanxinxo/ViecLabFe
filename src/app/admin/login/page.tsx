@@ -16,7 +16,7 @@ export default function AdminLogin() {
     // Check if there's an admin-token cookie
     const checkAuth = async () => {
       try {
-        const response = await fetch('/api/admin/dashboard', {
+        const response = await fetch('/api/jobs', {
           credentials: 'include'
         });
         if (response.ok) {

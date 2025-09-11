@@ -50,10 +50,8 @@ export async function GET(
     const data = await response.json();
     console.log('✅ [JOBS ID API] Job retrieved successfully:', data);
     
-    // Normalize response format to ensure consistency
-    const normalizedResponse = normalizeApiResponse(data, 'Lấy dữ liệu việc làm thành công');
-    
-    return NextResponse.json(normalizedResponse, { status: response.status });
+    // For single item, return the data directly without normalization
+    return NextResponse.json(data, { status: response.status });
   } catch (error: any) {
     console.error('💥 [JOBS ID API] Error:', error);
     
@@ -84,7 +82,52 @@ export async function PUT(
     
     console.log('✅ [JOBS ID API] Admin authenticated:', admin.username);
     
-    const body = await request.json();
+    // Check if request contains FormData (file upload)
+    const contentType = request.headers.get('content-type') || '';
+    console.log('🔍 [JOBS ID API] Content-Type:', contentType);
+    console.log('🔍 [JOBS ID API] All headers:', Object.fromEntries(request.headers.entries()));
+    
+    let body: any;
+    let headers: Record<string, string> = {};
+    
+    // Try to detect FormData by checking if content-type contains multipart
+    // or by trying to parse as FormData first
+    try {
+      if (contentType.includes('multipart/form-data')) {
+        // Handle file upload with FormData
+        console.log('🔍 [JOBS ID API] Processing FormData request');
+        body = await request.formData();
+        
+        // Log FormData contents for debugging
+        console.log('🔍 [JOBS ID API] FormData keys:', Array.from(body.keys()));
+        for (const [key, value] of body.entries()) {
+          if (value instanceof File) {
+            console.log(`🔍 [JOBS ID API] File field: ${key}, size: ${value.size}, type: ${value.type}`);
+          } else {
+            console.log(`🔍 [JOBS ID API] Text field: ${key} = ${value}`);
+          }
+        }
+        
+        // Don't set Content-Type header for FormData, let fetch set it automatically
+      } else {
+        // Handle JSON request
+        console.log('🔍 [JOBS ID API] Processing JSON request');
+        body = await request.json();
+        headers['Content-Type'] = 'application/json';
+      }
+    } catch (error) {
+      console.error('💥 [JOBS ID API] Error parsing request body:', error);
+      
+      // If JSON parsing fails, try FormData as fallback
+      try {
+        console.log('🔄 [JOBS ID API] JSON parsing failed, trying FormData...');
+        body = await request.formData();
+        console.log('✅ [JOBS ID API] Successfully parsed as FormData');
+      } catch (formDataError) {
+        console.error('💥 [JOBS ID API] FormData parsing also failed:', formDataError);
+        throw new Error('Cannot parse request body as JSON or FormData');
+      }
+    }
     
     // Proxy to backend
     const backendUrl = 'https://vieclabbe.onrender.com';
@@ -109,30 +152,87 @@ export async function PUT(
       authHeaders['authorization'] = authorization;
     }
     
-    const response = await fetch(`${backendUrl}/api/jobs/${params.id}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        ...authHeaders
-      },
-      body: JSON.stringify(body),
-    });
-
-    if (!response.ok) {
-      throw new Error(`Backend API error: ${response.status}`);
+    // Prepare request body
+    let requestBody: any;
+    if (body instanceof FormData) {
+      requestBody = body;
+      console.log('🔍 [JOBS ID API] Using FormData as request body');
+    } else {
+      requestBody = JSON.stringify(body);
+      console.log('🔍 [JOBS ID API] Using JSON as request body');
     }
-
-    const data = await response.json();
-    console.log('✅ [JOBS ID API] Job updated successfully:', data);
     
-    return NextResponse.json(data, { status: response.status });
+    console.log('🔍 [JOBS ID API] Calling backend with:', {
+      method: 'PUT',
+      url: `${backendUrl}/api/jobs/${params.id}`,
+      hasFormData: body instanceof FormData,
+      authHeaders: Object.keys(authHeaders),
+      requestHeaders: Object.keys(headers)
+    });
+    
+    try {
+      // Log final request details
+      console.log('🔍 [JOBS ID API] Final request details:', {
+        url: `${backendUrl}/api/jobs/${params.id}`,
+        method: 'PUT',
+        headers: {
+          ...headers,
+          ...authHeaders
+        },
+        bodyType: body instanceof FormData ? 'FormData' : 'JSON',
+        bodySize: body instanceof FormData ? 'FormData with files' : JSON.stringify(body).length + ' chars'
+      });
+      
+      const response = await fetch(`${backendUrl}/api/jobs/${params.id}`, {
+        method: 'PUT',
+        headers: {
+          ...headers,
+          ...authHeaders
+        },
+        body: requestBody,
+      });
+
+      console.log('🔍 [JOBS ID API] Backend response status:', response.status);
+      console.log('🔍 [JOBS ID API] Backend response headers:', Object.fromEntries(response.headers.entries()));
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ [JOBS ID API] Backend error:', {
+          status: response.status,
+          statusText: response.statusText,
+          error: errorText,
+          url: `${backendUrl}/api/jobs/${params.id}`,
+          requestMethod: 'PUT',
+          requestBodyType: body instanceof FormData ? 'FormData' : 'JSON'
+        });
+        
+        // Try to parse error response
+        try {
+          const errorData = JSON.parse(errorText);
+          console.error('❌ [JOBS ID API] Parsed error data:', errorData);
+        } catch (parseError) {
+          console.error('❌ [JOBS ID API] Could not parse error response as JSON');
+        }
+        
+        throw new Error(`Backend API error: ${response.status} - ${errorText}`);
+      }
+      
+      const data = await response.json();
+      console.log('✅ [JOBS ID API] Job updated successfully:', data);
+      
+      return NextResponse.json(data, { status: response.status });
+      
+    } catch (fetchError) {
+      console.error('💥 [JOBS ID API] Fetch error:', fetchError);
+      throw fetchError;
+    }
   } catch (error: any) {
     console.error('💥 [JOBS ID API] Error:', error);
     
     return NextResponse.json(
       { 
         success: false,
-        message: 'Không thể cập nhật việc làm'
+        message: 'Không thể cập nhật việc làm: ' + error.message
       },
       { status: 500 }
     );

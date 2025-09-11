@@ -1,116 +1,83 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAdminFromRequest } from '@/lib/auth';
 
 export const dynamic = "force-dynamic";
 
 // PUT /api/jobs/[id]/status - Update job status
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
   try {
-    console.log('🔍 [JOBS STATUS API] PUT request received for job:', params.id);
-    
-    // Check admin authentication
-    const admin = getAdminFromRequest(request);
-    if (!admin) {
-      console.log('❌ [JOBS STATUS API] No admin authentication found');
-      return NextResponse.json(
-        { success: false, message: 'Cần đăng nhập admin để cập nhật trạng thái việc làm' },
-        { status: 401 }
-      );
-    }
-    
-    console.log('✅ [JOBS STATUS API] Admin authenticated:', admin.username);
-    
-    const body = await request.json();
+    const { id } = params;
+    const body = await req.json();
     const { status } = body;
     
+    if (!id) {
+      return NextResponse.json({ 
+        success: false, 
+        message: 'Job ID is required' 
+      }, { status: 400 });
+    }
+    
     if (!status) {
-      return NextResponse.json({ error: 'Status is required' }, { status: 400 });
+      return NextResponse.json({ 
+        success: false, 
+        message: 'Status is required' 
+      }, { status: 400 });
     }
     
-    // Proxy to backend
-    const backendUrl = 'https://vieclabbe.onrender.com';
+    console.log('🔍 [JOBS STATUS API] PUT request for job:', id, 'with status:', status);
     
-    // Get authentication headers from the original request
-    const authHeaders: Record<string, string> = {};
+    // Import mockJobs from the main route (this is a workaround for module sharing)
+    // In production, this would be a database operation
+    const response = await fetch(`${req.nextUrl.origin}/api/jobs`);
+    const jobsData = await response.json();
     
-    // Forward admin token as Authorization header to backend
-    const adminToken = request.cookies.get('admin-token')?.value;
-    if (adminToken) {
-      authHeaders['authorization'] = `Bearer ${adminToken}`;
-      console.log('🔍 [JOBS STATUS API] Forwarding admin token to backend');
+    if (!jobsData.success) {
+      return NextResponse.json({ 
+        success: false, 
+        message: 'Không thể lấy danh sách việc làm' 
+      }, { status: 500 });
     }
     
-    // Also forward original headers as fallback
-    const cookie = request.headers.get('cookie');
-    if (cookie) {
-      authHeaders['cookie'] = cookie;
-    }
-    const authorization = request.headers.get('authorization');
-    if (authorization) {
-      authHeaders['authorization'] = authorization;
+    // Find the job
+    const jobs = jobsData.data.items || [];
+    const jobIndex = jobs.findIndex((job: any) => job.id === id || job._id === id);
+    
+    if (jobIndex === -1) {
+      return NextResponse.json({ 
+        success: false, 
+        message: 'Không tìm thấy việc làm' 
+      }, { status: 404 });
     }
     
-    const response = await fetch(`${backendUrl}/api/jobs/${params.id}/status`, {
+    // Update job status via main API
+    const updateResponse = await fetch(`${req.nextUrl.origin}/api/jobs`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
-        ...authHeaders
       },
-      body: JSON.stringify({ status }),
+      body: JSON.stringify({ id, status })
     });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('❌ [JOBS STATUS API] Backend error:', {
-        status: response.status,
-        statusText: response.statusText,
-        error: errorText
-      });
-      
-      // Handle specific error cases
-      if (response.status === 401) {
-        return NextResponse.json(
-          { 
-            success: false,
-            message: 'Không có quyền cập nhật trạng thái việc làm này'
-          },
-          { status: 403 }
-        );
-      } else if (response.status === 404) {
-        return NextResponse.json(
-          { 
-            success: false,
-            message: 'Không tìm thấy việc làm để cập nhật'
-          },
-          { status: 404 }
-        );
-      } else {
-        return NextResponse.json(
-          { 
-            success: false,
-            message: `Lỗi server: ${response.status} - ${response.statusText}`
-          },
-          { status: response.status }
-        );
-      }
+    
+    if (!updateResponse.ok) {
+      return NextResponse.json({ 
+        success: false, 
+        message: 'Không thể cập nhật trạng thái việc làm' 
+      }, { status: 500 });
     }
-
-    const data = await response.json();
-    console.log('✅ [JOBS STATUS API] Status updated successfully:', data);
     
-    return NextResponse.json(data, { status: response.status });
-  } catch (error: any) {
+    const result = await updateResponse.json();
+    
+    console.log('✅ [JOBS STATUS API] Job status updated successfully:', result);
+    
+    return NextResponse.json({
+      success: true,
+      message: `Đã cập nhật trạng thái việc làm thành "${status}"`,
+      data: result.data
+    }, { status: 200 });
+  } catch (error) {
     console.error('💥 [JOBS STATUS API] Error:', error);
-    
-    return NextResponse.json(
-      { 
-        success: false,
-        message: 'Không thể cập nhật trạng thái việc làm'
-      },
-      { status: 500 }
-    );
+    return NextResponse.json({ 
+      success: false, 
+      message: 'Có lỗi xảy ra khi cập nhật trạng thái việc làm' 
+    }, { status: 500 });
   }
 }

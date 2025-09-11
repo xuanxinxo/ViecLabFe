@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { apiClient } from "../../lib/api";
+import { apiLoaders } from "../../lib/apiDataLoader";
 
 interface Job {
   id: string;
@@ -102,67 +103,32 @@ export default function CarouselJob() {
   const fetchJobs = async () => {
     try {
       setLoading(true); // Always show loading when fetching
-      console.log('Fetching jobs directly from backend...');
+      console.log('Fetching jobs using API loader...');
       
-      // Fetch via local API proxy to avoid CORS issues
-      // Request 12 items explicitly to ensure we have enough for 2 pages (6 x 2)
-      const response = await fetch('/api/jobs?limit=12&pageSize=12&per_page=12', {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+      // Use API loader to fetch jobs
+      const result = await apiLoaders.jobs.load({
+        limit: '12',
+        pageSize: '12',
+        per_page: '12'
       });
       
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      if (result.success) {
+        console.log(`✅ Loaded ${result.data.length} jobs successfully`);
+        
+        // Sort by date (newest first) and limit to 12 jobs (6 per page × 2 pages)
+        const sortedJobs = [...result.data]
+          .sort((a, b) => new Date(b.postedDate || b.createdAt).getTime() - new Date(a.postedDate || a.createdAt).getTime())
+          .slice(0, 12);
+        
+        console.log('Sorted and limited to 12 jobs:', sortedJobs.length);
+        
+        setJobs(sortedJobs);
+        setRetryCount(0); // Reset retry count on success
+        setLoading(false); // Always stop loading when data is loaded
+      } else {
+        throw new Error(result.error || 'Failed to load jobs');
       }
       
-      const jobsData = await response.json();
-      console.log('Backend API response:', jobsData);
-      
-      // Handle API client response format with improved error handling
-      let jobsArray = [];
-      try {
-        if (jobsData?.success && jobsData?.data?.items && Array.isArray(jobsData.data.items)) {
-          // Standard backend format: { success: true, data: { items: [...], pagination: {...} } }
-          jobsArray = jobsData.data.items;
-          console.log('Using standard backend format (data.items):', jobsArray.length, 'jobs');
-        } else if (jobsData?.success && Array.isArray(jobsData.data)) {
-          // Alternative format: { success: true, data: [...] }
-          jobsArray = jobsData.data;
-          console.log('Using success format (data array):', jobsArray.length, 'jobs');
-        } else if (jobsData?.data && Array.isArray(jobsData.data)) {
-          // Response format: { data: [...] }
-          jobsArray = jobsData.data;
-          console.log('Using direct data array:', jobsArray.length, 'jobs');
-        } else if (Array.isArray(jobsData)) {
-          // Response format: [...]
-          jobsArray = jobsData;
-          console.log('Using direct array:', jobsArray.length, 'jobs');
-        } else {
-          console.warn('No valid jobs data found in response:', jobsData);
-          throw new Error('Định dạng dữ liệu không hợp lệ từ server');
-        }
-      } catch (parseError) {
-        console.error('Error parsing jobs data:', parseError);
-        throw new Error('Không thể xử lý dữ liệu từ server');
-      }
-      
-      console.log('Total jobs available:', jobsArray.length);
-      
-      // Sort by date (newest first) and limit to 12 jobs (6 per page × 2 pages)
-      const sortedJobs = [...jobsArray]
-        .sort((a, b) => new Date(b.postedDate || b.createdAt).getTime() - new Date(a.postedDate || a.createdAt).getTime())
-        .slice(0, 12);
-      
-      console.log('Sorted and limited to 12 jobs:', sortedJobs.length);
-      
-      console.log(`Setting ${sortedJobs.length} real jobs to state`);
-      setJobs(sortedJobs);
-      setRetryCount(0); // Reset retry count on success
-      setLoading(false); // Always stop loading when data is loaded
-      
-      // Don't cache to localStorage to avoid mock data issues
     } catch (error: any) {
       console.error('Error fetching jobs:', error);
       

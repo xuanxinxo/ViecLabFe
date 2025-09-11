@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Job } from '../../types/job';
+import { apiLoaders } from '../../lib/apiDataLoader';
 
 export default function AllJobsPage() {
   const [jobs, setJobs] = useState<Job[]>([]);
@@ -27,55 +28,28 @@ export default function AllJobsPage() {
       setLoading(true);
       setError('');
 
-      const queryParams = new URLSearchParams({
+      const params = {
         page: pagination.page.toString(),
         limit: pagination.limit.toString(),
         ...(searchTerm && { search: searchTerm }),
         ...(locationFilter && { location: locationFilter }),
         ...(typeFilter && { type: typeFilter }),
-      });
+      };
 
-      console.log('Loading jobs with params:', queryParams.toString());
+      console.log('Loading jobs with params:', params);
 
-      const response = await fetch(`/api/jobs?${queryParams.toString()}`);
-      console.log('Response status:', response.status);
+      const result = await apiLoaders.jobs.load(params);
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
-      console.log('Jobs data:', data);
-
-      if (data.success && data.data) {
-        // Handle response format: { success: true, data: { items: [...], pagination: {...} } }
-        if (data.data.items && Array.isArray(data.data.items)) {
-          setJobs(data.data.items);
-          setPagination(prev => ({
-            ...prev,
-            total: data.data.pagination?.total || data.data.items.length,
-            totalPages: Math.ceil((data.data.pagination?.total || data.data.items.length) / pagination.limit),
-          }));
-        } else if (Array.isArray(data.data)) {
-          // Handle response format: { success: true, data: [...] }
-          setJobs(data.data);
-          setPagination(prev => ({
-            ...prev,
-            total: data.data.length,
-            totalPages: Math.ceil(data.data.length / pagination.limit),
-          }));
-        } else {
-          throw new Error('Định dạng dữ liệu không hợp lệ');
-        }
-      } else if (Array.isArray(data)) {
-        setJobs(data);
+      if (result.success) {
+        setJobs(result.data);
         setPagination(prev => ({
           ...prev,
-          total: data.length,
-          totalPages: Math.ceil(data.length / pagination.limit),
+          total: result.total,
+          totalPages: result.pagination?.totalPages || Math.ceil(result.total / pagination.limit),
         }));
+        console.log(`✅ Loaded ${result.data.length} jobs successfully`);
       } else {
-        throw new Error('Định dạng dữ liệu không hợp lệ');
+        throw new Error(result.error || 'Failed to load jobs');
       }
     } catch (err: any) {
       console.error('Error loading jobs:', err);

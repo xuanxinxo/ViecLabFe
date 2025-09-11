@@ -52,7 +52,6 @@ const getCachedOrFetch = async (key: string, fetchFn: () => Promise<any>) => {
 };
 
 // Create axios instance with base config
-console.log('Initializing API client with base URL:', `${API_URL}/api`);
 const api: AxiosInstance = axios.create({
   baseURL: `${API_URL}/api`,
   headers: {
@@ -88,14 +87,6 @@ api.interceptors.request.use(
       }
     }
     
-    console.log(`[API] ${config.method?.toUpperCase()} ${config.url}`, {
-      params: config.params,
-      data: config.data,
-      headers: {
-        ...config.headers,
-        Authorization: config.headers.Authorization ? 'Bearer [TOKEN]' : 'None'
-      }
-    });
     
     return config;
   },
@@ -108,10 +99,11 @@ api.interceptors.request.use(
 // Request interceptor for local API
 localApi.interceptors.request.use(
   (config) => {
-    console.log(`[LOCAL API] ${config.method?.toUpperCase()} ${config.url}`, {
-      params: config.params,
-      data: config.data
-    });
+    // Don't set Content-Type for FormData requests
+    if (config.data instanceof FormData) {
+      delete config.headers['Content-Type'];
+    }
+    
     return config;
   },
   (error) => {
@@ -123,10 +115,6 @@ localApi.interceptors.request.use(
 // Response interceptor for error handling
 api.interceptors.response.use(
   (response) => {
-    console.log(`[API] ${response.config.method?.toUpperCase()} ${response.config.url} ${response.status}`, {
-      status: response.status,
-      data: response.data
-    });
     return response;
   },
   (error) => {
@@ -190,10 +178,6 @@ api.interceptors.response.use(
 // Response interceptor for local API
 localApi.interceptors.response.use(
   (response) => {
-    console.log(`[LOCAL API] ${response.config.method?.toUpperCase()} ${response.config.url} ${response.status}`, {
-      status: response.status,
-      data: response.data
-    });
     return response;
   },
   (error) => {
@@ -216,7 +200,6 @@ const createApiClient = <T>(endpoint: string, apiInstance: AxiosInstance = api) 
     try {
       const response = await getCachedOrFetch(cacheKey, async () => {
         const response = await apiInstance.get(`/${endpoint}`, { params });
-        console.log(`[API CLIENT] GET /${endpoint} response:`, response.data);
         
         // Handle different response formats from backend
         if (response.data && typeof response.data === 'object') {
@@ -237,11 +220,8 @@ const createApiClient = <T>(endpoint: string, apiInstance: AxiosInstance = api) 
       
       return response;
     } catch (error: any) {
-      console.error(`[API CLIENT] GET /${endpoint} error:`, error);
-      
       // Return fallback data for jobs endpoint to prevent complete failure
       if (endpoint === 'jobs' || endpoint === 'newjobs') {
-        console.warn(`[API CLIENT] Returning fallback data for ${endpoint}`);
         return {
           data: [],
           status: 200,
@@ -293,50 +273,38 @@ export const adminApi = {
   },
   // Job management
   jobs: {
-    getAll: (params?: any) => api.get('/admin/jobs', addAdminToken({ params })),
-    getById: (id: string) => api.get(`/admin/jobs/${id}`, addAdminToken({})),
-    create: (data: any) => api.post('/admin/jobs', data, addAdminToken({})),
-    update: (id: string, data: any) => api.put(`/admin/jobs/${id}`, data, addAdminToken({})),
-    delete: (id: string) => api.delete(`/admin/jobs/${id}`, addAdminToken({})),
-    updateStatus: (id: string, status: string) => api.put(`/admin/jobs/${id}/status`, { status }, addAdminToken({})),
+    getAll: (params?: any) => localApi.get('/hirings', { params }),
+    getById: (id: string) => localApi.get(`/hirings/${id}`),
+    create: (data: any) => {
+      // Use hirings API for creating jobs (approved jobs)
+      return localApi.post('/hirings', data);
+    },
+    update: (id: string, data: any) => localApi.put(`/hirings/${id}`, data),
+    delete: (id: string) => localApi.delete(`/hirings/${id}`),
+    updateStatus: (id: string, status: string) => localApi.put(`/hirings/${id}/status`, { status }),
   },
   // Application management
   applications: {
-    getAll: (params?: any) => api.get('/admin/applications', addAdminToken({ params })),
-    getById: (id: string) => api.get(`/admin/applications/${id}`, addAdminToken({})),
-    update: (id: string, data: any) => api.put(`/admin/applications/${id}`, data, addAdminToken({})),
-    delete: (id: string) => api.delete(`/admin/applications/${id}`, addAdminToken({})),
+    getAll: (params?: any) => localApi.get('/applications', { params }),
+    getById: (id: string) => localApi.get(`/applications/${id}`),
+    update: (id: string, data: any) => localApi.put(`/applications/${id}`, data),
+    delete: (id: string) => localApi.delete(`/applications/${id}`),
   },
   // News management
   news: {
-    getAll: (params?: any) => api.get('/admin/news', addAdminToken({ params })),
-    getById: (id: string) => api.get(`/admin/news/${id}`, addAdminToken({})),
-    create: (data: any) => api.post('/admin/news', data, addAdminToken({})),
-    update: (id: string, data: any) => api.put(`/admin/news/${id}`, data, addAdminToken({})),
-    delete: (id: string) => api.delete(`/admin/news/${id}`, addAdminToken({})),
+    getAll: (params?: any) => localApi.get('/news', { params }),
+    getById: (id: string) => localApi.get(`/news/${id}`),
+    create: (data: any) => localApi.post('/news', data),
+    update: (id: string, data: any) => localApi.put(`/news/${id}`, data),
+    delete: (id: string) => localApi.delete(`/news/${id}`),
   },
   // Hiring management
   hirings: {
-    getAll: (params?: any) => {
-      const config = addAdminToken({ params });
-      return api.get('/admin/hirings', config);
-    },
-    getById: (id: string) => {
-      const config = addAdminToken({});
-      return api.get(`/admin/hirings/${id}`, config);
-    },
-    create: (data: any) => {
-      const config = addAdminToken({});
-      return api.post('/admin/hirings', data, config);
-    },
-    update: (id: string, data: any) => {
-      const config = addAdminToken({});
-      return api.put(`/admin/hirings/${id}`, data, config);
-    },
-    delete: (id: string) => {
-      const config = addAdminToken({});
-      return api.delete(`/admin/hirings/${id}`, config);
-    },
+    getAll: (params?: any) => localApi.get('/hirings', { params }),
+    getById: (id: string) => localApi.get(`/hirings/${id}`),
+    create: (data: any) => localApi.post('/hirings', data),
+    update: (id: string, data: any) => localApi.put(`/hirings/${id}`, data),
+    delete: (id: string) => localApi.delete(`/hirings/${id}`),
   },
   // System settings
   settings: {
@@ -387,7 +355,6 @@ export const apiClient = {
         
         if (!response.ok) {
           const errorText = await response.text();
-          console.error('Login API error response:', errorText);
           
           // Try to parse as JSON for better error handling
           try {
@@ -402,7 +369,6 @@ export const apiClient = {
         }
         
         const data = await response.json();
-        console.log('Login API success response:', data);
         return data;
       } catch (error: any) {
         console.error('Login API error:', error);
@@ -440,7 +406,6 @@ export const apiClient = {
         
         if (!response.ok) {
           const errorText = await response.text();
-          console.error('Register API error response:', errorText);
           
           // If endpoint doesn't exist, return a helpful message
           if (response.status === 404) {
@@ -460,7 +425,6 @@ export const apiClient = {
         }
         
         const data = await response.json();
-        console.log('Register API success response:', data);
         return data;
       } catch (error: any) {
         console.error('Register API error:', error);

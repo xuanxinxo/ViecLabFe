@@ -66,6 +66,8 @@ export async function POST(request: NextRequest) {
     // Call backend API to authenticate user
     let backendResponse;
     try {
+      console.log('📤 [LOGIN] Calling backend API:', `${API_BASE_URL}/api/users/login`);
+      
       backendResponse = await fetch(`${API_BASE_URL}/api/users/login`, {
         method: 'POST',
         headers: {
@@ -76,10 +78,17 @@ export async function POST(request: NextRequest) {
           email: email.toLowerCase().trim(),
           password: password
         }),
-        signal: AbortSignal.timeout(10000), // 10 second timeout
+        signal: AbortSignal.timeout(15000), // 15 second timeout
       });
 
       console.log('📥 [LOGIN] Backend response status:', backendResponse.status);
+      
+      // Check if response is ok
+      if (!backendResponse.ok) {
+        const errorText = await backendResponse.text();
+        console.error('❌ [LOGIN] Backend error response:', errorText);
+        throw new Error(`Backend API error: ${backendResponse.status} - ${errorText}`);
+      }
     } catch (fetchError) {
       console.error('❌ [LOGIN] Backend fetch error:', fetchError);
       // Fallback: check if user exists locally (for demo purposes)
@@ -292,13 +301,28 @@ export async function POST(request: NextRequest) {
     console.log('✅ [LOGIN] Backend authentication successful');
     console.log('📥 [LOGIN] Backend data:', backendData);
 
-    // Create JWT token for the user
-    const token = jwt.sign(
+    // Extract user data from backend response
+    const userData = backendData.data?.user || backendData.user;
+    const accessToken = backendData.data?.accessToken || backendData.accessToken;
+    
+    if (!userData) {
+      console.error('❌ [LOGIN] No user data in backend response');
+      return NextResponse.json(
+        { 
+          success: false, 
+          message: 'Dữ liệu người dùng không hợp lệ từ server' 
+        },
+        { status: 500 }
+      );
+    }
+
+    // Create JWT token for the user (use backend token if available, otherwise create local)
+    const token = accessToken || jwt.sign(
       {
-        userId: backendData.user?._id || backendData.user?.id || backendData._id,
-        email: backendData.user?.email || backendData.email,
-        name: backendData.user?.name || backendData.name,
-        role: backendData.user?.role || backendData.role || 'user',
+        userId: userData.id || userData._id,
+        email: userData.email,
+        name: userData.name,
+        role: userData.role || 'user',
       },
       JWT_SECRET,
       { expiresIn: '7d' }
@@ -309,13 +333,13 @@ export async function POST(request: NextRequest) {
     // Set cookie
     const response = NextResponse.json({
       success: true,
-      message: 'Đăng nhập thành công',
+      message: backendData.message || 'Đăng nhập thành công',
       data: {
         user: {
-          id: backendData.user?._id || backendData.user?.id || backendData._id,
-          name: backendData.user?.name || backendData.name,
-          email: backendData.user?.email || backendData.email,
-          role: backendData.user?.role || backendData.role || 'user'
+          id: userData.id || userData._id,
+          name: userData.name,
+          email: userData.email,
+          role: userData.role || 'user'
         },
         token: token
       }

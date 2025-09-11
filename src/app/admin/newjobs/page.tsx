@@ -81,18 +81,14 @@ export default function AdminNewJobs() {
 
   const handleLogout = async () => {
     try {
-      const response = await fetch("/api/admin/logout", {
-        method: "POST",
-        credentials: "include",
-      });
-      const data = await response.json();
-      if (data.success) {
-        router.push("/admin/login");
-      } else {
-        console.error("Logout failed:", data.message);
-      }
+      // Clear admin token from cookies
+      document.cookie = 'admin-token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+      // Redirect to login
+      router.push("/admin/login");
     } catch (error) {
       console.error("Logout failed:", error);
+      // Still redirect even if logout fails
+      router.push("/admin/login");
     }
   };
 
