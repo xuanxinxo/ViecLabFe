@@ -4,15 +4,15 @@ import { notFound } from 'next/navigation'
 import { apiClient } from '../../../lib/api'
 import Image from 'next/image'
 import Link from 'next/link'
-import { ObjectId } from 'mongodb'
+// MongoDB ObjectId validation moved to server-side
 import { apiLoaders } from '../../../lib/apiDataLoader'
 import { useState, useEffect } from 'react'
 
 type Props = { params: { id: string } }
 
-// Validate if the ID is a valid MongoDB ObjectId
+// Validate if the ID is a valid MongoDB ObjectId format (24 hex characters)
 function isValidObjectId(id: string) {
-  return ObjectId.isValid(id) && new ObjectId(id).toString() === id;
+  return /^[0-9a-fA-F]{24}$/.test(id);
 }
 
 export default function NewsDetailPage({ params }: Props) {
