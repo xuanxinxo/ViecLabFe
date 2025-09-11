@@ -24,14 +24,15 @@ export default function JobSearch({ provinces = [], jobTitles = [] }: JobSearchP
         return;
       }
 
-      if (jobTitle && jobTitle.length < 3) {
-        setError('Tên công việc phải có ít nhất 3 ký tự');
-        return;
-      }
-
       // Kiểm tra độ dài tối thiểu cho tìm kiếm
       if (jobTitle && jobTitle.length < 2) {
         setError('Vui lòng nhập ít nhất 2 ký tự để tìm kiếm');
+        return;
+      }
+
+      // Kiểm tra độ dài tối đa
+      if (jobTitle && jobTitle.length > 100) {
+        setError('Từ khóa tìm kiếm không được vượt quá 100 ký tự');
         return;
       }
 
@@ -39,8 +40,16 @@ export default function JobSearch({ provinces = [], jobTitles = [] }: JobSearchP
       setError('');
 
       const params = new URLSearchParams();
-      if (jobTitle) params.append('search', jobTitle);
-      if (selectedProvince) params.append('location', selectedProvince);
+      if (jobTitle) {
+        // Sanitize job title input
+        const sanitizedJobTitle = jobTitle.trim().replace(/[<>\"'&]/g, '');
+        params.append('search', sanitizedJobTitle);
+      }
+      if (selectedProvince) {
+        // Sanitize province input
+        const sanitizedProvince = selectedProvince.trim().replace(/[<>\"'&]/g, '');
+        params.append('location', sanitizedProvince);
+      }
 
       // Lưu giá trị hiện tại để xóa sau khi chuyển trang
       const currentJobTitle = jobTitle;

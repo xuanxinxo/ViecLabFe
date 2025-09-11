@@ -120,26 +120,32 @@ export default function CarouselJob() {
       const jobsData = await response.json();
       console.log('Backend API response:', jobsData);
       
-      // Handle API client response format
+      // Handle API client response format with improved error handling
       let jobsArray = [];
-      if (jobsData?.data?.items && Array.isArray(jobsData.data.items)) {
-        // Response format: { success: true, data: { items: [...], pagination: {...} } }
-        jobsArray = jobsData.data.items;
-        console.log('Using jobsData.data.items:', jobsArray.length, 'jobs');
-      } else if (jobsData?.data && Array.isArray(jobsData.data)) {
-        // Response format: { data: [...] }
-        jobsArray = jobsData.data;
-        console.log('Using jobsData.data:', jobsArray.length, 'jobs');
-      } else if (Array.isArray(jobsData)) {
-        // Response format: [...]
-        jobsArray = jobsData;
-        console.log('Using jobsData directly:', jobsArray.length, 'jobs');
-      } else if (jobsData?.success && Array.isArray(jobsData.data)) {
-        // Response format: { success: true, data: [...] }
-        jobsArray = jobsData.data;
-        console.log('Using jobsData.data (success format):', jobsArray.length, 'jobs');
-      } else {
-        console.warn('No valid jobs data found in response:', jobsData);
+      try {
+        if (jobsData?.success && jobsData?.data?.items && Array.isArray(jobsData.data.items)) {
+          // Standard backend format: { success: true, data: { items: [...], pagination: {...} } }
+          jobsArray = jobsData.data.items;
+          console.log('Using standard backend format (data.items):', jobsArray.length, 'jobs');
+        } else if (jobsData?.success && Array.isArray(jobsData.data)) {
+          // Alternative format: { success: true, data: [...] }
+          jobsArray = jobsData.data;
+          console.log('Using success format (data array):', jobsArray.length, 'jobs');
+        } else if (jobsData?.data && Array.isArray(jobsData.data)) {
+          // Response format: { data: [...] }
+          jobsArray = jobsData.data;
+          console.log('Using direct data array:', jobsArray.length, 'jobs');
+        } else if (Array.isArray(jobsData)) {
+          // Response format: [...]
+          jobsArray = jobsData;
+          console.log('Using direct array:', jobsArray.length, 'jobs');
+        } else {
+          console.warn('No valid jobs data found in response:', jobsData);
+          throw new Error('Định dạng dữ liệu không hợp lệ từ server');
+        }
+      } catch (parseError) {
+        console.error('Error parsing jobs data:', parseError);
+        throw new Error('Không thể xử lý dữ liệu từ server');
       }
       
       console.log('Total jobs available:', jobsArray.length);

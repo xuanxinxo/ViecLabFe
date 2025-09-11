@@ -6,6 +6,7 @@ import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import type { Job } from "../jobs/page";
 import { SuspenseBoundary } from "@/components/SuspenseBoundary";
 import { debounce } from "lodash";
+import { normalizeApiResponse, validateSearchParams, buildSearchParams } from "@/lib/apiResponseNormalizer";
 
 // Skeleton loader
 const JobCardSkeleton = () => (
@@ -65,22 +66,14 @@ function SearchContent() {
           setLoadingMore(true);
         }
 
-        // Build query parameters
-        const searchQuery = searchTerm.trim();
-        const locationQuery = locationTerm.trim();
+        // Validate search parameters
+        const validation = validateSearchParams(searchTerm, locationTerm);
+        if (!validation.isValid) {
+          throw new Error(validation.error || "Tham số tìm kiếm không hợp lệ");
+        }
         
-        const params = new URLSearchParams({
-          q: searchQuery,  // Using 'q' as the search parameter as per REST conventions
-          location: locationQuery,
-          _page: pageNum.toString(),
-          _limit: "10",
-          _sort: 'postedDate',
-          _order: 'desc',
-          status: 'active'  // Only show active jobs
-        });
-
-        // Add cache-busting parameter
-        params.append('_t', Date.now().toString());
+        // Build query parameters using utility function
+        const params = buildSearchParams(searchTerm, locationTerm, pageNum, 10);
 
         // Log the request URL and parameters
         const apiUrl = `/api/jobs?${params.toString()}`;
@@ -89,15 +82,38 @@ function SearchContent() {
 
         // Make the API request
         const startTime = performance.now();
-        const response = await fetch(apiUrl);
+        const response = await fetch(apiUrl, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          // Add timeout to prevent hanging requests
+          signal: AbortSignal.timeout(30000) // 30 second timeout
+        });
         const loadTime = performance.now() - startTime;
         
         console.log(`API response time: ${loadTime.toFixed(2)}ms`);
         console.log('Response status:', response.status);
 
         if (!isMounted.current) return;
+        
         if (!response.ok) {
-          throw new Error("Không thể kết nối đến máy chủ");
+          const errorText = await response.text();
+          console.error('API Error Response:', {
+            status: response.status,
+            statusText: response.statusText,
+            body: errorText
+          });
+          
+          if (response.status === 400) {
+            throw new Error("Tham số tìm kiếm không hợp lệ");
+          } else if (response.status === 404) {
+            throw new Error("Không tìm thấy dữ liệu");
+          } else if (response.status >= 500) {
+            throw new Error("Lỗi máy chủ, vui lòng thử lại sau");
+          } else {
+            throw new Error(`Lỗi kết nối: ${response.status} - ${response.statusText}`);
+          }
         }
 
         const data = await response.json();
@@ -109,76 +125,72 @@ function SearchContent() {
           throw new Error("Không nhận được dữ liệu từ máy chủ");
         }
         
-        // Extract jobs data from the response structure
-        let jobsData: Job[] = [];
-        let totalCount = 0;
+        // Normalize API response using utility function
+        const normalizedResponse = normalizeApiResponse<Job[]>(data, 'Tìm kiếm thành công');
         
-        // Handle the new API response format
-        if (data.success && Array.isArray(data.data)) {
-          jobsData = data.data;
-          totalCount = data.count || data.pagination?.total || jobsData.length;
-        } 
-        // Fallback to old formats for backward compatibility
-        else if (data.jobs && data.jobs.success && Array.isArray(data.jobs.data)) {
-          jobsData = data.jobs.data;
-          totalCount = data.jobs.count || jobsData.length;
-        } else if (Array.isArray(data.data)) {
-          jobsData = data.data;
-          totalCount = data.count || data.total || jobsData.length;
-        } else if (Array.isArray(data)) {
-          jobsData = data;
-          totalCount = jobsData.length;
-        } else {
-          console.error('Unexpected response format:', data);
-          throw new Error(`Định dạng dữ liệu không hợp lệ từ máy chủ`);
+        if (!normalizedResponse.success) {
+          throw new Error(normalizedResponse.message || 'Có lỗi xảy ra khi tìm kiếm');
         }
         
+        const jobsData: Job[] = normalizedResponse.data;
+        const totalCount = normalizedResponse.pagination?.total || jobsData.length;
+        
+        console.log('Normalized response:', {
+          success: normalizedResponse.success,
+          jobsCount: jobsData.length,
+          totalCount,
+          pagination: normalizedResponse.pagination
+        });
+        
         // Additional client-side filtering if backend doesn't filter properly
-        if (searchQuery && jobsData.length > 0) {
+        let finalJobsData = jobsData;
+        let finalTotalCount = totalCount;
+        
+        if (searchTerm.trim() && jobsData.length > 0) {
           const filteredJobs = jobsData.filter(job => 
-            job.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            job.company.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            (job.description && job.description.toLowerCase().includes(searchQuery.toLowerCase()))
+            job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            job.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (job.description && job.description.toLowerCase().includes(searchTerm.toLowerCase()))
           );
-          jobsData = filteredJobs;
-          totalCount = filteredJobs.length;
-          console.log(`Client-side filtering: ${jobsData.length} jobs match "${searchQuery}"`);
+          finalJobsData = filteredJobs;
+          finalTotalCount = filteredJobs.length;
+          console.log(`Client-side filtering: ${finalJobsData.length} jobs match "${searchTerm}"`);
         }
         
         // If no search query, don't show any results
-        if (!searchQuery && !locationQuery) {
-          jobsData = [];
-          totalCount = 0;
+        if (!searchTerm.trim() && !locationTerm.trim()) {
+          finalJobsData = [];
+          finalTotalCount = 0;
           console.log('No search terms provided, clearing results');
         }
         const pagination = {
           page: pageNum.toString(),
           limit: '10',
-          total: totalCount.toString(),
-          totalPages: Math.ceil(totalCount / 10).toString()
+          total: finalTotalCount.toString(),
+          totalPages: Math.ceil(finalTotalCount / 10).toString()
         };
         
         // Update jobs state
         setJobs(prevJobs => 
-          pageNum === 1 ? jobsData : [...prevJobs, ...jobsData]
+          pageNum === 1 ? finalJobsData : [...prevJobs, ...finalJobsData]
         );
         
         // Update pagination state
-        const hasMoreData = pageNum < Math.ceil(totalCount / 10);
+        const hasMoreData = pageNum < Math.ceil(finalTotalCount / 10);
         setHasMore(hasMoreData);
         setCurrentPage(pageNum);
         
         // Log the final results for debugging
-        console.log(`Final results: ${jobsData.length} jobs, total: ${totalCount}, hasMore: ${hasMoreData}`);
+        console.log(`Final results: ${finalJobsData.length} jobs, total: ${finalTotalCount}, hasMore: ${hasMoreData}`);
         
         // Show no jobs message if no results on initial load
         if (isInitialLoad) {
-          setShowNoJobsMessage(jobsData.length === 0);
+          setShowNoJobsMessage(finalJobsData.length === 0);
         }
         
         // If we have search terms but no results, show appropriate message
-        if (searchQuery && jobsData.length === 0) {
-          console.log(`No jobs found for search term: "${searchQuery}"`);
+        if (searchTerm.trim() && finalJobsData.length === 0) {
+          console.log(`No jobs found for search term: "${searchTerm}"`);
         }
       } catch (err) {
         console.error("Error fetching jobs:", err);
