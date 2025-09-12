@@ -157,13 +157,18 @@ export default function CreateJob() {
         form.append('img', selectedImage);
       }
 
-      // Send FormData to jobs API
-      const response = await adminApi.jobs.create(form);
-      console.log('🔍 [CREATE JOB] Full response:', response);
-      console.log('🔍 [CREATE JOB] Response data:', response.data);
+      // Send FormData to jobs API directly
+      console.log('🔍 [CREATE JOB] Sending request to /api/jobs...');
+      const response = await fetch('/api/jobs', {
+        method: 'POST',
+        credentials: 'include',
+        body: form
+      });
+      
       console.log('🔍 [CREATE JOB] Response status:', response.status);
-
-      const data = response.data;
+      
+      const data = await response.json();
+      console.log('🔍 [CREATE JOB] Response data:', data);
 
       if (data && data.success) {
         console.log('✅ [CREATE JOB] Create successful:', data);
@@ -193,22 +198,9 @@ export default function CreateJob() {
         setError(data.message || 'Tạo việc làm thất bại');
         showToast('❌ Tạo việc làm thất bại!', 'error');
       }
-    } catch (err) {
-      console.error('💥 [CREATE JOB] Unexpected error:', err);
-
-      let errorMessage = 'Có lỗi xảy ra khi tạo việc làm.';
-
-      if (err instanceof Error) {
-        if (err.message.includes('fetch')) {
-          errorMessage = 'Lỗi kết nối mạng. Vui lòng kiểm tra kết nối internet.';
-        } else if (err.message.includes('JSON')) {
-          errorMessage = 'Lỗi xử lý dữ liệu từ server.';
-        } else {
-          errorMessage = `Lỗi không xác định: ${err.message}`;
-        }
-      }
-
-      setError(errorMessage);
+    } catch (err: any) {
+      console.error('💥 [CREATE JOB] Error:', err);
+      setError('Có lỗi xảy ra khi tạo việc làm. Vui lòng thử lại.');
       showToast('❌ Có lỗi xảy ra khi tạo việc làm!', 'error');
     } finally {
       setSaving(false);

@@ -43,11 +43,7 @@ export async function loadApiData<T>(
         }
       });
       
-      // Use backend API URL for jobs and hirings
-      const backendUrl = 'https://vieclabbe.onrender.com';
-      const isBackendEndpoint = ['jobs', 'hirings', 'newjobs'].includes(endpoint);
-      const baseUrl = isBackendEndpoint ? `${backendUrl}/api` : '/api';
-      const url = `${baseUrl}/${endpoint}${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+      const url = `/api/${endpoint}${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
       console.log(`[API LOADER] Attempt ${attempt + 1}/${retries + 1}: ${url}`);
       
       // Make API request with timeout
@@ -125,11 +121,7 @@ export async function loadApiItem<T>(
   
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
-      // Use backend API URL for jobs and hirings
-      const backendUrl = 'https://vieclabbe.onrender.com';
-      const isBackendEndpoint = ['jobs', 'hirings', 'newjobs'].includes(endpoint);
-      const baseUrl = isBackendEndpoint ? `${backendUrl}/api` : '/api';
-      const url = `${baseUrl}/${endpoint}/${id}`;
+      const url = `/api/${endpoint}/${id}`;
       console.log(`[API LOADER] Loading item ${id} (attempt ${attempt + 1}/${retries + 1}): ${url}`);
       
       // Make API request with timeout

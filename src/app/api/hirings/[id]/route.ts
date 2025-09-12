@@ -15,34 +15,83 @@ export async function GET(
 ) {
   try {
     const hiringId = params.id;
+    console.log(`🔍 [HIRINGS API] Fetching hiring with ID: ${hiringId}`);
 
-    // Load mock data
+    // Try backend API first
+    try {
+      const backendUrl = `https://vieclabbe.onrender.com/api/hirings/${hiringId}`;
+      console.log(`🔍 [HIRINGS API] Calling backend: ${backendUrl}`);
+      
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+      
+      const response = await fetch(backendUrl, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        signal: controller.signal,
+      });
+      
+      clearTimeout(timeoutId);
+      
+      if (response.ok) {
+        const backendData = await response.json();
+        console.log(`✅ [HIRINGS API] Backend response:`, backendData);
+        
+        // Handle backend response format
+        if (backendData.success && backendData.data) {
+          return NextResponse.json({
+            success: true,
+            data: backendData.data,
+            message: 'Lấy thông tin tuyển dụng thành công từ backend'
+          });
+        } else if (backendData) {
+          return NextResponse.json({
+            success: true,
+            data: backendData,
+            message: 'Lấy thông tin tuyển dụng thành công từ backend'
+          });
+        }
+      } else {
+        console.log(`⚠️ [HIRINGS API] Backend returned ${response.status}, falling back to mock data`);
+      }
+    } catch (backendError) {
+      console.log(`⚠️ [HIRINGS API] Backend error, falling back to mock data:`, backendError);
+    }
+
+    // Fallback to mock data
     let mockHirings: any[] = [];
     try {
       const data = await fs.readFile(MOCK_STORAGE_PATH, 'utf8');
       mockHirings = JSON.parse(data);
+      console.log(`📊 [HIRINGS API] Loaded ${mockHirings.length} mock hirings from file`);
     } catch (error) {
+      console.log(`⚠️ [HIRINGS API] No mock data found`);
       mockHirings = [];
     }
 
-    // Find the hiring
+    // Find the hiring in mock data
     const hiring = mockHirings.find(hiring => hiring.id === hiringId || hiring._id === hiringId);
     if (!hiring) {
+      console.log(`❌ [HIRINGS API] Hiring not found in mock data either`);
       return NextResponse.json(
-        { success: false, message: 'Không tìm thấy việc làm' },
+        { success: false, message: 'Không tìm thấy tin tuyển dụng' },
         { status: 404 }
       );
     }
 
+    console.log(`✅ [HIRINGS API] Found hiring in mock data:`, hiring.title);
     return NextResponse.json({
       success: true,
       data: hiring,
-      message: 'Lấy thông tin việc làm thành công'
+      message: 'Lấy thông tin tuyển dụng thành công từ mock data'
     });
 
   } catch (error: any) {
+    console.error(`💥 [HIRINGS API] Error:`, error);
     return NextResponse.json(
-      { success: false, message: 'Có lỗi xảy ra khi lấy thông tin việc làm' },
+      { success: false, message: 'Có lỗi xảy ra khi lấy thông tin tuyển dụng' },
       { status: 500 }
     );
   }

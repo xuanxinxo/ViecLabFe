@@ -20,49 +20,49 @@ export default function JobList({
   limit = 3,
   containerClassName = "",
 }: JobListProps) {
-  const [jobs, setJobs] = useState<Job[]>([]);
+  const [hirings, setHirings] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
 
   useEffect(() => {
-    loadJobs();
+    loadHirings();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  async function loadJobs() {
+  async function loadHirings() {
     try {
       setLoading(true);
       setError("");
 
-      console.log("Loading jobs using API client...");
+      console.log("Loading hirings using API client...");
       
       // Use API client to fetch hirings
       const responseData = await apiClient.hirings.getAll({});
       console.log("API Response:", responseData);
       
       // Handle backend response format: {success: true, count: 29, data: [...]}
-      let jobsData: Job[] = [];
+      let hiringsData: Job[] = [];
       
       if (responseData.success && Array.isArray(responseData.data)) {
         // Backend format: {success: true, data: [...]}
-        jobsData = responseData.data;
+        hiringsData = responseData.data;
       } else if (responseData.data && Array.isArray(responseData.data)) {
         // Nested data response
-        jobsData = responseData.data;
+        hiringsData = responseData.data;
       } else if (Array.isArray(responseData)) {
         // Direct array response
-        jobsData = responseData;
+        hiringsData = responseData;
       } else {
         console.error("Unexpected response format:", responseData);
         throw new Error("Invalid response format");
       }
       
-      console.log("Processed jobs data:", jobsData);
-      setJobs(jobsData.slice(0, limit));
+      console.log("Processed hirings data:", hiringsData);
+      setHirings(hiringsData.slice(0, limit));
       
     } catch (err: any) {
-      console.error("Error loading jobs:", err);
+      console.error("Error loading hirings:", err);
       
       // Handle different types of errors
       if (err.isTimeout) {
@@ -70,11 +70,11 @@ export default function JobList({
       } else if (err.isNetworkError) {
         setError("Lỗi kết nối mạng. Vui lòng kiểm tra internet và thử lại.");
       } else if (err.status === 404) {
-        setError("Không tìm thấy dữ liệu việc làm.");
+        setError("Không tìm thấy dữ liệu tuyển dụng.");
       } else {
         setError("Có lỗi xảy ra khi tải dữ liệu");
       }
-      setJobs([]);
+      setHirings([]);
     } finally {
       setLoading(false);
     }
@@ -114,7 +114,7 @@ export default function JobList({
               onClick={() => {
                 setError("");
                 setLoading(true);
-                loadJobs();
+                loadHirings();
               }}
               className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
             >
@@ -123,15 +123,15 @@ export default function JobList({
           </div>
         )}
 
-        {!loading && !error && jobs.length === 0 && (
+        {!loading && !error && hirings.length === 0 && (
           <div className="text-center py-8 text-gray-500">
-            Chưa có việc làm nào được đăng
+            Chưa có tin tuyển dụng nào được đăng
           </div>
         )}
 
         {!loading &&
           !error &&
-          jobs.map((job) => (
+          hirings.map((job) => (
             <div
               className="transition-transform transform hover:-translate-y-1 hover:shadow-lg duration-300"
               key={job.id || job._id}
@@ -157,7 +157,7 @@ function Header() {
   return (
     <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-6 max-w-6xl mx-auto px-4">
       <h3 className="text-xl sm:text-2xl font-bold text-center sm:text-left break-words">
-        Việc làm mới nhất
+        Tin tuyển dụng mới nhất
       </h3>
       <Link
         href="/hirings"

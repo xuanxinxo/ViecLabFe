@@ -52,24 +52,7 @@ export default function JobDetail() {
         setLoading(true);
         console.log('Loading job with ID:', params.id);
 
-        // Try backend API first, then fallback to local API
-        let result = await apiLoaders.jobs.loadItem(params.id as string);
-
-        // If backend API fails, try local API as fallback
-        if (!result.success && !result.data) {
-          console.log('Backend API failed, trying local API as fallback...');
-          try {
-            const localResponse = await fetch(`/api/jobs/${params.id}`);
-            if (localResponse.ok) {
-              const localData = await localResponse.json();
-              if (localData.success && localData.data) {
-                result = { data: localData.data, success: true };
-              }
-            }
-          } catch (localError) {
-            console.log('Local API also failed:', localError);
-          }
-        }
+        const result = await apiLoaders.jobs.loadItem(params.id as string);
 
         if (result.success && result.data) {
           setJob(result.data);

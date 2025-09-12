@@ -50,25 +50,47 @@ export default function BannerDetail() {
     async function loadJob() {
       try {
         setLoading(true);
-        const response = await fetch(`/api/jobs/${params.id}`, {
+        console.log(`🔍 [BANNER DETAIL] Loading hiring with ID: ${params.id}`);
+        
+        // Try hirings API first
+        let response = await fetch(`/api/hirings/${params.id}`, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
             'Accept': 'application/json',
           },
         });
-        const data = await response.json();
+        
+        let data = await response.json();
+        console.log(`🔍 [BANNER DETAIL] Hirings API response:`, data);
+        
+        // If hirings API fails, try jobs API as fallback
+        if (!response.ok || !data.success) {
+          console.log(`⚠️ [BANNER DETAIL] Hirings API failed, trying jobs API...`);
+          response = await fetch(`/api/jobs/${params.id}`, {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+            },
+          });
+          data = await response.json();
+          console.log(`🔍 [BANNER DETAIL] Jobs API response:`, data);
+        }
+        
         if (response.ok) {
           // Handle backend response format: {success: true, data: {...}}
           if (data.success && data.data) {
             setJob(data.data);
+            console.log(`✅ [BANNER DETAIL] Job loaded successfully:`, data.data.title);
           } else if (data) {
             setJob(data);
+            console.log(`✅ [BANNER DETAIL] Job loaded successfully:`, data.title);
           } else {
-            setError('Không tìm thấy việc làm');
+            setError('Không tìm thấy tin tuyển dụng');
           }
         } else {
-          setError(data.error || 'Không tìm thấy việc làm');
+          setError(data.error || 'Không tìm thấy tin tuyển dụng');
         }
       } catch (err) {
         console.error('Error loading job:', err);
@@ -92,7 +114,7 @@ export default function BannerDetail() {
     return (
       <div className="min-h-screen bg-gray-100 flex items-center justify-center text-center">
         <div>
-          <h2 className="text-2xl font-bold text-red-600 mb-4">Không tìm thấy việc làm</h2>
+          <h2 className="text-2xl font-bold text-red-600 mb-4">Không tìm thấy tin tuyển dụng</h2>
           <Link href="/" className="text-blue-600 underline hover:text-blue-800">← Quay lại trang chủ</Link>
         </div>
       </div>

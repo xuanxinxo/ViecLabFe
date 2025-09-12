@@ -15,32 +15,81 @@ export async function GET(
 ) {
   try {
     const jobId = params.id;
+    console.log(`🔍 [JOBS API] Fetching job with ID: ${jobId}`);
 
-    // Load mock data
+    // Try backend API first
+    try {
+      const backendUrl = `https://vieclabbe.onrender.com/api/jobs/${jobId}`;
+      console.log(`🔍 [JOBS API] Calling backend: ${backendUrl}`);
+      
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+      
+      const response = await fetch(backendUrl, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        signal: controller.signal,
+      });
+      
+      clearTimeout(timeoutId);
+      
+      if (response.ok) {
+        const backendData = await response.json();
+        console.log(`✅ [JOBS API] Backend response:`, backendData);
+        
+        // Handle backend response format
+        if (backendData.success && backendData.data) {
+          return NextResponse.json({
+            success: true,
+            data: backendData.data,
+            message: 'Lấy thông tin việc làm thành công từ backend'
+          });
+        } else if (backendData) {
+          return NextResponse.json({
+            success: true,
+            data: backendData,
+            message: 'Lấy thông tin việc làm thành công từ backend'
+          });
+        }
+      } else {
+        console.log(`⚠️ [JOBS API] Backend returned ${response.status}, falling back to mock data`);
+      }
+    } catch (backendError) {
+      console.log(`⚠️ [JOBS API] Backend error, falling back to mock data:`, backendError);
+    }
+
+    // Fallback to mock data
     let mockJobs: any[] = [];
     try {
       const data = await fs.readFile(MOCK_STORAGE_PATH, 'utf8');
       mockJobs = JSON.parse(data);
+      console.log(`📊 [JOBS API] Loaded ${mockJobs.length} mock jobs from file`);
     } catch (error) {
+      console.log(`⚠️ [JOBS API] No mock data found`);
       mockJobs = [];
     }
 
-    // Find the job
+    // Find the job in mock data
     const job = mockJobs.find(job => job.id === jobId || job._id === jobId);
     if (!job) {
+      console.log(`❌ [JOBS API] Job not found in mock data either`);
       return NextResponse.json(
         { success: false, message: 'Không tìm thấy việc làm' },
         { status: 404 }
       );
     }
 
+    console.log(`✅ [JOBS API] Found job in mock data:`, job.title);
     return NextResponse.json({
       success: true,
       data: job,
-      message: 'Lấy thông tin việc làm thành công'
+      message: 'Lấy thông tin việc làm thành công từ mock data'
     });
 
   } catch (error: any) {
+    console.error(`💥 [JOBS API] Error:`, error);
     return NextResponse.json(
       { success: false, message: 'Có lỗi xảy ra khi lấy thông tin việc làm' },
       { status: 500 }
