@@ -9,21 +9,20 @@ import { adminApi } from '@/lib/api';
 const showToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
   // Create toast element
   const toast = document.createElement('div');
-  toast.className = `fixed top-4 right-4 z-50 px-6 py-3 rounded-lg shadow-lg text-white font-medium transition-all duration-300 transform translate-x-full ${
-    type === 'success' ? 'bg-green-500' : 
-    type === 'error' ? 'bg-red-500' : 
-    'bg-blue-500'
-  }`;
+  toast.className = `fixed top-4 right-4 z-50 px-6 py-3 rounded-lg shadow-lg text-white font-medium transition-all duration-300 transform translate-x-full ${type === 'success' ? 'bg-green-500' :
+    type === 'error' ? 'bg-red-500' :
+      'bg-blue-500'
+    }`;
   toast.textContent = message;
-  
+
   // Add to DOM
   document.body.appendChild(toast);
-  
+
   // Animate in
   setTimeout(() => {
     toast.classList.remove('translate-x-full');
   }, 100);
-  
+
   // Remove after 3 seconds
   setTimeout(() => {
     toast.classList.add('translate-x-full');
@@ -128,7 +127,7 @@ export default function CreateJob() {
       form.append('type', formData.type);
       form.append('salary', formData.salary.trim());
       form.append('description', formData.description.trim());
-      
+
       // Handle deadline
       if (formData.deadline) {
         form.append('deadline', formData.deadline);
@@ -136,11 +135,11 @@ export default function CreateJob() {
 
       // Handle requirements array
       const validRequirements = formData.requirements.filter((r) => r.trim());
-      validRequirements.forEach((req) => form.append('requirements', req.trim()));
+      validRequirements.forEach((req, index) => form.append(`requirements[${index}]`, req.trim()));
 
       // Handle benefits array
       const validBenefits = formData.benefits.filter((b) => b.trim());
-      validBenefits.forEach((ben) => form.append('benefits', ben.trim()));
+      validBenefits.forEach((ben, index) => form.append(`benefits[${index}]`, ben.trim()));
 
       // Handle image upload
       if (selectedImage) {
@@ -158,18 +157,18 @@ export default function CreateJob() {
         form.append('img', selectedImage);
       }
 
-      // Send FormData to hirings API (for approved jobs)
-      const response = await adminApi.hirings.create(form);
+      // Send FormData to jobs API
+      const response = await adminApi.jobs.create(form);
       console.log('🔍 [CREATE JOB] Full response:', response);
       console.log('🔍 [CREATE JOB] Response data:', response.data);
       console.log('🔍 [CREATE JOB] Response status:', response.status);
-      
+
       const data = response.data;
 
       if (data && data.success) {
         console.log('✅ [CREATE JOB] Create successful:', data);
         showToast('🎉 Tạo việc làm thành công!', 'success');
-        
+
         // Reset form
         setFormData({
           title: '',
@@ -184,7 +183,7 @@ export default function CreateJob() {
         });
         setSelectedImage(null);
         setError('');
-        
+
         // Redirect after a short delay to show the success message
         setTimeout(() => {
           router.push('/admin/jobs?refresh=true');
@@ -196,9 +195,9 @@ export default function CreateJob() {
       }
     } catch (err) {
       console.error('💥 [CREATE JOB] Unexpected error:', err);
-      
+
       let errorMessage = 'Có lỗi xảy ra khi tạo việc làm.';
-      
+
       if (err instanceof Error) {
         if (err.message.includes('fetch')) {
           errorMessage = 'Lỗi kết nối mạng. Vui lòng kiểm tra kết nối internet.';
@@ -208,7 +207,7 @@ export default function CreateJob() {
           errorMessage = `Lỗi không xác định: ${err.message}`;
         }
       }
-      
+
       setError(errorMessage);
       showToast('❌ Có lỗi xảy ra khi tạo việc làm!', 'error');
     } finally {
@@ -228,7 +227,7 @@ export default function CreateJob() {
             ← Quay lại
           </button>
         </div>
-        
+
         {error && (
           <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
             <div className="flex">
@@ -246,7 +245,7 @@ export default function CreateJob() {
             </div>
           </div>
         )}
-        
+
         <form onSubmit={handleSubmit}>
           <div className="grid grid-cols-1 gap-4">
             <div>
@@ -271,7 +270,7 @@ export default function CreateJob() {
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
-            
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Địa điểm *</label>
               <input
@@ -283,7 +282,7 @@ export default function CreateJob() {
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
-            
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Loại công việc</label>
               <select
@@ -298,7 +297,7 @@ export default function CreateJob() {
                 <option value="Freelance">Freelance</option>
               </select>
             </div>
-            
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Mức lương</label>
               <input

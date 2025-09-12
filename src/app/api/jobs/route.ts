@@ -1,14 +1,37 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAdminFromRequest } from '@/lib/auth';
+import { promises as fs } from 'fs';
+import path from 'path';
 
 export const dynamic = "force-dynamic";
 
-// Temporary storage for mock jobs (in production, this would be a database)
-let mockJobs: any[] = [];
+// File path for persistent mock storage
+const MOCK_STORAGE_PATH = path.join(process.cwd(), 'mock-jobs.json');
+
+// Load mock jobs from file
+async function loadMockJobs(): Promise<any[]> {
+  try {
+    const data = await fs.readFile(MOCK_STORAGE_PATH, 'utf8');
+    return JSON.parse(data);
+  } catch (error) {
+    return [];
+  }
+}
+
+// Save mock jobs to file
+async function saveMockJobs(jobs: any[]): Promise<void> {
+  try {
+    await fs.writeFile(MOCK_STORAGE_PATH, JSON.stringify(jobs, null, 2));
+  } catch (error) {
+    console.error('Error saving mock jobs:', error);
+  }
+}
 
 // GET /api/jobs - Return mock jobs for testing
 export async function GET(request: NextRequest) {
   try {
+    const envurl = process.env.API_URL;
+    console.log("url: ", envurl);
     // Get query parameters
     const searchParams = request.nextUrl.searchParams;
     const status = searchParams.get('status');
@@ -20,6 +43,10 @@ export async function GET(request: NextRequest) {
     if (status) queryParams.append('status', status);
     
     const backendUrl = `https://vieclabbe.onrender.com/api/jobs${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+    
+    // Load mock jobs from file
+    const mockJobs = await loadMockJobs();
+    console.log(`📊 [JOBS API] Loaded ${mockJobs.length} mock jobs from file`);
     
     // Try backend API first, fallback to mock storage
     let data;
@@ -42,8 +69,34 @@ export async function GET(request: NextRequest) {
       }
       
       data = await response.json();
+      
+      // Merge mock jobs with backend data
+      if (data.success && data.data) {
+        let backendJobs = [];
+        
+        // Handle different response formats
+        if (data.data.items && Array.isArray(data.data.items)) {
+          backendJobs = data.data.items;
+        } else if (Array.isArray(data.data)) {
+          backendJobs = data.data;
+        }
+        
+        if (backendJobs.length > 0) {
+          // Add mock jobs to backend data
+          const allJobs = [...backendJobs, ...mockJobs];
+          
+          if (data.data.items) {
+            data.data.items = allJobs;
+            data.data.pagination.total = allJobs.length;
+          } else {
+            data.data = allJobs;
+          }
+          
+          console.log(`📊 [JOBS API] Merged ${backendJobs.length} backend jobs with ${mockJobs.length} mock jobs`);
+        }
+      }
     } catch (backendError) {
-      // Fallback to mock storage
+      // Fallback to mock storage only
       const mockData = {
         success: true,
         data: {
@@ -92,14 +145,15 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(filteredData);
   } catch (error: any) {
     // Return mock data instead of error to prevent 500
+    const fallbackMockJobs = await loadMockJobs();
     const mockData = {
       success: true,
       data: {
-        items: mockJobs,
+        items: fallbackMockJobs,
         pagination: {
           page: 1,
-          limit: mockJobs.length,
-          total: mockJobs.length,
+          limit: fallbackMockJobs.length,
+          total: fallbackMockJobs.length,
           totalPages: 1
         }
       }
@@ -293,11 +347,13 @@ export async function POST(req: NextRequest) {
       };
       
       // Add to mock storage
-      mockJobs.push(newJob);
+      const currentMockJobs = await loadMockJobs();
+      currentMockJobs.push(newJob);
+      await saveMockJobs(currentMockJobs);
       
       const fallbackResponse = {
         success: true,
-        message: 'Việc làm đã được tạo thành công (chế độ offline)',
+        message: 'Việc làm đã được tạo thành công (lưu tạm thời - backend không khả dụng)',
         data: newJob
       };
       
@@ -339,7 +395,9 @@ export async function POST(req: NextRequest) {
         img: body.img
       };
       
-      mockJobs.push(newJob);
+      const currentMockJobs = await loadMockJobs();
+      currentMockJobs.push(newJob);
+      await saveMockJobs(currentMockJobs);
       
       return NextResponse.json({
         success: true,
@@ -372,8 +430,11 @@ export async function PUT(req: NextRequest) {
     
     console.log('🔍 [JOBS API] PUT request for job:', id, 'with data:', updateData);
     
+    // Load mock jobs from file
+    const mockJobs = await loadMockJobs();
+    
     // Find and update job in mock storage
-    const jobIndex = mockJobs.findIndex(job => job.id === id || job._id === id);
+    const jobIndex = mockJobs.findIndex((job: any) => job.id === id || job._id === id);
     
     if (jobIndex === -1) {
       return NextResponse.json({ 
@@ -388,6 +449,9 @@ export async function PUT(req: NextRequest) {
       ...updateData,
       updatedAt: new Date().toISOString()
     };
+    
+    // Save back to file
+    await saveMockJobs(mockJobs);
     
     console.log('✅ [JOBS API] Job updated successfully:', mockJobs[jobIndex]);
     

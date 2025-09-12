@@ -1,0 +1,65 @@
+[
+  {
+    "id": "mock-job-1757586155106",
+    "_id": "mock-job-1757586155106",
+    "title": "ssssssssssss",
+    "company": "Toredco",
+    "location": "04 mỹ an 4 ngũ hành sơn đà nẵng",
+    "type": "Full-time",
+    "salary": "Thoả Thuận",
+    "description": "s",
+    "requirements": [
+      "s"
+    ],
+    "benefits": [
+      "s"
+    ],
+    "deadline": "2025-09-18",
+    "status": "pending",
+    "createdAt": "2025-09-11T10:22:35.106Z",
+    "updatedAt": "2025-09-11T10:22:35.106Z",
+    "img": "uploaded_image"
+  },
+  {
+    "id": "mock-job-1757597747314",
+    "_id": "mock-job-1757597747314",
+    "title": "ssss",
+    "company": "s",
+    "location": "s",
+    "type": "Full-time",
+    "salary": "12.000.000 - 14.000.000 vnđ/tháng",
+    "description": "sss",
+    "requirements": [
+      "aaa"
+    ],
+    "benefits": [
+      "aaaa"
+    ],
+    "deadline": "2025-09-26",
+    "status": "pending",
+    "createdAt": "2025-09-11T13:35:47.314Z",
+    "updatedAt": "2025-09-11T13:35:47.314Z",
+    "img": "uploaded_image"
+  },
+  {
+    "id": "mock-job-1757598206166",
+    "_id": "mock-job-1757598206166",
+    "title": "vvvvv",
+    "company": "Toredco",
+    "location": "vv",
+    "type": "Full-time",
+    "salary": "50k/1h",
+    "description": "vvvvv",
+    "requirements": [
+      "vvv"
+    ],
+    "benefits": [
+      "vvvvv"
+    ],
+    "deadline": "",
+    "status": "pending",
+    "createdAt": "2025-09-11T13:43:26.166Z",
+    "updatedAt": "2025-09-11T13:43:26.166Z",
+    "img": "uploaded_image"
+  }
+]

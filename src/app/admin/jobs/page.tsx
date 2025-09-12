@@ -77,18 +77,10 @@ export default function AdminJobs() {
     try {
       setLoading(true);
       setError('');
-
-      console.log('🔍 [ADMIN JOBS PAGE] Loading jobs from backend API...');
-
       // Call backend jobs API
       const response = await adminApi.jobs.getAll();
-
-      console.log('🔍 [ADMIN JOBS PAGE] API Response:', response);
-      console.log('🔍 [ADMIN JOBS PAGE] Response data:', response.data);
-      console.log('🔍 [ADMIN JOBS PAGE] Response status:', response.status);
-
+      console.log("ress>>>", response);
       const data = response.data;
-
       if (!data || !data.success) {
         throw new Error(data?.message || 'Failed to load jobs');
       }
@@ -97,22 +89,17 @@ export default function AdminJobs() {
       let jobsData = [];
       if (data.data && data.data.items && Array.isArray(data.data.items)) {
         jobsData = data.data.items;
-        console.log('✅ [ADMIN JOBS PAGE] Using data.data.items with', jobsData.length, 'jobs');
       } else if (data.data && Array.isArray(data.data)) {
         jobsData = data.data;
-        console.log('✅ [ADMIN JOBS PAGE] Using data.data with', jobsData.length, 'jobs');
       } else if (Array.isArray(data)) {
         jobsData = data;
-        console.log('✅ [ADMIN JOBS PAGE] Using data array with', jobsData.length, 'jobs');
       } else {
-        console.log('❌ [ADMIN JOBS PAGE] No valid jobs data found in response');
         jobsData = [];
       }
 
-      console.log('🔍 [ADMIN JOBS PAGE] Jobs data:', jobsData);
 
       // Format jobs data
-      const formattedJobs = jobsData.map((job) => ({
+      const formattedJobs = jobsData.map((job: any) => ({
         id: job.id || job._id || '',
         _id: job._id || job.id || '',
         title: job.title || 'No Title',
@@ -148,8 +135,8 @@ export default function AdminJobs() {
       setActionLoading(prev => ({ ...prev, [`status-${jobId}`]: true }));
       console.log('🔄 [ADMIN JOBS PAGE] Updating job status:', { jobId, newStatus });
 
-      // Use hirings API with authentication
-      const response = await fetch(`/api/hirings/${jobId}/status`, {
+      // Use jobs API with authentication
+      const response = await fetch(`/api/jobs/${jobId}/status`, {
         method: 'PUT',
         credentials: 'include',
         headers: {
@@ -214,8 +201,8 @@ export default function AdminJobs() {
         setActionLoading(prev => ({ ...prev, [`delete-${jobId}`]: true }));
         console.log('🗑️ [ADMIN JOBS PAGE] Deleting job:', jobId);
 
-        // Use hirings API with authentication
-        const response = await fetch(`/api/hirings/${jobId}`, {
+        // Use jobs API with authentication
+        const response = await fetch(`/api/jobs/${jobId}`, {
           method: 'DELETE',
           credentials: 'include',
           headers: {
@@ -310,8 +297,8 @@ export default function AdminJobs() {
       {/* Toast Notification */}
       {toast.show && (
         <div className={`fixed top-24 right-4 z-50 px-6 py-3 rounded-lg shadow-lg transition-all duration-300 ${toast.type === 'success' ? 'bg-green-500 text-white' :
-            toast.type === 'error' ? 'bg-red-500 text-white' :
-              'bg-blue-500 text-white'
+          toast.type === 'error' ? 'bg-red-500 text-white' :
+            'bg-blue-500 text-white'
           }`}>
           {toast.message}
         </div>
@@ -369,8 +356,8 @@ export default function AdminJobs() {
             <div className="ml-3">
               <h3 className="text-sm font-medium text-blue-800">Thông tin API</h3>
               <div className="mt-2 text-sm text-blue-700">
-                <p>• API Endpoint: <code className="bg-blue-100 px-1 rounded">/api/hirings</code></p>
-                <p>• Backend API: <code className="bg-blue-100 px-1 rounded">https://vieclabbe.onrender.com/api/hirings</code></p>
+                <p>• API Endpoint: <code className="bg-blue-100 px-1 rounded">/api/jobs</code></p>
+                <p>• Backend API: <code className="bg-blue-100 px-1 rounded">https://vieclabbe.onrender.com/api/jobs</code></p>
                 <p>• Authentication: Cookie-based (credentials: include)</p>
                 <p>• Last updated: {new Date().toLocaleString('vi-VN')}</p>
               </div>
@@ -455,9 +442,9 @@ export default function AdminJobs() {
                       <td className="px-6 py-4 whitespace-nowrap">{job.salary}</td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${job.status === 'active' ? 'bg-green-100 text-green-800' :
-                            job.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                              job.status === 'deleted' ? 'bg-gray-100 text-gray-800' :
-                                'bg-red-100 text-red-800'
+                          job.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                            job.status === 'deleted' ? 'bg-gray-100 text-gray-800' :
+                              'bg-red-100 text-red-800'
                           }`}>
                           {job.status === 'active' ? 'Đang hoạt động' :
                             job.status === 'pending' ? 'Chờ duyệt' :
@@ -483,8 +470,8 @@ export default function AdminJobs() {
                                 onClick={() => handleStatusChange(job.id, 'active')}
                                 disabled={actionLoading[`status-${job.id}`]}
                                 className={`px-3 py-1 rounded-md text-xs text-white ${actionLoading[`status-${job.id}`]
-                                    ? 'bg-green-400 cursor-not-allowed'
-                                    : 'bg-green-500 hover:bg-green-600'
+                                  ? 'bg-green-400 cursor-not-allowed'
+                                  : 'bg-green-500 hover:bg-green-600'
                                   }`}
                               >
                                 {actionLoading[`status-${job.id}`] ? '⏳...' : 'Duyệt'}
@@ -494,8 +481,8 @@ export default function AdminJobs() {
                               onClick={() => handleDelete(job.id)}
                               disabled={actionLoading[`delete-${job.id}`]}
                               className={`px-3 py-1 rounded-md text-xs text-white ${actionLoading[`delete-${job.id}`]
-                                  ? 'bg-red-400 cursor-not-allowed'
-                                  : 'bg-red-500 hover:bg-red-600'
+                                ? 'bg-red-400 cursor-not-allowed'
+                                : 'bg-red-500 hover:bg-red-600'
                                 }`}
                             >
                               {actionLoading[`delete-${job.id}`] ? '⏳...' : 'Xóa'}
