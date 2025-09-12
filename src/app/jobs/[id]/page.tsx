@@ -51,9 +51,26 @@ export default function JobDetail() {
       try {
         setLoading(true);
         console.log('Loading job with ID:', params.id);
-        
-        const result = await apiLoaders.jobs.loadItem(params.id as string);
-        
+
+        // Try backend API first, then fallback to local API
+        let result = await apiLoaders.jobs.loadItem(params.id as string);
+
+        // If backend API fails, try local API as fallback
+        if (!result.success && !result.data) {
+          console.log('Backend API failed, trying local API as fallback...');
+          try {
+            const localResponse = await fetch(`/api/jobs/${params.id}`);
+            if (localResponse.ok) {
+              const localData = await localResponse.json();
+              if (localData.success && localData.data) {
+                result = { data: localData.data, success: true };
+              }
+            }
+          } catch (localError) {
+            console.log('Local API also failed:', localError);
+          }
+        }
+
         if (result.success && result.data) {
           setJob(result.data);
           console.log('Job loaded successfully:', result.data);
@@ -96,8 +113,8 @@ export default function JobDetail() {
           <p className="text-gray-500 mb-6 text-sm">
             ID: {params.id}
           </p>
-          <Link 
-            href="/jobs" 
+          <Link
+            href="/jobs"
             className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-50 hover:text-blue-600 hover:border-blue-300 transition-all duration-200 ease-in-out"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -113,19 +130,19 @@ export default function JobDetail() {
   return (
     <div className="min-h-screen bg-gray-50 pb-16 pt-20">
       <header className="bg-white shadow-sm border-b mb-8 fixed top-0 left-0 right-0 z-50">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <Link 
-            href="/jobs" 
-            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-50 hover:text-blue-600 hover:border-blue-300 transition-all duration-200 ease-in-out"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-            </svg>
-            Quay lại danh sách việc làm
-          </Link>
-        </div>
-      </header>
 
+      </header>
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4 mt-10">
+        <Link
+          href="/jobs"
+          className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-50 hover:text-blue-600 hover:border-blue-300 transition-all duration-200 ease-in-out"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+          </svg>
+          Quay lại danh sách việc làm
+        </Link>
+      </div>
       <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
         <div className="bg-white rounded-xl shadow-md overflow-hidden">
           {/* Banner */}

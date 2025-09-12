@@ -140,56 +140,8 @@ export default function CarouselJob() {
           fetchJobs();
         }, 2000); // Wait 2 seconds before retry
       } else {
-        console.log('Max retries reached, using fallback data');
-        // Use fallback data instead of empty array
-        const fallbackJobs = [
-          {
-            id: 'fallback-1',
-            title: 'Frontend Developer',
-            company: 'TOREDCO',
-            location: 'Đà Nẵng',
-            type: 'Full-time',
-            salary: '15-20 triệu',
-            description: 'Phát triển ứng dụng web với React, Next.js',
-            requirements: ['React', 'TypeScript', 'Next.js'],
-            benefits: ['Lương thưởng hấp dẫn', 'Bảo hiểm y tế'],
-            postedDate: new Date().toISOString(),
-            deadline: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-            status: 'active',
-            img: '/img/tech.jpg'
-          },
-          {
-            id: 'fallback-2',
-            title: 'Backend Developer',
-            company: 'TOREDCO',
-            location: 'Đà Nẵng',
-            type: 'Full-time',
-            salary: '18-25 triệu',
-            description: 'Phát triển API và hệ thống backend',
-            requirements: ['Node.js', 'MongoDB', 'Express'],
-            benefits: ['Stock options', 'Remote work'],
-            postedDate: new Date().toISOString(),
-            deadline: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-            status: 'active',
-            img: '/img/backend.jpg'
-          },
-          {
-            id: 'fallback-3',
-            title: 'UI/UX Designer',
-            company: 'TOREDCO',
-            location: 'Đà Nẵng',
-            type: 'Full-time',
-            salary: '12-18 triệu',
-            description: 'Thiết kế giao diện người dùng',
-            requirements: ['Figma', 'Adobe Creative Suite'],
-            benefits: ['Môi trường sáng tạo', 'Đào tạo'],
-            postedDate: new Date().toISOString(),
-            deadline: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-            status: 'active',
-            img: '/img/design.jpg'
-          }
-        ];
-        setJobs(fallbackJobs);
+        console.log('Max retries reached, no jobs available');
+        setJobs([]);
         setLoading(false);
       }
     }
@@ -310,7 +262,7 @@ export default function CarouselJob() {
                       Ứng tuyển
                     </button>
                     <Link
-                      href={`/banner/${job.id}`}
+                      href={`/jobs/${job.id}`}
                       className="flex-1 text-center bg-blue-500 text-white px-3 py-1.5 rounded hover:bg-blue-600 whitespace-nowrap"
                     >
                       Xem chi tiết

@@ -195,7 +195,7 @@ export default function HiringsJobNewList() {
                               Ứng tuyển job
                             </button>
                             <a
-                              href={`/jobs/${job.id}`}
+                              href={`/detailjobs/${job.id}`}
                               className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg text-sm font-semibold shadow hover:bg-gray-300 transition-colors"
                             >
                               Xem chi tiết

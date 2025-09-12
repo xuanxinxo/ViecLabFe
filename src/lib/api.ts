@@ -63,7 +63,7 @@ const api: AxiosInstance = axios.create({
 
 // Create local API instance for frontend routes
 const localApi: AxiosInstance = axios.create({
-  baseURL: `${API_URL}/api`, // Use local API routes
+  baseURL: '/api', // Use local API routes (relative path)
   headers: {
     'Content-Type': 'application/json',
   },
@@ -325,11 +325,11 @@ export const adminApi = {
 export const apiClient = {
   users: createApiClient<any>('users'),
   jobs: createApiClient<any>('jobs', api), // Use direct backend API
-  newJobs: createApiClient<any>('newjobs', localApi), // Use local API proxy to backend
+  newJobs: createApiClient<any>('newjobs', api), // Use direct backend API
   toredco: createApiClient<any>('toredco'),
   applications: createApiClient<any>('applications', localApi), // Use local API proxy to backend
   admin: adminApi, // Export admin API methods
-  hirings: createApiClient<any>('hirings', localApi), // Use local API proxy to backend
+  hirings: createApiClient<any>('hirings', api), // Use direct backend API
   news: createApiClient<any>('news', localApi), // Use local API for news only
 
 
