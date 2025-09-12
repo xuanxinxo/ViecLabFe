@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAdminFromRequest } from '../../../../lib/auth';
 
+import { addCorsHeaders, createCorsOptionsResponse } from '@/lib/corsHelper';
 export const dynamic = "force-dynamic";
+// OPTIONS handler for CORS preflight
+export async function OPTIONS() {
+  return createCorsOptionsResponse();
+}
 
 // GET /api/admin/jobs
 export async function GET(request: NextRequest) {
@@ -11,7 +16,8 @@ export async function GET(request: NextRequest) {
     const admin = getAdminFromRequest(request);
     if (!admin || admin.role !== 'admin') {
       console.log('❌ [ADMIN JOBS] Unauthorized access');
-      return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
+      const response = NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
+    return addCorsHeaders(response);
     }
 
     console.log('✅ [ADMIN JOBS] Admin verified:', admin.username);
@@ -89,24 +95,27 @@ export async function GET(request: NextRequest) {
       
       console.log('✅ [ADMIN JOBS] Transformed', transformedJobs.length, 'jobs');
       
-      return NextResponse.json({ success: true, data: transformedJobs });
+      const response = NextResponse.json({ success: true, data: transformedJobs });
+    return addCorsHeaders(response);
       
         } catch (apiError) {
       console.error('💥 [ADMIN JOBS] Backend API error:', apiError);
       
       // Return error when backend is not available - no fallback to sample data
       console.log('❌ [ADMIN JOBS] Backend API not available');
-      return NextResponse.json(
+      const response = NextResponse.json(
         { success: false, message: 'Backend API không khả dụng. Vui lòng kiểm tra kết nối database.' },
         { status: 503 }
       );
+    return addCorsHeaders(response);
     }
   } catch (err) {
     console.error('💥 [ADMIN JOBS] Error:', err);
-    return NextResponse.json(
+    const response = NextResponse.json(
       { success: false, message: 'Internal server error' },
       { status: 500 }
     );
+    return addCorsHeaders(response);
   }
 }
 
@@ -118,7 +127,8 @@ export async function POST(request: NextRequest) {
     const admin = getAdminFromRequest(request);
     if (!admin || admin.role !== 'admin') {
       console.log('❌ [ADMIN JOBS] Unauthorized access');
-      return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
+      const response = NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
+    return addCorsHeaders(response);
     }
 
     console.log('✅ [ADMIN JOBS] Admin verified:', admin.username);
@@ -128,10 +138,11 @@ export async function POST(request: NextRequest) {
 
     if (!body.title || !body.company || !body.location) {
       console.log('❌ [ADMIN JOBS] Missing required fields');
-      return NextResponse.json(
+      const response = NextResponse.json(
         { success: false, message: 'Tiêu đề, công ty và địa điểm là bắt buộc' },
         { status: 400 }
       );
+    return addCorsHeaders(response);
     }
 
     // Call backend API to create job
@@ -170,25 +181,28 @@ export async function POST(request: NextRequest) {
       const createdJob = await response.json();
       console.log('✅ [ADMIN JOBS] Job created successfully via backend:', createdJob);
 
-      return NextResponse.json(
+      const response = NextResponse.json(
         { success: true, message: 'Job created successfully', data: createdJob },
         { status: 201 }
       );
+    return addCorsHeaders(response);
     } catch (apiError) {
       console.error('💥 [ADMIN JOBS] Backend API error:', apiError);
       
       // Return error when backend is not available
       console.log('❌ [ADMIN JOBS] Backend API not available');
-      return NextResponse.json(
+      const response = NextResponse.json(
         { success: false, message: 'Backend API không khả dụng. Vui lòng kiểm tra kết nối database.' },
         { status: 503 }
       );
+    return addCorsHeaders(response);
     }
   } catch (err: any) {
     console.error('💥 [ADMIN JOBS] Error:', err);
-    return NextResponse.json(
+    const response = NextResponse.json(
       { success: false, message: 'Internal server error' },
       { status: 500 }
     );
+    return addCorsHeaders(response);
   }
 }

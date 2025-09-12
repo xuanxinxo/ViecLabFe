@@ -2,10 +2,15 @@ import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 
+import { addCorsHeaders, createCorsOptionsResponse } from '@/lib/corsHelper';
 const JWT_SECRET = process.env.JWT_SECRET || 'toredco-admin-secret-key-2024-super-secure';
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://vieclabbe.onrender.com';
 
 export const dynamic = "force-dynamic";
+// OPTIONS handler for CORS preflight
+export async function OPTIONS() {
+  return createCorsOptionsResponse();
+}
 
 // POST /api/auth/login
 export async function POST(request: NextRequest) {
@@ -18,13 +23,14 @@ export async function POST(request: NextRequest) {
       console.log('📝 [LOGIN] Received credentials:', { email: body.email, password: body.password ? '***' : 'undefined' });
     } catch (jsonError) {
       console.error('❌ [LOGIN] JSON parse error:', jsonError);
-      return NextResponse.json(
+      const response = NextResponse.json(
         { 
           success: false, 
           message: 'Dữ liệu không hợp lệ' 
         },
         { status: 400 }
       );
+    return addCorsHeaders(response);
     }
     
     const { email, password } = body;
@@ -32,7 +38,7 @@ export async function POST(request: NextRequest) {
     // Validate required fields
     if (!email || !password) {
       console.log('❌ [LOGIN] Missing email or password');
-      return NextResponse.json(
+      const response = NextResponse.json(
         { 
           success: false, 
           message: 'Email và mật khẩu là bắt buộc',
@@ -43,13 +49,14 @@ export async function POST(request: NextRequest) {
         },
         { status: 400 }
       );
+    return addCorsHeaders(response);
     }
 
     // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       console.log('❌ [LOGIN] Invalid email format');
-      return NextResponse.json(
+      const response = NextResponse.json(
         { 
           success: false, 
           message: 'Định dạng email không hợp lệ',
@@ -59,6 +66,7 @@ export async function POST(request: NextRequest) {
         },
         { status: 400 }
       );
+    return addCorsHeaders(response);
     }
 
     console.log('📤 [LOGIN] Sending credentials to backend');
@@ -135,13 +143,14 @@ export async function POST(request: NextRequest) {
 
         return response;
       } else {
-        return NextResponse.json(
+        const response = NextResponse.json(
           {
             success: false,
             message: 'Email hoặc mật khẩu không đúng'
           },
           { status: 401 }
         );
+    return addCorsHeaders(response);
       }
     }
 
@@ -194,13 +203,14 @@ export async function POST(request: NextRequest) {
 
           return response;
         } else {
-          return NextResponse.json(
+          const response = NextResponse.json(
             {
               success: false,
               message: 'Email hoặc mật khẩu không đúng'
             },
             { status: 401 }
           );
+    return addCorsHeaders(response);
         }
       }
       
@@ -249,19 +259,20 @@ export async function POST(request: NextRequest) {
 
           return response;
         } else {
-          return NextResponse.json(
+          const response = NextResponse.json(
             {
               success: false,
               message: 'Email hoặc mật khẩu không đúng'
             },
             { status: 401 }
           );
+    return addCorsHeaders(response);
         }
       }
       
       // Handle specific error cases
       if (backendResponse.status === 401) {
-        return NextResponse.json(
+        const response = NextResponse.json(
           { 
             success: false, 
             message: 'Email hoặc mật khẩu không đúng',
@@ -272,10 +283,11 @@ export async function POST(request: NextRequest) {
           },
           { status: 401 }
         );
+    return addCorsHeaders(response);
       }
       
       if (backendResponse.status === 404) {
-        return NextResponse.json(
+        const response = NextResponse.json(
           { 
             success: false, 
             message: 'Tài khoản không tồn tại',
@@ -285,9 +297,10 @@ export async function POST(request: NextRequest) {
           },
           { status: 404 }
         );
+    return addCorsHeaders(response);
       }
       
-      return NextResponse.json(
+      const response = NextResponse.json(
         { 
           success: false, 
           message: errorData.message || 'Có lỗi xảy ra khi đăng nhập',
@@ -295,6 +308,7 @@ export async function POST(request: NextRequest) {
         },
         { status: backendResponse.status }
       );
+    return addCorsHeaders(response);
     }
 
     const backendData = await backendResponse.json();
@@ -307,13 +321,14 @@ export async function POST(request: NextRequest) {
     
     if (!userData) {
       console.error('❌ [LOGIN] No user data in backend response');
-      return NextResponse.json(
+      const response = NextResponse.json(
         { 
           success: false, 
           message: 'Dữ liệu người dùng không hợp lệ từ server' 
         },
         { status: 500 }
       );
+    return addCorsHeaders(response);
     }
 
     // Create JWT token for the user (use backend token if available, otherwise create local)
@@ -360,7 +375,7 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('❌ [LOGIN] Server error:', error);
-    return NextResponse.json(
+    const response = NextResponse.json(
       { 
         success: false, 
         message: 'Có lỗi xảy ra trên server. Vui lòng thử lại sau.',
@@ -368,5 +383,6 @@ export async function POST(request: NextRequest) {
       },
       { status: 500 }
     );
+    return addCorsHeaders(response);
   }
 }

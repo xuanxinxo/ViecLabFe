@@ -2,10 +2,15 @@ import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 
+import { addCorsHeaders, createCorsOptionsResponse } from '@/lib/corsHelper';
 const JWT_SECRET = process.env.JWT_SECRET || 'toredco-admin-secret-key-2024-super-secure';
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://vieclabbe.onrender.com';
 
 export const dynamic = "force-dynamic";
+// OPTIONS handler for CORS preflight
+export async function OPTIONS() {
+  return createCorsOptionsResponse();
+}
 
 // POST /api/auth/register
 export async function POST(request: NextRequest) {
@@ -20,71 +25,77 @@ export async function POST(request: NextRequest) {
       console.log('📝 [REGISTER] Received data:', body);
     } catch (jsonError) {
       console.error('❌ [REGISTER] JSON parse error:', jsonError);
-      return NextResponse.json(
+      const response = NextResponse.json(
         { 
           success: false, 
           message: 'Dữ liệu không hợp lệ' 
         },
         { status: 400 }
       );
+    return addCorsHeaders(response);
     }
 
     const { name, email, password } = body;
 
     // Validate required fields
     if (!name || !email || !password) {
-      return NextResponse.json(
+      const response = NextResponse.json(
         { 
           success: false, 
           message: 'Vui lòng điền đầy đủ thông tin bắt buộc'
         },
         { status: 400 }
       );
+    return addCorsHeaders(response);
     }
 
     // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      return NextResponse.json(
+      const response = NextResponse.json(
         { 
           success: false, 
           message: 'Định dạng email không hợp lệ'
         },
         { status: 400 }
       );
+    return addCorsHeaders(response);
     }
 
     // Validate password strength
     if (password.length < 6) {
-      return NextResponse.json(
+      const response = NextResponse.json(
         { 
           success: false, 
           message: 'Mật khẩu phải có ít nhất 6 ký tự'
         },
         { status: 400 }
       );
+    return addCorsHeaders(response);
     }
 
     // Check for uppercase letter
     if (!/[A-Z]/.test(password)) {
-      return NextResponse.json(
+      const response = NextResponse.json(
         { 
           success: false, 
           message: 'Mật khẩu phải chứa ít nhất một chữ hoa'
         },
         { status: 400 }
       );
+    return addCorsHeaders(response);
     }
 
     // Check for special character
     if (!/[^a-zA-Z0-9\s]/.test(password)) {
-      return NextResponse.json(
+      const response = NextResponse.json(
         { 
           success: false, 
           message: 'Mật khẩu phải chứa ít nhất một ký tự đặc biệt'
         },
         { status: 400 }
       );
+    return addCorsHeaders(response);
     }
 
     // Hash password
@@ -256,22 +267,24 @@ export async function POST(request: NextRequest) {
       
       // Handle specific error cases
       if (backendResponse.status === 409) {
-        return NextResponse.json(
+        const response = NextResponse.json(
           { 
             success: false, 
             message: 'Email này đã được sử dụng'
           },
           { status: 409 }
         );
+    return addCorsHeaders(response);
       }
       
-      return NextResponse.json(
+      const response = NextResponse.json(
         { 
           success: false, 
           message: errorData.message || 'Có lỗi xảy ra khi đăng ký'
         },
         { status: backendResponse.status }
       );
+    return addCorsHeaders(response);
     }
 
     const backendData = await backendResponse.json();
@@ -292,7 +305,7 @@ export async function POST(request: NextRequest) {
     console.log('🔑 [REGISTER] JWT token created');
 
     // Return success response
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       message: 'Đăng ký thành công',
       data: {
@@ -305,11 +318,12 @@ export async function POST(request: NextRequest) {
         token: token
       }
     });
+    return addCorsHeaders(response);
 
   } catch (error) {
     console.error('❌ [REGISTER] Server error:', error);
     console.error('❌ [REGISTER] Error stack:', error instanceof Error ? error.stack : 'No stack');
-    return NextResponse.json(
+    const response = NextResponse.json(
       { 
         success: false, 
         message: 'Có lỗi xảy ra trên server. Vui lòng thử lại sau.',
@@ -318,5 +332,6 @@ export async function POST(request: NextRequest) {
       },
       { status: 500 }
     );
+    return addCorsHeaders(response);
   }
 }

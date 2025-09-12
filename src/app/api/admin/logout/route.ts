@@ -1,6 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { serverCookieHelper } from '@/lib/cookieHelper';
 
+import { addCorsHeaders, createCorsOptionsResponse } from '@/lib/corsHelper';
+
+// OPTIONS handler for CORS preflight
+export async function OPTIONS() {
+  return createCorsOptionsResponse();
+}
+
 export async function POST(request: NextRequest) {
   try {
     // Create response
@@ -15,9 +22,10 @@ export async function POST(request: NextRequest) {
     return response;
   } catch (error) {
     console.error('Logout error:', error);
-    return NextResponse.json(
+    const response = NextResponse.json(
       { success: false, message: 'Logout failed' },
       { status: 500 }
     );
+    return addCorsHeaders(response);
   }
 }

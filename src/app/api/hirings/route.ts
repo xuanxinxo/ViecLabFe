@@ -2,8 +2,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAdminFromRequest } from '@/lib/auth';
 import { promises as fs } from 'fs';
 import path from 'path';
+import { addCorsHeaders, createCorsOptionsResponse } from '@/lib/corsHelper';
 
 export const dynamic = "force-dynamic";
+
+// OPTIONS handler for CORS preflight
+export async function OPTIONS() {
+  return createCorsOptionsResponse();
+}
 
 // File path for persistent mock storage
 const MOCK_STORAGE_PATH = path.join(process.cwd(), 'mock-hirings.json');
@@ -123,7 +129,8 @@ export async function GET(request: NextRequest) {
     // Debug log to see what's being returned
     console.log(`[HIRINGS API] Returning ${data?.data?.items?.length || 0} items (${mockHirings.length} mock items)`);
     
-    return NextResponse.json(data);
+    const response = NextResponse.json(data);
+    return addCorsHeaders(response);
   } catch (error: any) {
     // Return mock data instead of error to prevent 500
     const mockData = {
@@ -139,7 +146,8 @@ export async function GET(request: NextRequest) {
       }
     };
     
-    return NextResponse.json(mockData);
+    const response = NextResponse.json(mockData);
+    return addCorsHeaders(response);
   }
 }
 
@@ -149,10 +157,11 @@ export async function POST(request: NextRequest) {
     // Check admin authentication
     const admin = getAdminFromRequest(request);
     if (!admin) {
-      return NextResponse.json(
+      const response = NextResponse.json(
         { success: false, message: 'Cần đăng nhập admin để tạo việc làm' },
         { status: 401 }
       );
+      return addCorsHeaders(response);
     }
     
     // Handle FormData request (for file upload)
@@ -160,10 +169,11 @@ export async function POST(request: NextRequest) {
     try {
       formData = await request.formData();
     } catch (formError) {
-      return NextResponse.json(
+      const response = NextResponse.json(
         { success: false, message: 'Lỗi xử lý dữ liệu form' },
         { status: 400 }
       );
+      return addCorsHeaders(response);
     }
     
     // Extract form fields
@@ -182,19 +192,19 @@ export async function POST(request: NextRequest) {
     
     // Validate required fields
     if (!body.title.trim()) {
-      return NextResponse.json(
+      const response = NextResponse.json(
         { success: false, message: 'Tiêu đề việc làm là bắt buộc' },
         { status: 400 }
       );
     }
     if (!body.company.trim()) {
-      return NextResponse.json(
+      const response = NextResponse.json(
         { success: false, message: 'Tên công ty là bắt buộc' },
         { status: 400 }
       );
     }
     if (!body.location.trim()) {
-      return NextResponse.json(
+      const response = NextResponse.json(
         { success: false, message: 'Địa điểm làm việc là bắt buộc' },
         { status: 400 }
       );
@@ -271,7 +281,7 @@ export async function POST(request: NextRequest) {
           throw new Error(`Backend server error: ${response.status} - ${errorText}`);
         } else {
           // For client errors (4xx), return the error directly
-          return NextResponse.json(
+          const response = NextResponse.json(
             { success: false, message: `Lỗi từ server: ${errorText}` },
             { status: response.status }
           );
@@ -280,7 +290,7 @@ export async function POST(request: NextRequest) {
 
       const data = await response.json();
       // Ensure consistent response shape
-      return NextResponse.json(
+      const response = NextResponse.json(
         data.success ? data : { success: true, message: 'Tạo việc làm thành công', data },
         { status: response.status || 201 }
       );
@@ -299,7 +309,7 @@ export async function POST(request: NextRequest) {
       
       if (!isNetworkError && !isServerError) {
         // For other errors, return the error directly
-        return NextResponse.json(
+        const response = NextResponse.json(
           { success: false, message: `Lỗi kết nối: ${backendError.message}` },
           { status: 500 }
         );
@@ -335,7 +345,7 @@ export async function POST(request: NextRequest) {
         data: newHiring
       };
       
-      return NextResponse.json(fallbackResponse, { status: 200 });
+      const response = NextResponse.json(fallbackResponse, { status: 200 });
     }
   } catch (error: any) {
     // Final fallback - create hiring in mock storage
@@ -376,7 +386,7 @@ export async function POST(request: NextRequest) {
       mockHirings.push(newHiring);
       await saveMockHirings(); // Save to file
       
-      return NextResponse.json({
+      const response = NextResponse.json({
         success: true,
         message: 'Việc làm đã được tạo thành công (lưu tạm thời - backend không khả dụng)',
         data: newHiring
@@ -401,7 +411,7 @@ export async function PUT(request: NextRequest) {
     // Check admin authentication
     const admin = getAdminFromRequest(request);
     if (!admin) {
-      return NextResponse.json(
+      const response = NextResponse.json(
         { success: false, message: 'Cần đăng nhập admin để cập nhật trạng thái' },
         { status: 401 }
       );
@@ -411,7 +421,7 @@ export async function PUT(request: NextRequest) {
     const { status } = body;
 
     if (!status) {
-      return NextResponse.json(
+      const response = NextResponse.json(
         { success: false, message: 'Trạng thái là bắt buộc' },
         { status: 400 }
       );
@@ -439,7 +449,7 @@ export async function DELETE(request: NextRequest) {
     // Check admin authentication
     const admin = getAdminFromRequest(request);
     if (!admin) {
-      return NextResponse.json(
+      const response = NextResponse.json(
         { success: false, message: 'Cần đăng nhập admin để xóa việc làm' },
         { status: 401 }
       );

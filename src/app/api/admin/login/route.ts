@@ -4,7 +4,12 @@ import { authenticateAdmin, checkRateLimit } from '@/lib/auth';
 import jwt from 'jsonwebtoken';
 import { serverCookieHelper } from '@/lib/cookieHelper';
 
+import { addCorsHeaders, createCorsOptionsResponse } from '@/lib/corsHelper';
 export const dynamic = "force-dynamic";
+// OPTIONS handler for CORS preflight
+export async function OPTIONS() {
+  return createCorsOptionsResponse();
+}
 
 const JWT_SECRET = process.env.JWT_SECRET || 'toredco-admin-secret-key-2024-super-secure';
 
@@ -17,10 +22,11 @@ export async function POST(request: NextRequest) {
     const clientIP = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown';
     if (!checkRateLimit(`admin-login-${clientIP}`, 20, 300000)) { // 20 attempts per 5 minutes (increased for testing)
       console.log('❌ [ADMIN LOGIN] Rate limit exceeded for IP:', clientIP);
-      return NextResponse.json(
+      const response = NextResponse.json(
         { success: false, message: 'Too many login attempts. Please try again later.' },
         { status: 429 },
       );
+    return addCorsHeaders(response);
     }
     
     const { username, password } = await request.json();
@@ -28,10 +34,11 @@ export async function POST(request: NextRequest) {
 
     if (!username || !password) {
       console.log('❌ [ADMIN LOGIN] Missing username or password');
-      return NextResponse.json(
+      const response = NextResponse.json(
         { success: false, message: 'Username and password are required' },
         { status: 400 },
       );
+    return addCorsHeaders(response);
     }
 
     /* 1. Xác thực admin */
@@ -41,10 +48,11 @@ export async function POST(request: NextRequest) {
     if (!user) {
       console.log('❌ [ADMIN LOGIN] Authentication failed for username:', username);
       console.log('🔍 [ADMIN LOGIN] Available users:', ['admin', 'admin2', 'admin3']);
-      return NextResponse.json(
+      const response = NextResponse.json(
         { success: false, message: 'Invalid credentials' },
         { status: 401 },
       );
+    return addCorsHeaders(response);
     }
 
     console.log('✅ [ADMIN LOGIN] Authentication successful for user:', user.username);
@@ -85,10 +93,11 @@ export async function POST(request: NextRequest) {
     return response;
   } catch (err) {
     console.error('💥 [ADMIN LOGIN] Error:', err);
-    return NextResponse.json(
+    const response = NextResponse.json(
       { success: false, message: 'Internal server error' },
       { status: 500 },
     );
+    return addCorsHeaders(response);
   }
 }
 

@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+import { addCorsHeaders, createCorsOptionsResponse } from '@/lib/corsHelper';
 export const dynamic = "force-dynamic";
+// OPTIONS handler for CORS preflight
+export async function OPTIONS() {
+  return createCorsOptionsResponse();
+}
 
 // POST /api/auth/logout
 export async function POST(request: NextRequest) {
@@ -28,7 +33,7 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('❌ [LOGOUT] Server error:', error);
-    return NextResponse.json(
+    const response = NextResponse.json(
       { 
         success: false, 
         message: 'Có lỗi xảy ra khi đăng xuất',
@@ -36,5 +41,6 @@ export async function POST(request: NextRequest) {
       },
       { status: 500 }
     );
+    return addCorsHeaders(response);
   }
 }

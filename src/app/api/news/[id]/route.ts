@@ -1,6 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+import { addCorsHeaders, createCorsOptionsResponse } from '@/lib/corsHelper';
 // PUT: Cập nhật tin tức
+
+// OPTIONS handler for CORS preflight
+export async function OPTIONS() {
+  return createCorsOptionsResponse();
+}
+
 export async function PUT(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -13,10 +20,11 @@ export async function PUT(
     // Validate news ID
     if (!params.id || params.id === 'undefined') {
       console.error('Invalid news ID:', params.id);
-      return NextResponse.json(
+      const response = NextResponse.json(
         { error: 'ID tin tức không hợp lệ' },
         { status: 400 }
       );
+    return addCorsHeaders(response);
     }
     
     const contentType = request.headers.get('content-type') || '';
@@ -65,10 +73,11 @@ export async function PUT(
     }
 
     if (!title || !summary || !date) {
-      return NextResponse.json(
+      const response = NextResponse.json(
         { error: 'Thiếu dữ liệu bắt buộc' },
         { status: 400 }
       );
+    return addCorsHeaders(response);
     }
 
     // Mock update news item
@@ -83,18 +92,20 @@ export async function PUT(
       updatedAt: new Date().toISOString()
     };
 
-    return NextResponse.json({ 
+    const response = NextResponse.json({ 
       success: true, 
       news: updatedNews,
       message: 'Cập nhật tin tức thành công'
     });
+    return addCorsHeaders(response);
 
   } catch (error) {
     console.error('Error updating news:', error);
-    return NextResponse.json(
+    const response = NextResponse.json(
       { error: 'Server error' },
       { status: 500 }
     );
+    return addCorsHeaders(response);
   }
 }
 
@@ -127,13 +138,15 @@ export async function GET(
     console.log('Backend response data:', data);
     
     // For single item, return the data directly
-    return NextResponse.json(data);
+    const response = NextResponse.json(data);
+    return addCorsHeaders(response);
 
   } catch (error) {
     console.error('Error fetching news:', error);
-    return NextResponse.json(
+    const response = NextResponse.json(
       { error: 'Server error' },
       { status: 500 }
     );
+    return addCorsHeaders(response);
   }
 }

@@ -2,7 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAdminFromRequest } from '../../../../lib/auth';
 import { apiClient } from '../../../../lib/api';
 
+import { addCorsHeaders, createCorsOptionsResponse } from '@/lib/corsHelper';
 export const dynamic = "force-dynamic";
+// OPTIONS handler for CORS preflight
+export async function OPTIONS() {
+  return createCorsOptionsResponse();
+}
 
 // GET /api/admin/users
 export async function GET(request: NextRequest) {
@@ -12,7 +17,8 @@ export async function GET(request: NextRequest) {
     const admin = getAdminFromRequest(request);
     if (!admin || admin.role !== 'admin') {
       console.log('❌ [ADMIN USERS] Unauthorized access');
-      return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
+      const response = NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
+    return addCorsHeaders(response);
     }
 
     console.log('✅ [ADMIN USERS] Admin verified:', admin.username);
@@ -97,22 +103,24 @@ export async function GET(request: NextRequest) {
 
     console.log('✅ [ADMIN USERS] Returning users:', paginatedUsers.length);
     
-    return NextResponse.json({ 
+    const response = NextResponse.json({ 
       success: true, 
       data: paginatedUsers,
       pagination: {
         page: pageNum,
         limit: limitNum,
         total: filteredUsers.length,
-        totalPages: Math.ceil(filteredUsers.length / limitNum)
+        totalPages: Math.ceil(filteredUsers.length / limitNum);
+    return addCorsHeaders(response);
       }
     });
   } catch (err) {
     console.error('💥 [ADMIN USERS] Error:', err);
-    return NextResponse.json(
+    const response = NextResponse.json(
       { success: false, message: 'Internal server error' },
       { status: 500 }
     );
+    return addCorsHeaders(response);
   }
 }
 

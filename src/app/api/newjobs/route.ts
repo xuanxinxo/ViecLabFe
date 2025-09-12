@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+import { addCorsHeaders, createCorsOptionsResponse } from '@/lib/corsHelper';
 export const dynamic = "force-dynamic";
+// OPTIONS handler for CORS preflight
+export async function OPTIONS() {
+  return createCorsOptionsResponse();
+}
 
 // GET /api/newjobs - Proxy to backend
 export async function GET(request: NextRequest) {
@@ -31,11 +36,12 @@ export async function GET(request: NextRequest) {
     const data = await response.json();
     console.log('Backend response data:', data);
     
-    return NextResponse.json(data);
+    const response = NextResponse.json(data);
+    return addCorsHeaders(response);
   } catch (error: any) {
     console.error('💥 [NEWJOBS API] Error:', error);
     
-    return NextResponse.json(
+    const response = NextResponse.json(
       { 
         success: false,
         data: [],
@@ -43,6 +49,7 @@ export async function GET(request: NextRequest) {
       },
       { status: 500 }
     );
+    return addCorsHeaders(response);
   }
 }
 
@@ -66,8 +73,10 @@ export async function POST(req: NextRequest) {
     }
 
     const data = await response.json();
-    return NextResponse.json(data, { status: response.status });
+    const response = NextResponse.json(data, { status: response.status });
+    return addCorsHeaders(response);
   } catch (error) {
-    return NextResponse.json({ error: 'Server error' }, { status: 500 });
+    const response = NextResponse.json({ error: 'Server error' }, { status: 500 });
+    return addCorsHeaders(response);
   }
 }

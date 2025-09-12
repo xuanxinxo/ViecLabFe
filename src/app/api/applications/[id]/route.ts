@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+import { addCorsHeaders, createCorsOptionsResponse } from '@/lib/corsHelper';
 export const dynamic = "force-dynamic";
+// OPTIONS handler for CORS preflight
+export async function OPTIONS() {
+  return createCorsOptionsResponse();
+}
 
 // GET /api/applications/[id] - Proxy to backend
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
@@ -27,11 +32,12 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     const data = await response.json();
     console.log('Backend response data:', data);
     
-    return NextResponse.json(data);
+    const response = NextResponse.json(data);
+    return addCorsHeaders(response);
   } catch (error: any) {
     console.error('💥 [APPLICATIONS API] Error:', error);
     
-    return NextResponse.json(
+    const response = NextResponse.json(
       { 
         success: false,
         data: null,
@@ -39,6 +45,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
       },
       { status: 500 }
     );
+    return addCorsHeaders(response);
   }
 }
 
@@ -67,17 +74,19 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
     const data = await response.json();
     console.log('Backend response data:', data);
     
-    return NextResponse.json(data);
+    const response = NextResponse.json(data);
+    return addCorsHeaders(response);
   } catch (error: any) {
     console.error('💥 [APPLICATIONS API] Error:', error);
     
-    return NextResponse.json(
+    const response = NextResponse.json(
       { 
         success: false,
         message: 'Không thể xóa dữ liệu từ server'
       },
       { status: 500 }
     );
+    return addCorsHeaders(response);
   }
 }
 

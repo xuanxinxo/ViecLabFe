@@ -2,7 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { apiClient } from '../../../../lib/api';
 import { getAdminFromRequest } from '../../../../lib/auth';
 
+import { addCorsHeaders, createCorsOptionsResponse } from '@/lib/corsHelper';
 export const dynamic = "force-dynamic";
+// OPTIONS handler for CORS preflight
+export async function OPTIONS() {
+  return createCorsOptionsResponse();
+}
 
 // POST - Tạo job mới
 export async function POST(request: NextRequest) {
@@ -25,10 +30,11 @@ export async function POST(request: NextRequest) {
 
     // Kiểm tra các trường bắt buộc
     if (!title || !company || !location || !type || !description || !deadline || !img) {
-      return NextResponse.json(
+      const response = NextResponse.json(
         { success: false, message: 'Vui lòng điền đầy đủ thông tin bắt buộc' },
         { status: 400 }
       );
+    return addCorsHeaders(response);
     }
 
     // Chuẩn bị dữ liệu job mới
@@ -53,19 +59,21 @@ export async function POST(request: NextRequest) {
     // Gọi API để tạo job mới
     const response = await apiClient.jobs.create(newJobData);
 
-    return NextResponse.json(
+    const response = NextResponse.json(
       { success: true, data: response.data }, 
       { status: 201 }
     );
+    return addCorsHeaders(response);
   } catch (error: any) {
     console.error('Lỗi khi tạo job mới:', error);
-    return NextResponse.json(
+    const response = NextResponse.json(
       { 
         success: false, 
         message: error.response?.data?.message || 'Đã xảy ra lỗi khi tạo công việc mới' 
       },
       { status: 500 }
     );
+    return addCorsHeaders(response);
   }
 }
 
@@ -77,7 +85,8 @@ export async function GET(request: NextRequest) {
     const admin = getAdminFromRequest(request);
     if (!admin || admin.role !== 'admin') {
       console.log('❌ [ADMIN NEWJOBS] Unauthorized access');
-      return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
+      const response = NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
+    return addCorsHeaders(response);
     }
 
     console.log('✅ [ADMIN NEWJOBS] Admin verified:', admin.username);
@@ -152,14 +161,15 @@ export async function GET(request: NextRequest) {
 
         console.log('✅ [ADMIN NEWJOBS] Returning jobs:', paginatedJobs.length);
         
-        return NextResponse.json({ 
+        const response = NextResponse.json({ 
           success: true, 
           data: paginatedJobs,
           pagination: {
             page: pageNum,
             limit: limitNum,
             total: filteredJobs.length,
-            totalPages: Math.ceil(filteredJobs.length / limitNum)
+            totalPages: Math.ceil(filteredJobs.length / limitNum);
+    return addCorsHeaders(response);
           }
         });
       } else {
@@ -171,11 +181,12 @@ export async function GET(request: NextRequest) {
       // Return empty array instead of mock data
       console.log('✅ [ADMIN NEWJOBS] Returning empty array due to backend error');
       
-      return NextResponse.json({ 
+      const response = NextResponse.json({ 
         success: true, 
         data: [],
         pagination: {
-          page: parseInt(page),
+          page: parseInt(page);
+    return addCorsHeaders(response);,
           limit: parseInt(limit),
           total: 0,
           totalPages: 0
@@ -184,12 +195,13 @@ export async function GET(request: NextRequest) {
     }
   } catch (error: any) {
     console.error('💥 [ADMIN NEWJOBS] Error:', error);
-    return NextResponse.json(
+    const response = NextResponse.json(
       { 
         success: false, 
         message: error.message || 'Đã xảy ra lỗi khi tải danh sách công việc' 
       },
       { status: 500 }
     );
+    return addCorsHeaders(response);
   }
 }

@@ -95,6 +95,7 @@ export default function CarouselJob() {
   const [currentPage, setCurrentPage] = useState(0);
   const [showApplyModal, setShowApplyModal] = useState(false);
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
+  const [hasAttemptedFetch, setHasAttemptedFetch] = useState(false); // Track if we've attempted to fetch
   const router = useRouter();
 
   const jobsPerPage = 6; // 6 jobs per page, 2 pages = 12 total jobs
@@ -103,16 +104,20 @@ export default function CarouselJob() {
   const fetchJobs = async () => {
     try {
       setLoading(true); // Always show loading when fetching
+      setHasAttemptedFetch(true);
       console.log('Fetching jobs using API loader...');
       
-      // Use API loader to fetch jobs
+      // Use API loader to fetch jobs with better error handling
       const result = await apiLoaders.jobs.load({
         limit: '12',
         pageSize: '12',
-        per_page: '12'
+        per_page: '12',
+        status: 'active' // Ensure we only get active jobs
       });
       
-      if (result.success) {
+      console.log('API Loader result:', result);
+      
+      if (result.success && result.data && result.data.length > 0) {
         console.log(`✅ Loaded ${result.data.length} jobs successfully`);
         
         // Sort by date (newest first) and limit to 12 jobs (6 per page × 2 pages)
@@ -125,81 +130,93 @@ export default function CarouselJob() {
         setJobs(sortedJobs);
         setRetryCount(0); // Reset retry count on success
         setLoading(false); // Always stop loading when data is loaded
+        return; // Exit early on success
       } else {
-        throw new Error(result.error || 'Failed to load jobs');
+        console.log('No jobs found or API returned empty data');
+        // Don't throw error immediately, try fallback first
       }
       
     } catch (error: any) {
       console.error('Error fetching jobs:', error);
-      
-      // Retry up to 2 times
-      if (retryCount < 2) {
-        console.log(`Retrying... attempt ${retryCount + 1}/2`);
-        setRetryCount(prev => prev + 1);
-        setTimeout(() => {
-          fetchJobs();
-        }, 2000); // Wait 2 seconds before retry
-      } else {
-        console.log('Max retries reached, using fallback data');
-        // Use fallback data instead of empty array
-        const fallbackJobs = [
-          {
-            id: 'fallback-1',
-            title: 'Frontend Developer',
-            company: 'TOREDCO',
-            location: 'Đà Nẵng',
-            type: 'Full-time',
-            salary: '15-20 triệu',
-            description: 'Phát triển ứng dụng web với React, Next.js',
-            requirements: ['React', 'TypeScript', 'Next.js'],
-            benefits: ['Lương thưởng hấp dẫn', 'Bảo hiểm y tế'],
-            postedDate: new Date().toISOString(),
-            deadline: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-            status: 'active',
-            img: '/img/tech.jpg'
-          },
-          {
-            id: 'fallback-2',
-            title: 'Backend Developer',
-            company: 'TOREDCO',
-            location: 'Đà Nẵng',
-            type: 'Full-time',
-            salary: '18-25 triệu',
-            description: 'Phát triển API và hệ thống backend',
-            requirements: ['Node.js', 'MongoDB', 'Express'],
-            benefits: ['Stock options', 'Remote work'],
-            postedDate: new Date().toISOString(),
-            deadline: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-            status: 'active',
-            img: '/img/backend.jpg'
-          },
-          {
-            id: 'fallback-3',
-            title: 'UI/UX Designer',
-            company: 'TOREDCO',
-            location: 'Đà Nẵng',
-            type: 'Full-time',
-            salary: '12-18 triệu',
-            description: 'Thiết kế giao diện người dùng',
-            requirements: ['Figma', 'Adobe Creative Suite'],
-            benefits: ['Môi trường sáng tạo', 'Đào tạo'],
-            postedDate: new Date().toISOString(),
-            deadline: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-            status: 'active',
-            img: '/img/design.jpg'
-          }
-        ];
-        setJobs(fallbackJobs);
-        setLoading(false);
-      }
+    }
+    
+    // If we reach here, either no data or error occurred
+    // Retry up to 2 times
+    if (retryCount < 2) {
+      console.log(`Retrying... attempt ${retryCount + 1}/2`);
+      setRetryCount(prev => prev + 1);
+      setTimeout(() => {
+        fetchJobs();
+      }, 2000); // Wait 2 seconds before retry
+    } else {
+      console.log('Max retries reached, using fallback data');
+      // Use fallback data instead of empty array
+      const fallbackJobs = [
+        {
+          id: 'fallback-1',
+          title: 'Frontend Developer',
+          company: 'TOREDCO',
+          location: 'Đà Nẵng',
+          type: 'Full-time',
+          salary: '15-20 triệu',
+          description: 'Phát triển ứng dụng web với React, Next.js',
+          requirements: ['React', 'TypeScript', 'Next.js'],
+          benefits: ['Lương thưởng hấp dẫn', 'Bảo hiểm y tế'],
+          postedDate: new Date().toISOString(),
+          deadline: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+          status: 'active',
+          img: '/img/tech.jpg'
+        },
+        {
+          id: 'fallback-2',
+          title: 'Backend Developer',
+          company: 'TOREDCO',
+          location: 'Đà Nẵng',
+          type: 'Full-time',
+          salary: '18-25 triệu',
+          description: 'Phát triển API và hệ thống backend',
+          requirements: ['Node.js', 'MongoDB', 'Express'],
+          benefits: ['Stock options', 'Remote work'],
+          postedDate: new Date().toISOString(),
+          deadline: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+          status: 'active',
+          img: '/img/backend.jpg'
+        },
+        {
+          id: 'fallback-3',
+          title: 'UI/UX Designer',
+          company: 'TOREDCO',
+          location: 'Đà Nẵng',
+          type: 'Full-time',
+          salary: '12-18 triệu',
+          description: 'Thiết kế giao diện người dùng',
+          requirements: ['Figma', 'Adobe Creative Suite'],
+          benefits: ['Môi trường sáng tạo', 'Đào tạo'],
+          postedDate: new Date().toISOString(),
+          deadline: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+          status: 'active',
+          img: '/img/design.jpg'
+        }
+      ];
+      setJobs(fallbackJobs);
+      setLoading(false);
     }
   };
 
   useEffect(() => {
-    // Clear any cached mock data and fetch fresh data
+    // Only clear cache if it's stale (older than 5 minutes)
     if (typeof window !== 'undefined') {
-      localStorage.removeItem('cachedJobs');
-      console.log('Cleared cached jobs from localStorage');
+      const cacheTimestamp = localStorage.getItem('jobsCacheTimestamp');
+      const now = Date.now();
+      const fiveMinutes = 5 * 60 * 1000;
+      
+      if (!cacheTimestamp || (now - parseInt(cacheTimestamp)) > fiveMinutes) {
+        localStorage.removeItem('cachedJobs');
+        localStorage.setItem('jobsCacheTimestamp', now.toString());
+        console.log('Cleared stale cached jobs from localStorage');
+      } else {
+        console.log('Using fresh cached jobs from localStorage');
+      }
     }
     fetchJobs();
   }, []);
@@ -240,13 +257,17 @@ export default function CarouselJob() {
     );
   }
 
-  if (jobs.length === 0) {
+  if (jobs.length === 0 && !loading && hasAttemptedFetch) {
     return (
       <div className="w-full mt-14">
         <div className="text-center py-10 text-gray-500">
           <p>Hiện chưa có việc làm nào.</p>
           <button 
-            onClick={fetchJobs}
+            onClick={() => {
+              setRetryCount(0);
+              setHasAttemptedFetch(false);
+              fetchJobs();
+            }}
             className="mt-4 bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700"
           >
             Thử lại

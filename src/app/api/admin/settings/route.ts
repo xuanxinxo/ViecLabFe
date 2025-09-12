@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAdminFromRequest } from '../../../../lib/auth';
 
+import { addCorsHeaders, createCorsOptionsResponse } from '@/lib/corsHelper';
 export const dynamic = "force-dynamic";
+// OPTIONS handler for CORS preflight
+export async function OPTIONS() {
+  return createCorsOptionsResponse();
+}
 
 // Mock settings data - trong thực tế sẽ lưu trong database
 let systemSettings = {
@@ -36,19 +41,22 @@ export async function GET(request: NextRequest) {
   try {
     const admin = getAdminFromRequest(request);
     if (!admin || admin.role !== 'admin') {
-      return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
+      const response = NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
+    return addCorsHeaders(response);
     }
 
-    return NextResponse.json({ 
+    const response = NextResponse.json({ 
       success: true, 
       data: systemSettings 
     });
+    return addCorsHeaders(response);
   } catch (err) {
     console.error('Error fetching settings:', err);
-    return NextResponse.json(
+    const response = NextResponse.json(
       { success: false, message: 'Internal server error' },
       { status: 500 }
     );
+    return addCorsHeaders(response);
   }
 }
 
@@ -57,17 +65,19 @@ export async function PUT(request: NextRequest) {
   try {
     const admin = getAdminFromRequest(request);
     if (!admin || admin.role !== 'admin') {
-      return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
+      const response = NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
+    return addCorsHeaders(response);
     }
 
     const body = await request.json();
     
     // Validate required fields
     if (!body.siteName || !body.contactEmail) {
-      return NextResponse.json(
+      const response = NextResponse.json(
         { success: false, message: 'Site name and contact email are required' },
         { status: 400 }
       );
+    return addCorsHeaders(response);
     }
 
     // Cập nhật settings
@@ -81,17 +91,19 @@ export async function PUT(request: NextRequest) {
     // Trong thực tế, lưu vào database ở đây
     // await saveSettingsToDatabase(systemSettings);
     
-    return NextResponse.json({ 
+    const response = NextResponse.json({ 
       success: true, 
       data: systemSettings,
       message: 'Settings updated successfully' 
     });
+    return addCorsHeaders(response);
   } catch (err) {
     console.error('Error updating settings:', err);
-    return NextResponse.json(
+    const response = NextResponse.json(
       { success: false, message: 'Internal server error' },
       { status: 500 }
     );
+    return addCorsHeaders(response);
   }
 }
 

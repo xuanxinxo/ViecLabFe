@@ -1,6 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+import { addCorsHeaders, createCorsOptionsResponse } from '@/lib/corsHelper';
 // GET: Lấy danh sách tin tức
+
+// OPTIONS handler for CORS preflight
+export async function OPTIONS() {
+  return createCorsOptionsResponse();
+}
+
 export async function GET(request: NextRequest) {
   try {
     console.log('[NEWS API] Fetching news from backend...');
@@ -83,15 +90,16 @@ export async function GET(request: NextRequest) {
     
     console.log(`[NEWS API] Returning ${news.length} news items`);
     
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       data: news,
       count: news.length
     });
+    return addCorsHeaders(response);
   } catch (err) {
     console.error('Error in news API:', err);
     
-    return NextResponse.json(
+    const response = NextResponse.json(
       { 
         error: 'Có lỗi xảy ra khi tải danh sách tin tức',
         details: process.env.NODE_ENV === 'development' ? {
@@ -100,6 +108,7 @@ export async function GET(request: NextRequest) {
       },
       { status: 500 }
     );
+    return addCorsHeaders(response);
   }
 }
 
@@ -114,10 +123,11 @@ export async function POST(request: NextRequest) {
     const imageFile = formData.get('image') as File | null;
 
     if (!title || !summary || !date) {
-      return NextResponse.json(
+      const response = NextResponse.json(
         { error: 'Thiếu dữ liệu bắt buộc' },
         { status: 400 }
       );
+    return addCorsHeaders(response);
     }
 
     // Mock create news item
@@ -132,16 +142,18 @@ export async function POST(request: NextRequest) {
       updatedAt: new Date().toISOString()
     };
 
-    return NextResponse.json(
+    const response = NextResponse.json(
       { success: true, news: newNewsItem },
       { status: 201 }
     );
+    return addCorsHeaders(response);
   } catch (error) {
     console.error('Error creating news item:', error);
-    return NextResponse.json(
+    const response = NextResponse.json(
       { error: 'Có lỗi xảy ra khi tạo tin tức mới' },
       { status: 500 }
     );
+    return addCorsHeaders(response);
   }
 }
 
@@ -151,25 +163,28 @@ export async function DELETE(request: NextRequest) {
     const { id } = await request.json();
     
     if (!id) {
-      return NextResponse.json(
+      const response = NextResponse.json(
         { error: 'Thiếu ID tin tức' },
         { status: 400 }
       );
+    return addCorsHeaders(response);
     }
     
     // Mock delete - in real app, this would delete from database
     console.log(`Mock deleting news with ID: ${id}`);
     
-    return NextResponse.json({ 
+    const response = NextResponse.json({ 
       success: true,
       message: 'Tin tức đã được xóa thành công' 
     });
+    return addCorsHeaders(response);
     
   } catch (error) {
     console.error('Error deleting news:', error);
-    return NextResponse.json(
+    const response = NextResponse.json(
       { error: 'Có lỗi xảy ra khi xóa tin tức' },
       { status: 500 }
     );
+    return addCorsHeaders(response);
   }
 }

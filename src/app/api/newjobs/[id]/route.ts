@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { normalizeApiResponse, createErrorResponse } from '@/lib/apiResponseNormalizer';
 
+import { addCorsHeaders, createCorsOptionsResponse } from '@/lib/corsHelper';
 export const dynamic = "force-dynamic";
+// OPTIONS handler for CORS preflight
+export async function OPTIONS() {
+  return createCorsOptionsResponse();
+}
 
 // GET /api/newjobs/[id] - Proxy to backend
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
@@ -29,12 +34,14 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     console.log('Backend response data:', data);
     
     // For single item, return the data directly without normalization
-    return NextResponse.json(data);
+    const response = NextResponse.json(data);
+    return addCorsHeaders(response);
   } catch (error: any) {
     console.error('💥 [NEWJOBS API] Error:', error);
     
-    return NextResponse.json(
-      createErrorResponse('Không thể tải dữ liệu từ server'),
+    const response = NextResponse.json(
+      createErrorResponse('Không thể tải dữ liệu từ server');
+    return addCorsHeaders(response);,
       { status: 500 }
     );
   }
@@ -65,16 +72,18 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
     const data = await response.json();
     console.log('Backend response data:', data);
     
-    return NextResponse.json(data);
+    const response = NextResponse.json(data);
+    return addCorsHeaders(response);
   } catch (error: any) {
     console.error('💥 [NEWJOBS API] Error:', error);
     
-    return NextResponse.json(
+    const response = NextResponse.json(
       { 
         success: false,
         message: 'Không thể xóa dữ liệu từ server'
       },
       { status: 500 }
     );
+    return addCorsHeaders(response);
   }
 }

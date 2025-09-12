@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAdminFromRequest } from '../../../../lib/auth';
 
+import { addCorsHeaders, createCorsOptionsResponse } from '@/lib/corsHelper';
 export const dynamic = "force-dynamic";
+// OPTIONS handler for CORS preflight
+export async function OPTIONS() {
+  return createCorsOptionsResponse();
+}
 
 // GET /api/admin/dashboard
 export async function GET(request: NextRequest) {
@@ -11,7 +16,8 @@ export async function GET(request: NextRequest) {
     const admin = getAdminFromRequest(request);
     if (!admin || admin.role !== 'admin') {
       console.log('❌ [ADMIN DASHBOARD] Unauthorized access');
-      return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
+      const response = NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
+    return addCorsHeaders(response);
     }
 
     console.log('✅ [ADMIN DASHBOARD] Admin verified:', admin.username);
@@ -93,10 +99,11 @@ export async function GET(request: NextRequest) {
 
       console.log('✅ [ADMIN DASHBOARD] Real data loaded:', dashboardStats.overview);
       
-      return NextResponse.json({ 
+      const response = NextResponse.json({ 
         success: true, 
         data: dashboardStats 
       });
+    return addCorsHeaders(response);
 
     } catch (apiError) {
       console.error('💥 [ADMIN DASHBOARD] Backend API error:', apiError);
@@ -129,17 +136,19 @@ export async function GET(request: NextRequest) {
 
       console.log('⚠️ [ADMIN DASHBOARD] Using fallback data due to backend unavailability');
       
-      return NextResponse.json({ 
+      const response = NextResponse.json({ 
         success: true, 
         data: dashboardStats 
       });
+    return addCorsHeaders(response);
     }
   } catch (err) {
     console.error('💥 [ADMIN DASHBOARD] Error:', err);
-    return NextResponse.json(
+    const response = NextResponse.json(
       { success: false, message: 'Internal server error' },
       { status: 500 }
     );
+    return addCorsHeaders(response);
   }
 }
 

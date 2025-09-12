@@ -1,14 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+import { addCorsHeaders, createCorsOptionsResponse } from '@/lib/corsHelper';
+
+// OPTIONS handler for CORS preflight
+export async function OPTIONS() {
+  return createCorsOptionsResponse();
+}
+
 export async function POST(request: NextRequest) {
   try {
     const { token, password } = await request.json();
 
     if (!token || !password) {
-      return NextResponse.json(
+      const response = NextResponse.json(
         { success: false, message: 'Thiếu thông tin bắt buộc' },
         { status: 400 }
       );
+    return addCorsHeaders(response);
     }
 
     // Call the backend API to reset the password
@@ -23,21 +31,24 @@ export async function POST(request: NextRequest) {
     const data = await response.json();
 
     if (!response.ok) {
-      return NextResponse.json(
+      const response = NextResponse.json(
         { success: false, message: data.message || 'Có lỗi xảy ra khi đặt lại mật khẩu' },
         { status: response.status }
       );
+    return addCorsHeaders(response);
     }
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       message: 'Đặt lại mật khẩu thành công',
     });
+    return addCorsHeaders(response);
   } catch (error) {
     console.error('Reset password error:', error);
-    return NextResponse.json(
+    const response = NextResponse.json(
       { success: false, message: 'Có lỗi xảy ra khi xử lý yêu cầu' },
       { status: 500 }
     );
+    return addCorsHeaders(response);
   }
 }

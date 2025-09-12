@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAdminFromRequest } from '../../../../../lib/auth';
 
+import { addCorsHeaders, createCorsOptionsResponse } from '@/lib/corsHelper';
 export const dynamic = "force-dynamic";
+// OPTIONS handler for CORS preflight
+export async function OPTIONS() {
+  return createCorsOptionsResponse();
+}
 
 // GET /api/admin/jobs/[id] - Get job details
 export async function GET(
@@ -11,10 +16,11 @@ export async function GET(
   try {
     const user = getAdminFromRequest(request);
     if (!user || user.role !== 'admin') {
-      return NextResponse.json(
+      const response = NextResponse.json(
         { success: false, message: 'Unauthorized' },
         { status: 401 }
       );
+    return addCorsHeaders(response);
     }
 
     const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'https://vieclabbe.onrender.com';
@@ -27,31 +33,36 @@ export async function GET(
 
     if (!response.ok) {
       if (response.status === 404) {
-        return NextResponse.json(
+        const response = NextResponse.json(
           { success: false, message: `Không tìm thấy việc làm với ID: ${params.id}` },
           { status: 404 }
         );
+    return addCorsHeaders(response);
       }
       
-      return NextResponse.json(
+      const response = NextResponse.json(
         { success: false, message: `Lỗi từ server: ${response.status}` },
         { status: response.status }
       );
+    return addCorsHeaders(response);
     }
 
     const backendResponse = await response.json();
     
     if (backendResponse.success && backendResponse.data) {
-      return NextResponse.json({ success: true, data: backendResponse.data });
+      const response = NextResponse.json({ success: true, data: backendResponse.data });
+    return addCorsHeaders(response);
     } else {
-      return NextResponse.json({ success: true, data: backendResponse });
+      const response = NextResponse.json({ success: true, data: backendResponse });
+    return addCorsHeaders(response);
     }
   } catch (error) {
     console.error('Error fetching job:', error);
-    return NextResponse.json(
+    const response = NextResponse.json(
       { success: false, message: 'Internal server error' },
       { status: 500 }
     );
+    return addCorsHeaders(response);
   }
 }
 
@@ -63,10 +74,11 @@ export async function PUT(
   try {
     const user = getAdminFromRequest(request);
     if (!user || user.role !== 'admin') {
-      return NextResponse.json(
+      const response = NextResponse.json(
         { success: false, message: 'Unauthorized' },
         { status: 401 }
       );
+    return addCorsHeaders(response);
     }
 
     const formData = await request.formData();
@@ -108,10 +120,11 @@ export async function PUT(
     
     // Validate required fields
     if (!data.title || !data.company || !data.location) {
-      return NextResponse.json(
+      const response = NextResponse.json(
         { success: false, message: 'Tiêu đề, công ty và địa điểm là bắt buộc' },
         { status: 400 }
       );
+    return addCorsHeaders(response);
     }
 
     // Handle image upload
@@ -141,31 +154,35 @@ export async function PUT(
     
     if (!response.ok) {
       if (response.status === 404) {
-        return NextResponse.json(
+        const response = NextResponse.json(
           { success: false, message: 'Không tìm thấy việc làm để cập nhật' },
           { status: 404 }
         );
+    return addCorsHeaders(response);
       }
       
-      return NextResponse.json(
+      const response = NextResponse.json(
         { success: false, message: `Lỗi server: ${response.status}` },
         { status: response.status }
       );
+    return addCorsHeaders(response);
     }
     
     const updatedJob = await response.json();
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       message: 'Cập nhật việc làm thành công!',
       data: updatedJob
     });
+    return addCorsHeaders(response);
   } catch (error) {
     console.error('Error updating job:', error);
-    return NextResponse.json(
+    const response = NextResponse.json(
       { success: false, message: 'Có lỗi xảy ra khi cập nhật việc làm' },
       { status: 500 }
     );
+    return addCorsHeaders(response);
   }
 }
 
@@ -177,10 +194,11 @@ export async function DELETE(
   try {
     const user = getAdminFromRequest(request);
     if (!user || user.role !== 'admin') {
-      return NextResponse.json(
+      const response = NextResponse.json(
         { success: false, message: 'Unauthorized' },
         { status: 401 }
       );
+    return addCorsHeaders(response);
     }
 
     const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'https://vieclabbe.onrender.com';
@@ -200,21 +218,24 @@ export async function DELETE(
     });
 
     if (!response.ok) {
-      return NextResponse.json(
+      const response = NextResponse.json(
         { success: false, message: `Lỗi server: ${response.status}` },
         { status: response.status }
       );
+    return addCorsHeaders(response);
     }
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       message: 'Xóa việc làm thành công',
     });
+    return addCorsHeaders(response);
   } catch (error) {
     console.error('Error deleting job:', error);
-    return NextResponse.json(
+    const response = NextResponse.json(
       { success: false, message: 'Internal server error' },
       { status: 500 }
     );
+    return addCorsHeaders(response);
   }
 }

@@ -3,7 +3,12 @@ import { getAdminFromRequest } from '@/lib/auth';
 import { promises as fs } from 'fs';
 import path from 'path';
 
+import { addCorsHeaders, createCorsOptionsResponse } from '@/lib/corsHelper';
 export const dynamic = "force-dynamic";
+// OPTIONS handler for CORS preflight
+export async function OPTIONS() {
+  return createCorsOptionsResponse();
+}
 
 // File path for persistent mock storage
 const MOCK_STORAGE_PATH = path.join(process.cwd(), 'mock-hirings.json');
@@ -41,17 +46,19 @@ export async function GET(
         
         // Handle backend response format
         if (backendData.success && backendData.data) {
-          return NextResponse.json({
+          const response = NextResponse.json({
             success: true,
             data: backendData.data,
             message: 'Lấy thông tin tuyển dụng thành công từ backend'
           });
+    return addCorsHeaders(response);
         } else if (backendData) {
-          return NextResponse.json({
+          const response = NextResponse.json({
             success: true,
             data: backendData,
             message: 'Lấy thông tin tuyển dụng thành công từ backend'
           });
+    return addCorsHeaders(response);
         }
       } else {
         console.log(`⚠️ [HIRINGS API] Backend returned ${response.status}, falling back to mock data`);
@@ -75,25 +82,28 @@ export async function GET(
     const hiring = mockHirings.find(hiring => hiring.id === hiringId || hiring._id === hiringId);
     if (!hiring) {
       console.log(`❌ [HIRINGS API] Hiring not found in mock data either`);
-      return NextResponse.json(
+      const response = NextResponse.json(
         { success: false, message: 'Không tìm thấy tin tuyển dụng' },
         { status: 404 }
       );
+    return addCorsHeaders(response);
     }
 
     console.log(`✅ [HIRINGS API] Found hiring in mock data:`, hiring.title);
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       data: hiring,
       message: 'Lấy thông tin tuyển dụng thành công từ mock data'
     });
+    return addCorsHeaders(response);
 
   } catch (error: any) {
     console.error(`💥 [HIRINGS API] Error:`, error);
-    return NextResponse.json(
+    const response = NextResponse.json(
       { success: false, message: 'Có lỗi xảy ra khi lấy thông tin tuyển dụng' },
       { status: 500 }
     );
+    return addCorsHeaders(response);
   }
 }
 
@@ -106,10 +116,11 @@ export async function DELETE(
     // Check admin authentication
     const admin = getAdminFromRequest(request);
     if (!admin) {
-      return NextResponse.json(
+      const response = NextResponse.json(
         { success: false, message: 'Cần đăng nhập admin để xóa việc làm' },
         { status: 401 }
       );
+    return addCorsHeaders(response);
     }
 
     const jobId = params.id;
@@ -126,10 +137,11 @@ export async function DELETE(
     // Find and remove the job
     const jobIndex = mockHirings.findIndex(job => job.id === jobId || job._id === jobId);
     if (jobIndex === -1) {
-      return NextResponse.json(
+      const response = NextResponse.json(
         { success: false, message: 'Không tìm thấy việc làm' },
         { status: 404 }
       );
+    return addCorsHeaders(response);
     }
 
     // Remove job from array
@@ -138,16 +150,18 @@ export async function DELETE(
     // Save back to file
     await fs.writeFile(MOCK_STORAGE_PATH, JSON.stringify(mockHirings, null, 2));
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       message: 'Xóa việc làm thành công',
       data: deletedJob
     });
+    return addCorsHeaders(response);
 
   } catch (error: any) {
-    return NextResponse.json(
+    const response = NextResponse.json(
       { success: false, message: 'Có lỗi xảy ra khi xóa việc làm' },
       { status: 500 }
     );
+    return addCorsHeaders(response);
   }
 }

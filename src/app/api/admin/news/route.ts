@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAdminFromRequest } from '../../../../lib/auth';
 
+import { addCorsHeaders, createCorsOptionsResponse } from '@/lib/corsHelper';
 export const dynamic = "force-dynamic";
+// OPTIONS handler for CORS preflight
+export async function OPTIONS() {
+  return createCorsOptionsResponse();
+}
 
 // GET /api/admin/news
 export async function GET(request: NextRequest) {
@@ -11,7 +16,8 @@ export async function GET(request: NextRequest) {
     const admin = getAdminFromRequest(request);
     if (!admin || admin.role !== 'admin') {
       console.log('❌ [ADMIN NEWS] Unauthorized access');
-      return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
+      const response = NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
+    return addCorsHeaders(response);
     }
 
     console.log('✅ [ADMIN NEWS] Admin verified:', admin.username);
@@ -59,11 +65,12 @@ export async function GET(request: NextRequest) {
         
         console.log('✅ [ADMIN NEWS] Processed', news.length, 'news articles');
         
-        return NextResponse.json({
+        const response = NextResponse.json({
           success: true,
           data: news,
           pagination: backendData.pagination || {
-            page: parseInt(page),
+            page: parseInt(page);
+    return addCorsHeaders(response);,
             limit: parseInt(limit),
             total: news.length,
             totalPages: Math.ceil(news.length / parseInt(limit))
@@ -77,17 +84,19 @@ export async function GET(request: NextRequest) {
       
       // Return error when backend is not available
       console.log('❌ [ADMIN NEWS] Backend API not available');
-      return NextResponse.json(
+      const response = NextResponse.json(
         { success: false, message: 'Backend API không khả dụng. Vui lòng kiểm tra kết nối database.' },
         { status: 503 }
       );
+    return addCorsHeaders(response);
     }
   } catch (err) {
     console.error('💥 [ADMIN NEWS] Error:', err);
-    return NextResponse.json(
+    const response = NextResponse.json(
       { success: false, message: 'Internal server error' },
       { status: 500 }
     );
+    return addCorsHeaders(response);
   }
 }
 
@@ -99,7 +108,8 @@ export async function POST(request: NextRequest) {
     const admin = getAdminFromRequest(request);
     if (!admin || admin.role !== 'admin') {
       console.log('❌ [ADMIN NEWS] Unauthorized access');
-      return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
+      const response = NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
+    return addCorsHeaders(response);
     }
 
     console.log('✅ [ADMIN NEWS] Admin verified:', admin.username);
@@ -109,10 +119,11 @@ export async function POST(request: NextRequest) {
 
     if (!body.title || !body.summary) {
       console.log('❌ [ADMIN NEWS] Missing required fields');
-      return NextResponse.json(
+      const response = NextResponse.json(
         { success: false, message: 'Title and summary are required' },
         { status: 400 }
       );
+    return addCorsHeaders(response);
     }
 
     // Create new news
@@ -131,15 +142,17 @@ export async function POST(request: NextRequest) {
 
     console.log('✅ [ADMIN NEWS] News created successfully:', newNews.id);
     
-    return NextResponse.json(
+    const response = NextResponse.json(
       { success: true, data: newNews, message: 'News created successfully' },
       { status: 201 }
     );
+    return addCorsHeaders(response);
   } catch (err) {
     console.error('💥 [ADMIN NEWS] Error:', err);
-    return NextResponse.json(
+    const response = NextResponse.json(
       { success: false, message: 'Internal server error' },
       { status: 500 }
     );
+    return addCorsHeaders(response);
   }
 }

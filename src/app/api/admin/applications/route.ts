@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAdminFromRequest } from '../../../../lib/auth';
 
+import { addCorsHeaders, createCorsOptionsResponse } from '@/lib/corsHelper';
 export const dynamic = "force-dynamic";
+// OPTIONS handler for CORS preflight
+export async function OPTIONS() {
+  return createCorsOptionsResponse();
+}
 
 // GET /api/admin/applications
 export async function GET(request: NextRequest) {
@@ -11,7 +16,8 @@ export async function GET(request: NextRequest) {
     const admin = getAdminFromRequest(request);
     if (!admin || admin.role !== 'admin') {
       console.log('❌ [ADMIN APPLICATIONS] Unauthorized access');
-      return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
+      const response = NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
+    return addCorsHeaders(response);
     }
 
     console.log('✅ [ADMIN APPLICATIONS] Admin verified:', admin.username);
@@ -63,11 +69,12 @@ export async function GET(request: NextRequest) {
         
         console.log('✅ [ADMIN APPLICATIONS] Processed', applications.length, 'applications');
         
-        return NextResponse.json({
+        const response = NextResponse.json({
           success: true,
           data: applications,
           pagination: backendData.pagination || {
-            page: parseInt(page),
+            page: parseInt(page);
+    return addCorsHeaders(response);,
             limit: parseInt(limit),
             total: applications.length,
             totalPages: Math.ceil(applications.length / parseInt(limit))
@@ -81,17 +88,19 @@ export async function GET(request: NextRequest) {
       
       // Return error when backend is not available
       console.log('❌ [ADMIN APPLICATIONS] Backend API not available');
-      return NextResponse.json(
+      const response = NextResponse.json(
         { success: false, message: 'Backend API không khả dụng. Vui lòng kiểm tra kết nối database.' },
         { status: 503 }
       );
+    return addCorsHeaders(response);
     }
   } catch (err) {
     console.error('💥 [ADMIN APPLICATIONS] Error:', err);
-    return NextResponse.json(
+    const response = NextResponse.json(
       { success: false, message: 'Internal server error' },
       { status: 500 }
     );
+    return addCorsHeaders(response);
   }
 }
 
@@ -103,7 +112,8 @@ export async function POST(request: NextRequest) {
     const admin = getAdminFromRequest(request);
     if (!admin || admin.role !== 'admin') {
       console.log('❌ [ADMIN APPLICATIONS] Unauthorized access');
-      return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
+      const response = NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
+    return addCorsHeaders(response);
     }
 
     console.log('✅ [ADMIN APPLICATIONS] Admin verified:', admin.username);
@@ -113,10 +123,11 @@ export async function POST(request: NextRequest) {
 
     if (!body.applicantName || !body.email || !body.jobId) {
       console.log('❌ [ADMIN APPLICATIONS] Missing required fields');
-      return NextResponse.json(
+      const response = NextResponse.json(
         { success: false, message: 'Applicant name, email, and job ID are required' },
         { status: 400 }
       );
+    return addCorsHeaders(response);
     }
 
     // Create new application
@@ -140,15 +151,17 @@ export async function POST(request: NextRequest) {
 
     console.log('✅ [ADMIN APPLICATIONS] Application created successfully:', newApplication.id);
     
-    return NextResponse.json(
+    const response = NextResponse.json(
       { success: true, data: newApplication, message: 'Application created successfully' },
       { status: 201 }
     );
+    return addCorsHeaders(response);
   } catch (err) {
     console.error('💥 [ADMIN APPLICATIONS] Error:', err);
-    return NextResponse.json(
+    const response = NextResponse.json(
       { success: false, message: 'Internal server error' },
       { status: 500 }
     );
+    return addCorsHeaders(response);
   }
 }

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+import { addCorsHeaders, createCorsOptionsResponse } from '@/lib/corsHelper';
 // Mock data cho bảng xếp hạng sao
 const mockReviews = [
   // 5 sao - Nhân sự
@@ -561,6 +562,12 @@ const mockReviews = [
   }
 ];
 
+
+// OPTIONS handler for CORS preflight
+export async function OPTIONS() {
+  return createCorsOptionsResponse();
+}
+
 export async function GET(request: NextRequest) {
   try {
     console.log('[REVIEWS API] Fetching reviews data...');
@@ -600,14 +607,15 @@ export async function GET(request: NextRequest) {
     
     console.log(`[REVIEWS API] Returning ${filteredReviews.length} reviews`);
     
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       data: filteredReviews,
       count: filteredReviews.length,
       pagination: {
         total: mockReviews.length,
         page: 1,
-        limit: limit ? parseInt(limit) : filteredReviews.length,
+        limit: limit ? parseInt(limit);
+    return addCorsHeaders(response); : filteredReviews.length,
         totalPages: 1
       }
     });
@@ -615,7 +623,7 @@ export async function GET(request: NextRequest) {
   } catch (err) {
     console.error('Error in reviews API:', err);
     
-    return NextResponse.json(
+    const response = NextResponse.json(
       { 
         error: 'Có lỗi xảy ra khi tải danh sách đánh giá',
         details: process.env.NODE_ENV === 'development' ? {
@@ -624,6 +632,7 @@ export async function GET(request: NextRequest) {
       },
       { status: 500 }
     );
+    return addCorsHeaders(response);
   }
 }
 
@@ -633,10 +642,11 @@ export async function POST(request: NextRequest) {
     const { category, name, rating, title, content, experience, hometown } = body;
     
     if (!category || !name || !rating) {
-      return NextResponse.json(
+      const response = NextResponse.json(
         { error: 'Thiếu dữ liệu bắt buộc' },
         { status: 400 }
       );
+    return addCorsHeaders(response);
     }
     
     // Mock create review
@@ -654,16 +664,18 @@ export async function POST(request: NextRequest) {
       updatedAt: new Date().toISOString()
     };
     
-    return NextResponse.json(
+    const response = NextResponse.json(
       { success: true, data: newReview },
       { status: 201 }
     );
+    return addCorsHeaders(response);
     
   } catch (error) {
     console.error('Error creating review:', error);
-    return NextResponse.json(
+    const response = NextResponse.json(
       { error: 'Có lỗi xảy ra khi tạo đánh giá mới' },
       { status: 500 }
     );
+    return addCorsHeaders(response);
   }
 }

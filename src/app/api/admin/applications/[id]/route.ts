@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAdminFromRequest } from '../../../../../lib/auth';
 
+import { addCorsHeaders, createCorsOptionsResponse } from '@/lib/corsHelper';
 export const dynamic = "force-dynamic";
+// OPTIONS handler for CORS preflight
+export async function OPTIONS() {
+  return createCorsOptionsResponse();
+}
 
 // GET /api/admin/applications/[id] - Get application details
 export async function GET(
@@ -11,15 +16,17 @@ export async function GET(
   try {
     const admin = getAdminFromRequest(request);
     if (!admin || admin.role !== 'admin') {
-      return NextResponse.json(
+      const response = NextResponse.json(
         { success: false, message: 'Unauthorized' },
         { status: 401 }
       );
+    return addCorsHeaders(response);
     }
 
     const { id } = params;
     if (!id) {
-      return NextResponse.json({ success: false, message: 'Application ID is required' }, { status: 400 });
+      const response = NextResponse.json({ success: false, message: 'Application ID is required' }, { status: 400 });
+    return addCorsHeaders(response);
     }
 
     // For now, return a mock application
@@ -42,16 +49,18 @@ export async function GET(
       updatedAt: new Date().toISOString()
     };
 
-    return NextResponse.json({ 
+    const response = NextResponse.json({ 
       success: true, 
       data: application 
     });
+    return addCorsHeaders(response);
   } catch (err) {
     console.error('Error fetching application:', err);
-    return NextResponse.json(
+    const response = NextResponse.json(
       { success: false, message: 'Internal server error' },
       { status: 500 }
     );
+    return addCorsHeaders(response);
   }
 }
 
@@ -63,15 +72,17 @@ export async function PUT(
   try {
     const admin = getAdminFromRequest(request);
     if (!admin || admin.role !== 'admin') {
-      return NextResponse.json(
+      const response = NextResponse.json(
         { success: false, message: 'Unauthorized' },
         { status: 401 }
       );
+    return addCorsHeaders(response);
     }
 
     const { id } = params;
     if (!id) {
-      return NextResponse.json({ success: false, message: 'Application ID is required' }, { status: 400 });
+      const response = NextResponse.json({ success: false, message: 'Application ID is required' }, { status: 400 });
+    return addCorsHeaders(response);
     }
 
     const body = await request.json();
@@ -79,10 +90,11 @@ export async function PUT(
 
     // Validate required fields
     if (!body.applicantName || !body.email) {
-      return NextResponse.json(
+      const response = NextResponse.json(
         { success: false, message: 'Applicant name and email are required' },
         { status: 400 }
       );
+    return addCorsHeaders(response);
     }
 
     // Update application
@@ -94,17 +106,19 @@ export async function PUT(
 
     console.log('✅ [ADMIN APPLICATIONS] Application updated successfully:', id);
     
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       data: updatedApplication,
       message: 'Application updated successfully'
     });
+    return addCorsHeaders(response);
   } catch (err) {
     console.error('Error updating application:', err);
-    return NextResponse.json(
+    const response = NextResponse.json(
       { success: false, message: 'Internal server error' },
       { status: 500 }
     );
+    return addCorsHeaders(response);
   }
 }
 
@@ -116,15 +130,17 @@ export async function DELETE(
   try {
     const admin = getAdminFromRequest(request);
     if (!admin || admin.role !== 'admin') {
-      return NextResponse.json(
+      const response = NextResponse.json(
         { success: false, message: 'Unauthorized' },
         { status: 401 }
       );
+    return addCorsHeaders(response);
     }
 
     const { id } = params;
     if (!id) {
-      return NextResponse.json({ success: false, message: 'Application ID is required' }, { status: 400 });
+      const response = NextResponse.json({ success: false, message: 'Application ID is required' }, { status: 400 });
+    return addCorsHeaders(response);
     }
 
     console.log('🗑️ [ADMIN APPLICATIONS] Deleting application:', id);
@@ -134,16 +150,18 @@ export async function DELETE(
 
     console.log('✅ [ADMIN APPLICATIONS] Application deleted successfully:', id);
     
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       message: 'Application deleted successfully'
     });
+    return addCorsHeaders(response);
   } catch (err) {
     console.error('Error deleting application:', err);
-    return NextResponse.json(
+    const response = NextResponse.json(
       { success: false, message: 'Internal server error' },
       { status: 500 }
     );
+    return addCorsHeaders(response);
   }
 }
 

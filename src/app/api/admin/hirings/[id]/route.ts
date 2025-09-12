@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAdminFromRequest } from '../../../../../lib/auth';
 
+import { addCorsHeaders, createCorsOptionsResponse } from '@/lib/corsHelper';
 export const dynamic = "force-dynamic";
+// OPTIONS handler for CORS preflight
+export async function OPTIONS() {
+  return createCorsOptionsResponse();
+}
 
 // GET /api/admin/hirings/[id] - Get hiring details
 export async function GET(
@@ -11,15 +16,17 @@ export async function GET(
   try {
     const admin = getAdminFromRequest(request);
     if (!admin || admin.role !== 'admin') {
-      return NextResponse.json(
+      const response = NextResponse.json(
         { success: false, message: 'Unauthorized' },
         { status: 401 }
       );
+    return addCorsHeaders(response);
     }
 
     const { id } = params;
     if (!id) {
-      return NextResponse.json({ success: false, message: 'Hiring ID is required' }, { status: 400 });
+      const response = NextResponse.json({ success: false, message: 'Hiring ID is required' }, { status: 400 });
+    return addCorsHeaders(response);
     }
 
     // For now, return a mock hiring
@@ -49,16 +56,18 @@ export async function GET(
       updatedAt: new Date().toISOString()
     };
 
-    return NextResponse.json({ 
+    const response = NextResponse.json({ 
       success: true, 
       data: hiring 
     });
+    return addCorsHeaders(response);
   } catch (err) {
     console.error('Error fetching hiring:', err);
-    return NextResponse.json(
+    const response = NextResponse.json(
       { success: false, message: 'Internal server error' },
       { status: 500 }
     );
+    return addCorsHeaders(response);
   }
 }
 
@@ -70,15 +79,17 @@ export async function PUT(
   try {
     const admin = getAdminFromRequest(request);
     if (!admin || admin.role !== 'admin') {
-      return NextResponse.json(
+      const response = NextResponse.json(
         { success: false, message: 'Unauthorized' },
         { status: 401 }
       );
+    return addCorsHeaders(response);
     }
 
     const { id } = params;
     if (!id) {
-      return NextResponse.json({ success: false, message: 'Hiring ID is required' }, { status: 400 });
+      const response = NextResponse.json({ success: false, message: 'Hiring ID is required' }, { status: 400 });
+    return addCorsHeaders(response);
     }
 
     const body = await request.json();
@@ -86,10 +97,11 @@ export async function PUT(
 
     // Validate required fields
     if (!body.title || !body.company || !body.location) {
-      return NextResponse.json(
+      const response = NextResponse.json(
         { success: false, message: 'Title, company, and location are required' },
         { status: 400 }
       );
+    return addCorsHeaders(response);
     }
 
     // Update hiring
@@ -101,17 +113,19 @@ export async function PUT(
 
     console.log('✅ [ADMIN HIRINGS] Hiring updated successfully:', id);
     
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       data: updatedHiring,
       message: 'Hiring updated successfully'
     });
+    return addCorsHeaders(response);
   } catch (err) {
     console.error('Error updating hiring:', err);
-    return NextResponse.json(
+    const response = NextResponse.json(
       { success: false, message: 'Internal server error' },
       { status: 500 }
     );
+    return addCorsHeaders(response);
   }
 }
 
@@ -123,15 +137,17 @@ export async function DELETE(
   try {
     const admin = getAdminFromRequest(request);
     if (!admin || admin.role !== 'admin') {
-      return NextResponse.json(
+      const response = NextResponse.json(
         { success: false, message: 'Unauthorized' },
         { status: 401 }
       );
+    return addCorsHeaders(response);
     }
 
     const { id } = params;
     if (!id) {
-      return NextResponse.json({ success: false, message: 'Hiring ID is required' }, { status: 400 });
+      const response = NextResponse.json({ success: false, message: 'Hiring ID is required' }, { status: 400 });
+    return addCorsHeaders(response);
     }
 
     console.log('🗑️ [ADMIN HIRINGS] Deleting hiring:', id);
@@ -141,15 +157,17 @@ export async function DELETE(
 
     console.log('✅ [ADMIN HIRINGS] Hiring deleted successfully:', id);
     
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       message: 'Hiring deleted successfully'
     });
+    return addCorsHeaders(response);
   } catch (err) {
     console.error('Error deleting hiring:', err);
-    return NextResponse.json(
+    const response = NextResponse.json(
       { success: false, message: 'Internal server error' },
       { status: 500 }
     );
+    return addCorsHeaders(response);
   }
 }

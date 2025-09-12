@@ -2,8 +2,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAdminFromRequest } from '@/lib/auth';
 import { promises as fs } from 'fs';
 import path from 'path';
+import { addCorsHeaders, createCorsOptionsResponse } from '@/lib/corsHelper';
 
 export const dynamic = "force-dynamic";
+
+// OPTIONS handler for CORS preflight
+export async function OPTIONS() {
+  return createCorsOptionsResponse();
+}
 
 // File path for persistent mock storage
 const MOCK_STORAGE_PATH = path.join(process.cwd(), 'mock-jobs.json');
@@ -142,7 +148,8 @@ export async function GET(request: NextRequest) {
       };
     }
     
-    return NextResponse.json(filteredData);
+    const response = NextResponse.json(filteredData);
+    return addCorsHeaders(response);
   } catch (error: any) {
     // Return mock data instead of error to prevent 500
     console.error('💥 [JOBS API] GET request error:', error);
@@ -160,7 +167,8 @@ export async function GET(request: NextRequest) {
       }
     };
     
-    return NextResponse.json(mockData);
+    const response = NextResponse.json(mockData);
+    return addCorsHeaders(response);
   }
 }
 
@@ -175,10 +183,11 @@ export async function POST(req: NextRequest) {
     try {
       formData = await req.formData();
     } catch (formError) {
-      return NextResponse.json(
+      const response = NextResponse.json(
         { success: false, message: 'Lỗi xử lý dữ liệu form' },
         { status: 400 }
       );
+      return addCorsHeaders(response);
     }
     
     // Extract form fields
@@ -197,22 +206,25 @@ export async function POST(req: NextRequest) {
     
     // Validate required fields
     if (!body.title.trim()) {
-      return NextResponse.json(
+      const response = NextResponse.json(
         { success: false, message: 'Tiêu đề việc làm là bắt buộc' },
         { status: 400 }
       );
+      return addCorsHeaders(response);
     }
     if (!body.company.trim()) {
-      return NextResponse.json(
+      const response = NextResponse.json(
         { success: false, message: 'Tên công ty là bắt buộc' },
         { status: 400 }
       );
+      return addCorsHeaders(response);
     }
     if (!body.location.trim()) {
-      return NextResponse.json(
+      const response = NextResponse.json(
         { success: false, message: 'Địa điểm làm việc là bắt buộc' },
         { status: 400 }
       );
+      return addCorsHeaders(response);
     }
     
     // Proxy to backend
@@ -265,7 +277,7 @@ export async function POST(req: NextRequest) {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
       
-      const response = await fetch(`${backendUrl}/api/jobs`, {
+      const fetchResponse = await fetch(`${backendUrl}/api/jobs`, {
         method: 'POST',
         headers: {
           ...authHeaders
@@ -275,38 +287,40 @@ export async function POST(req: NextRequest) {
         signal: controller.signal,
       });
       
-      console.log('🔍 [JOBS API] Backend response status:', response.status);
+      console.log('🔍 [JOBS API] Backend response status:', fetchResponse.status);
 
       clearTimeout(timeoutId);
 
-      if (!response.ok) {
-        const errorText = await response.text();
+      if (!fetchResponse.ok) {
+        const errorText = await fetchResponse.text();
         console.error('❌ Backend API error:', {
-          status: response.status,
-          statusText: response.statusText,
+          status: fetchResponse.status,
+          statusText: fetchResponse.statusText,
           error: errorText
         });
         
         // Only fallback for server errors (5xx), not client errors (4xx)
-        if (response.status >= 500) {
-          throw new Error(`Backend server error: ${response.status} - ${errorText}`);
+        if (fetchResponse.status >= 500) {
+          throw new Error(`Backend server error: ${fetchResponse.status} - ${errorText}`);
         } else {
           // For client errors (4xx), return the error directly
-          return NextResponse.json(
+          const response = NextResponse.json(
             { success: false, message: `Lỗi từ server: ${errorText}` },
-            { status: response.status }
+            { status: fetchResponse.status }
           );
+          return addCorsHeaders(response);
         }
       }
 
-      const data = await response.json();
+      const data = await fetchResponse.json();
       console.log('✅ [JOBS API] Backend response data:', data);
       
       // Ensure consistent response shape
       const finalResponse = data.success ? data : { success: true, message: 'Tạo việc làm thành công', data };
       console.log('✅ [JOBS API] Final response:', finalResponse);
       
-      return NextResponse.json(finalResponse, { status: response.status || 201 });
+      const response = NextResponse.json(finalResponse, { status: fetchResponse.status || 201 });
+      return addCorsHeaders(response);
       
     } catch (backendError: any) {
       // Only fallback to mock storage for network errors or server errors (5xx)
@@ -328,10 +342,11 @@ export async function POST(req: NextRequest) {
       
       if (!isNetworkError && !isServerError) {
         // For other errors, return the error directly
-        return NextResponse.json(
+        const response = NextResponse.json(
           { success: false, message: `Lỗi kết nối: ${backendError.message}` },
           { status: 500 }
         );
+        return addCorsHeaders(response);
       }
       
       // Fallback to mock storage only for network/server errors
@@ -368,7 +383,8 @@ export async function POST(req: NextRequest) {
         data: newJob
       };
       
-      return NextResponse.json(fallbackResponse, { status: 200 });
+      const response = NextResponse.json(fallbackResponse, { status: 200 });
+      return addCorsHeaders(response);
     }
   } catch (error: any) {
     // Final fallback - create job in mock storage
@@ -413,15 +429,16 @@ export async function POST(req: NextRequest) {
       
       console.log('✅ [JOBS API] Final fallback job saved to mock storage:', newJob.id);
       
-      return NextResponse.json({
+      const response = NextResponse.json({
         success: true,
         message: 'Việc làm đã được tạo thành công (lưu tạm thời - backend không khả dụng)',
         data: newJob
       }, { status: 200 });
+      return addCorsHeaders(response);
       
     } catch (fallbackError) {
       console.error('💥 [JOBS API] Final fallback also failed:', fallbackError);
-      return NextResponse.json(
+      const response = NextResponse.json(
         { 
           success: false,
           message: 'Có lỗi xảy ra khi tạo việc làm. Vui lòng thử lại sau.',
@@ -429,6 +446,7 @@ export async function POST(req: NextRequest) {
         },
         { status: 500 }
       );
+      return addCorsHeaders(response);
     }
   }
 }
@@ -440,7 +458,8 @@ export async function PUT(req: NextRequest) {
     const { id, ...updateData } = body;
     
     if (!id) {
-      return NextResponse.json({ error: 'Job ID is required' }, { status: 400 });
+      const response = NextResponse.json({ error: 'Job ID is required' }, { status: 400 });
+    return addCorsHeaders(response);
     }
     
     console.log('🔍 [JOBS API] PUT request for job:', id, 'with data:', updateData);
@@ -452,10 +471,11 @@ export async function PUT(req: NextRequest) {
     const jobIndex = mockJobs.findIndex((job: any) => job.id === id || job._id === id);
     
     if (jobIndex === -1) {
-      return NextResponse.json({ 
-        success: false, 
-        message: 'Không tìm thấy việc làm' 
-      }, { status: 404 });
+    const response = NextResponse.json({ 
+      success: false, 
+      message: 'Không tìm thấy việc làm' 
+    }, { status: 404 });
+    return addCorsHeaders(response);
     }
     
     // Update job
@@ -470,17 +490,19 @@ export async function PUT(req: NextRequest) {
     
     console.log('✅ [JOBS API] Job updated successfully:', mockJobs[jobIndex]);
     
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       message: 'Cập nhật việc làm thành công',
       data: mockJobs[jobIndex]
     }, { status: 200 });
+    return addCorsHeaders(response);
   } catch (error) {
     console.error('💥 [JOBS API] PUT Error:', error);
-    return NextResponse.json({ 
+    const response = NextResponse.json({ 
       success: false, 
       message: 'Có lỗi xảy ra khi cập nhật việc làm' 
     }, { status: 500 });
+    return addCorsHeaders(response);
   }
 }
 
@@ -491,7 +513,8 @@ export async function DELETE(req: NextRequest) {
     const id = url.searchParams.get('id');
     
     if (!id) {
-      return NextResponse.json({ error: 'Job ID is required' }, { status: 400 });
+      const response = NextResponse.json({ error: 'Job ID is required' }, { status: 400 });
+    return addCorsHeaders(response);
     }
     
     // Proxy to backend
@@ -508,7 +531,7 @@ export async function DELETE(req: NextRequest) {
       authHeaders['authorization'] = authorization;
     }
     
-    const response = await fetch(`${backendUrl}/api/jobs/${id}`, {
+    const fetchResponse = await fetch(`${backendUrl}/api/jobs/${id}`, {
       method: 'DELETE',
       headers: {
         'Content-Type': 'application/json',
@@ -516,13 +539,15 @@ export async function DELETE(req: NextRequest) {
       },
     });
 
-    if (!response.ok) {
-      throw new Error(`Backend API error: ${response.status}`);
+    if (!fetchResponse.ok) {
+      throw new Error(`Backend API error: ${fetchResponse.status}`);
     }
 
-    const data = await response.json();
-    return NextResponse.json(data, { status: response.status });
+    const data = await fetchResponse.json();
+    const response = NextResponse.json(data, { status: fetchResponse.status });
+    return addCorsHeaders(response);
   } catch (error) {
-    return NextResponse.json({ error: 'Server error' }, { status: 500 });
+    const response = NextResponse.json({ error: 'Server error' }, { status: 500 });
+    return addCorsHeaders(response);
   }
 }

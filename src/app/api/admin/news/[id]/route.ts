@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAdminFromRequest } from '../../../../../lib/auth';
 
+import { addCorsHeaders, createCorsOptionsResponse } from '@/lib/corsHelper';
 export const dynamic = "force-dynamic";
+// OPTIONS handler for CORS preflight
+export async function OPTIONS() {
+  return createCorsOptionsResponse();
+}
 
 // GET /api/admin/news/[id] - Get news details
 export async function GET(
@@ -11,15 +16,17 @@ export async function GET(
   try {
     const admin = getAdminFromRequest(request);
     if (!admin || admin.role !== 'admin') {
-      return NextResponse.json(
+      const response = NextResponse.json(
         { success: false, message: 'Unauthorized' },
         { status: 401 }
       );
+    return addCorsHeaders(response);
     }
 
     const { id } = params;
     if (!id) {
-      return NextResponse.json({ success: false, message: 'News ID is required' }, { status: 400 });
+      const response = NextResponse.json({ success: false, message: 'News ID is required' }, { status: 400 });
+    return addCorsHeaders(response);
     }
 
     // For now, return a mock news item
@@ -37,16 +44,18 @@ export async function GET(
       updatedAt: new Date().toISOString()
     };
 
-    return NextResponse.json({ 
+    const response = NextResponse.json({ 
       success: true, 
       data: news 
     });
+    return addCorsHeaders(response);
   } catch (err) {
     console.error('Error fetching news:', err);
-    return NextResponse.json(
+    const response = NextResponse.json(
       { success: false, message: 'Internal server error' },
       { status: 500 }
     );
+    return addCorsHeaders(response);
   }
 }
 
@@ -58,15 +67,17 @@ export async function PUT(
   try {
     const admin = getAdminFromRequest(request);
     if (!admin || admin.role !== 'admin') {
-      return NextResponse.json(
+      const response = NextResponse.json(
         { success: false, message: 'Unauthorized' },
         { status: 401 }
       );
+    return addCorsHeaders(response);
     }
 
     const { id } = params;
     if (!id) {
-      return NextResponse.json({ success: false, message: 'News ID is required' }, { status: 400 });
+      const response = NextResponse.json({ success: false, message: 'News ID is required' }, { status: 400 });
+    return addCorsHeaders(response);
     }
 
     const body = await request.json();
@@ -74,10 +85,11 @@ export async function PUT(
 
     // Validate required fields
     if (!body.title || !body.summary) {
-      return NextResponse.json(
+      const response = NextResponse.json(
         { success: false, message: 'Title and summary are required' },
         { status: 400 }
       );
+    return addCorsHeaders(response);
     }
 
     // Update news
@@ -89,17 +101,19 @@ export async function PUT(
 
     console.log('✅ [ADMIN NEWS] News updated successfully:', id);
     
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       data: updatedNews,
       message: 'News updated successfully'
     });
+    return addCorsHeaders(response);
   } catch (err) {
     console.error('Error updating news:', err);
-    return NextResponse.json(
+    const response = NextResponse.json(
       { success: false, message: 'Internal server error' },
       { status: 500 }
     );
+    return addCorsHeaders(response);
   }
 }
 
@@ -111,15 +125,17 @@ export async function DELETE(
   try {
     const admin = getAdminFromRequest(request);
     if (!admin || admin.role !== 'admin') {
-      return NextResponse.json(
+      const response = NextResponse.json(
         { success: false, message: 'Unauthorized' },
         { status: 401 }
       );
+    return addCorsHeaders(response);
     }
 
     const { id } = params;
     if (!id) {
-      return NextResponse.json({ success: false, message: 'News ID is required' }, { status: 400 });
+      const response = NextResponse.json({ success: false, message: 'News ID is required' }, { status: 400 });
+    return addCorsHeaders(response);
     }
 
     console.log('🗑️ [ADMIN NEWS] Deleting news:', id);
@@ -129,15 +145,17 @@ export async function DELETE(
 
     console.log('✅ [ADMIN NEWS] News deleted successfully:', id);
     
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       message: 'News deleted successfully'
     });
+    return addCorsHeaders(response);
   } catch (err) {
     console.error('Error deleting news:', err);
-    return NextResponse.json(
+    const response = NextResponse.json(
       { success: false, message: 'Internal server error' },
       { status: 500 }
     );
+    return addCorsHeaders(response);
   }
 }
