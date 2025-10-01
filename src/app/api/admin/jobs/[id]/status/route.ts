@@ -1,11 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAdminFromRequest } from '@/lib/auth';
-
-import { addCorsHeaders, createCorsOptionsResponse } from '@/lib/corsHelper';
 export const dynamic = "force-dynamic";
 // OPTIONS handler for CORS preflight
 export async function OPTIONS() {
-  return createCorsOptionsResponse();
+  return new NextResponse(null, {
+    status: 200,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    },
+  });
 }
 
 // PUT /api/admin/jobs/:id/status
@@ -17,13 +22,19 @@ export async function PUT(
     const admin = getAdminFromRequest(request);
     if (!admin || admin.role !== 'admin') {
       const response = NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
-    return addCorsHeaders(response);
+    response.headers.set('Access-Control-Allow-Origin', '*');
+response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+return response;
     }
 
     const { id } = params;
     if (!id) {
       const response = NextResponse.json({ success: false, message: 'Job ID is required' }, { status: 400 });
-    return addCorsHeaders(response);
+    response.headers.set('Access-Control-Allow-Origin', '*');
+response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+return response;
     }
 
     const body = await request.json();
@@ -31,7 +42,10 @@ export async function PUT(
 
     if (!status) {
       const response = NextResponse.json({ success: false, message: 'Status is required' }, { status: 400 });
-    return addCorsHeaders(response);
+    response.headers.set('Access-Control-Allow-Origin', '*');
+response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+return response;
     }
 
     // Validate status
@@ -41,7 +55,10 @@ export async function PUT(
         success: false, 
         message: 'Invalid status. Must be one of: pending, active, expired, deleted' 
       }, { status: 400 });
-    return addCorsHeaders(response);
+    response.headers.set('Access-Control-Allow-Origin', '*');
+response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+return response;
     }
 
     // Call backend API to update job status
@@ -66,14 +83,20 @@ export async function PUT(
       data: updatedJob,
       message: 'Job status updated successfully' 
     });
-    return addCorsHeaders(response);
+    response.headers.set('Access-Control-Allow-Origin', '*');
+response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+return response;
   } catch (err) {
     console.error('Error updating job status:', err);
     const response = NextResponse.json(
       { success: false, message: 'Internal server error' },
       { status: 500 }
     );
-    return addCorsHeaders(response);
+    response.headers.set('Access-Control-Allow-Origin', '*');
+response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+return response;
   }
 }
 

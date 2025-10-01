@@ -253,459 +253,28 @@ export default function AdminDashboard() {
 
   return (
     <div className="min-h-screen bg-gray-100">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b mt-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-4">
-            <div className="flex items-center">
-              <h1 className="text-2xl font-bold text-gray-900">
-                TOREDCO Admin
-              </h1>
-            </div>
-            <div className="flex items-center space-x-4">
-              <ApiStatus />
-              <button
-                onClick={() => window.location.reload()}
-                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-                title="Làm mới dữ liệu"
-              >
-                🔄 Làm mới
-              </button>
-              <span className="text-gray-600">Admin</span>
-              <button
-                onClick={handleLogout}
-                className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors"
-              >
-                Đăng xuất
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
+      <AdminHeader onLogout={handleLogout} />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-8">
-          <div className="bg-white rounded-lg shadow p-4">
-            <div className="flex items-center">
-              <div className="p-2 bg-blue-100 rounded-lg">
-                <svg
-                  className="w-5 h-5 text-blue-600"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2-2v2m8 0V6a2 2 0 012 2v6a2 2 0 01-2 2H8a2 2 0 01-2-2V8a2 2 0 012-2V6"
-                  />
-                </svg>
-              </div>
-              <div className="ml-3">
-                <p className="text-xs font-medium text-gray-600">
-                  Tổng việc làm
-                </p>
-                <p className="text-xl font-semibold text-gray-900">
-                  {stats.totalJobs || (homeData.hirings.length + homeData.newJobs.length + homeData.jobs.length)}
-                </p>
-                <p className="text-xs text-gray-500">
-                  (Jobs: {homeData.jobs.length}, Hiring: {homeData.hirings.length}, NewJobs: {homeData.newJobs.length})
-                </p>
-              </div>
-            </div>
-          </div>
+        <StatsGrid stats={stats} homeData={homeData} />
 
-          <div className="bg-white rounded-lg shadow p-4">
-            <div className="flex items-center">
-              <div className="p-2 bg-green-100 rounded-lg">
-                <svg
-                  className="w-5 h-5 text-green-600"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"
-                  />
-                </svg>
-              </div>
-              <div className="ml-3">
-                <p className="text-xs font-medium text-gray-600">Ứng viên</p>
-                <p className="text-xl font-semibold text-gray-900">
-                  {stats.totalApplications || homeData.applications.length}
-                </p>
-              </div>
-            </div>
-          </div>
+        <QuickActions />
 
-          <div className="bg-white rounded-lg shadow p-4">
-            <div className="flex items-center">
-              <div className="p-2 bg-yellow-100 rounded-lg">
-                <svg
-                  className="w-5 h-5 text-yellow-600"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"
-                  />
-                </svg>
-              </div>
-              <div className="ml-3">
-                <p className="text-xs font-medium text-gray-600">Đánh giá</p>
-                <p className="text-xl font-semibold text-gray-900">
-                  {stats.totalReviews || homeData.reviews.length}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow p-4">
-            <div className="flex items-center">
-              <div className="p-2 bg-green-100 rounded-lg">
-                <svg
-                  className="w-5 h-5 text-green-600"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
-              </div>
-              <div className="ml-3">
-                <p className="text-xs font-medium text-gray-600">
-                  Việc làm đang hoạt động
-                </p>
-                <p className="text-xl font-semibold text-gray-900">
-                  {stats.activeJobs}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow p-4">
-            <div className="flex items-center">
-              <div className="p-2 bg-orange-100 rounded-lg">
-                <svg
-                  className="w-5 h-5 text-orange-600"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
-              </div>
-              <div className="ml-3">
-                <p className="text-xs font-medium text-gray-600">Chờ duyệt</p>
-                <p className="text-xl font-semibold text-gray-900">
-                  {stats.pendingJobs}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow p-4">
-            <div className="flex items-center">
-              <div className="p-2 bg-indigo-100 rounded-lg">
-                <svg
-                  className="w-5 h-5 text-indigo-600"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                  />
-                </svg>
-              </div>
-              <div className="ml-3">
-                <p className="text-xs font-medium text-gray-600">Tin tức</p>
-                <p className="text-xl font-semibold text-gray-900">
-                  {stats.totalNews || homeData.news.length}
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Quick Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-8">
-          <Link
-            href="/admin/jobs/create"
-            className="bg-white rounded-lg shadow p-4 hover:shadow-md transition-shadow"
-          >
-            <div className="flex flex-col items-center text-center">
-              <div className="p-2 bg-blue-100 rounded-lg mb-2">
-                <svg
-                  className="w-5 h-5 text-blue-600"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 6v6m0 0v6m0-6h6m-6 0H6"
-                  />
-                </svg>
-              </div>
-              <h3 className="text-sm font-semibold text-gray-900 mb-1">
-                Đăng việc làm
-              </h3> 
-              <p className="text-xs text-gray-600">Tạo việc làm mới</p>
-            </div>
-          </Link>
-           <Link
-            href="/admin/jobnew/create"
-            className="bg-white rounded-lg shadow p-4 hover:shadow-md transition-shadow"
-          >
-            <div className="flex flex-col items-center text-center">
-              <div className="p-2 bg-green-100 rounded-lg mb-2">
-                <svg
-                  className="w-5 h-5 text-green-600"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 6v6m0 0v6m0-6h6m-6 0H6"
-                  />
-                </svg>
-              </div>
-              <h3 className="text-sm font-semibold text-gray-900 mb-1">
-                Đăng việc làm TopNew
-              </h3>
-              <p className="text-xs text-gray-600">Tạo việc làm mới</p>
-            </div>
-          </Link>
-
-
-          <Link
-            href="/admin/jobs"
-            className="bg-white rounded-lg shadow p-4 hover:shadow-md transition-shadow"
-          >
-            <div className="flex flex-col items-center text-center">
-              <div className="p-2 bg-blue-100 rounded-lg mb-2">
-                <svg
-                  className="w-5 h-5 text-blue-600"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
-                  />
-                </svg>
-              </div>
-              <h3 className="text-sm font-semibold text-gray-900 mb-1">
-                Quản lý việc làm
-              </h3>
-              <p className="text-xs text-gray-600">Xem và chỉnh sửa</p>
-            </div>
-          </Link>
-
-          <Link
-            href="/admin/newjobs"
-            className="bg-white rounded-lg shadow p-4 hover:shadow-md transition-shadow"
-          >
-            <div className="flex flex-col items-center text-center">
-              <div className="p-2 bg-purple-100 rounded-lg mb-2">
-                <svg
-                  className="w-5 h-5 text-purple-600"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2-2v2m8 0V6a2 2 0 012 2v6a2 2 0 01-2 2H8a2 2 0 01-2-2V8a2 2 0 012-2V6"
-                  />
-                </svg>
-              </div>
-              <h3 className="text-sm font-semibold text-gray-900 mb-1">
-                Quản lý NewJobs
-              </h3>
-              <p className="text-xs text-gray-600">Xem và quản lý</p>
-            </div>
-          </Link>
-
-          <Link
-            href="/admin/hirings"
-            className="bg-white rounded-lg shadow p-4 hover:shadow-md transition-shadow"
-          >
-            <div className="flex flex-col items-center text-center">
-              <div className="p-2 bg-yellow-100 rounded-lg mb-2">
-                <svg
-                  className="w-5 h-5 text-yellow-600"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2-2v2m8 0V6a2 2 0 012 2v6a2 2 0 01-2 2H8a2 2 0 01-2-2V8a2 2 0 012-2V6"
-                  />
-                </svg>
-              </div>
-              <h3 className="text-sm font-semibold text-gray-900 mb-1">
-                Quản lý JobNew
-              </h3>
-              <p className="text-xs text-gray-600">Xem và chỉnh sửa</p>
-            </div>
-          </Link>
-
-          <Link
-            href="/admin/applications"
-            className="bg-white rounded-lg shadow p-4 hover:shadow-md transition-shadow"
-          >
-            <div className="flex flex-col items-center text-center">
-              <div className="p-2 bg-indigo-100 rounded-lg mb-2">
-                <svg
-                  className="w-5 h-5 text-indigo-600"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                  />
-                </svg>
-              </div>
-              <h3 className="text-sm font-semibold text-gray-900 mb-1">
-                Quản lý ứng viên
-              </h3>
-              <p className="text-xs text-gray-600">Xem và quản lý ứng viên</p>
-            </div>
-          </Link>
-
-          <Link
-            href="/admin/news"
-            className="bg-white rounded-lg shadow p-4 hover:shadow-md transition-shadow"
-          >
-            <div className="flex flex-col items-center text-center">
-              <div className="p-2 bg-indigo-100 rounded-lg mb-2">
-                <svg
-                  className="w-5 h-5 text-indigo-600"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                  />
-                </svg>
-              </div>
-              <h3 className="text-sm font-semibold text-gray-900 mb-1">
-                Đăng tin tức 
-              </h3>
-              <p className="text-xs text-gray-600">Xem tin tức</p>
-            </div>
-          </Link>
-        </div>
-
-        {/* Data Overview Section */}
-        <div className="bg-white rounded-lg shadow p-6 mb-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">Tổng quan dữ liệu hệ thống</h2>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-            <div className="text-center p-4 bg-indigo-50 rounded-lg">
-              <div className="text-3xl font-bold text-indigo-600">{homeData.jobs.length}</div>
-              <div className="text-sm text-gray-600">Việc làm Jobs</div>
-            </div>
-            <div className="text-center p-4 bg-blue-50 rounded-lg">
-              <div className="text-3xl font-bold text-blue-600">{homeData.hirings.length}</div>
-              <div className="text-sm text-gray-600">Việc làm Hiring</div>
-            </div>
-            <div className="text-center p-4 bg-green-50 rounded-lg">
-              <div className="text-3xl font-bold text-green-600">{homeData.newJobs.length}</div>
-              <div className="text-sm text-gray-600">Việc làm NewJobs</div>
-            </div>
-            <div className="text-center p-4 bg-purple-50 rounded-lg">
-              <div className="text-3xl font-bold text-purple-600">{homeData.applications.length}</div>
-              <div className="text-sm text-gray-600">Ứng viên</div>
-            </div>
-            <div className="text-center p-4 bg-orange-50 rounded-lg">
-              <div className="text-3xl font-bold text-orange-600">{homeData.news.length}</div>
-              <div className="text-sm text-gray-600">Tin tức</div>
-            </div>
-          </div>
-          <div className="mt-4 text-center">
-            <div className="text-lg font-semibold text-gray-700">
-              Tổng việc làm: <span className="text-blue-600">{homeData.jobs.length + homeData.hirings.length + homeData.newJobs.length}</span>
-            </div>
-          </div>
-        </div>
+        <DataOverview homeData={homeData} />
 
         {/* Home Data Sections - Similar to Home Page */}
         <div className="space-y-8">
-          {/* Jobs Section */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold text-gray-900">
-                Việc làm Jobs ({homeData.jobs.length})
-              </h2>
-              <Link href="/admin/jobs" className="text-blue-600 hover:text-blue-800">
-                Xem tất cả →
-              </Link>
-            </div>
+          <SectionCard title={`Việc làm Jobs (${homeData.jobs.length})`} href="/admin/jobs">
             {homeData.jobs.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {homeData.jobs.slice(0, 6).map((job: any) => (
                   <div key={job._id || job.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
                     <h3 className="font-semibold text-gray-900 mb-2">{job.title}</h3>
                     <p className="text-sm text-gray-600 mb-2">🏢 {job.company}</p>
-                    {job.location && (
-                      <p className="text-sm text-gray-600 mb-2">📍 {job.location}</p>
-                    )}
-                    {job.salary && (
-                      <p className="text-sm text-green-600 font-medium">💰 {job.salary}</p>
-                    )}
+                    {job.location && <p className="text-sm text-gray-600 mb-2">📍 {job.location}</p>}
+                    {job.salary && <p className="text-sm text-green-600 font-medium">💰 {job.salary}</p>}
                     {job.status && (
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                        job.status === 'active' || job.status === 'published'
-                          ? 'bg-green-100 text-green-800'
-                          : job.status === 'pending' || job.status === 'draft'
-                          ? 'bg-yellow-100 text-yellow-800'
-                          : 'bg-gray-100 text-gray-800'
-                      }`}>
+                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${job.status === 'active' || job.status === 'published' ? 'bg-green-100 text-green-800' : job.status === 'pending' || job.status === 'draft' ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-800'}`}>
                         {job.status}
                       </span>
                     )}
@@ -715,7 +284,7 @@ export default function AdminDashboard() {
             ) : (
               <p className="text-gray-500 text-center py-8">Chưa có việc làm Jobs nào</p>
             )}
-          </div>
+          </SectionCard>
 
           {/* Hirings Section */}
           <div className="bg-white rounded-lg shadow p-6">
@@ -870,6 +439,204 @@ export default function AdminDashboard() {
         </div>
 
       </div>
+    </div>
+  );
+}
+
+function AdminHeader({ onLogout }: { onLogout: () => void }) {
+  return (
+    <header className="bg-white shadow-sm border-b mt-10">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between items-center py-4">
+          <div className="flex items-center">
+            <h1 className="text-2xl font-bold text-gray-900">TOREDCO Admin</h1>
+          </div>
+          <div className="flex items-center space-x-4">
+            <ApiStatus />
+            <button onClick={() => window.location.reload()} className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors" title="Làm mới dữ liệu">🔄 Làm mới</button>
+            <span className="text-gray-600">Admin</span>
+            <button onClick={onLogout} className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors">Đăng xuất</button>
+          </div>
+        </div>
+      </div>
+    </header>
+  );
+}
+
+function StatsCard({ iconBg, icon, label, value, extra }: { iconBg: string; icon: React.ReactNode; label: string; value: React.ReactNode; extra?: React.ReactNode }) {
+  return (
+    <div className="bg-white rounded-lg shadow p-4">
+      <div className="flex items-center">
+        <div className={`p-2 ${iconBg} rounded-lg`}>{icon}</div>
+        <div className="ml-3">
+          <p className="text-xs font-medium text-gray-600">{label}</p>
+          <p className="text-xl font-semibold text-gray-900">{value}</p>
+          {extra}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function StatsGrid({ stats, homeData }: { stats: DashboardStats; homeData: HomeData }) {
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-8">
+      <StatsCard
+        iconBg="bg-blue-100"
+        icon={<svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2-2v2m8 0V6a2 2 0 012 2v6a2 2 0 01-2 2H8a2 2 0 01-2-2V8a2 2 0 012-2V6" /></svg>}
+        label="Tổng việc làm"
+        value={stats.totalJobs || (homeData.hirings.length + homeData.newJobs.length + homeData.jobs.length)}
+        extra={<p className="text-xs text-gray-500">(Jobs: {homeData.jobs.length}, Hiring: {homeData.hirings.length}, NewJobs: {homeData.newJobs.length})</p>}
+      />
+      <StatsCard
+        iconBg="bg-green-100"
+        icon={<svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" /></svg>}
+        label="Ứng viên"
+        value={stats.totalApplications || homeData.applications.length}
+      />
+      <StatsCard
+        iconBg="bg-yellow-100"
+        icon={<svg className="w-5 h-5 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" /></svg>}
+        label="Đánh giá"
+        value={stats.totalReviews || homeData.reviews.length}
+      />
+      <StatsCard
+        iconBg="bg-green-100"
+        icon={<svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
+        label="Việc làm đang hoạt động"
+        value={stats.activeJobs}
+      />
+      <StatsCard
+        iconBg="bg-orange-100"
+        icon={<svg className="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
+        label="Chờ duyệt"
+        value={stats.pendingJobs}
+      />
+      <StatsCard
+        iconBg="bg-indigo-100"
+        icon={<svg className="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>}
+        label="Tin tức"
+        value={stats.totalNews || homeData.news.length}
+      />
+    </div>
+  );
+}
+
+function QuickActions() {
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-8">
+      <Link href="/admin/jobs/create" className="bg-white rounded-lg shadow p-4 hover:shadow-md transition-shadow">
+        <div className="flex flex-col items-center text-center">
+          <div className="p-2 bg-blue-100 rounded-lg mb-2">
+            <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>
+          </div>
+          <h3 className="text-sm font-semibold text-gray-900 mb-1">Đăng việc làm</h3>
+          <p className="text-xs text-gray-600">Tạo việc làm mới</p>
+        </div>
+      </Link>
+      <Link href="/admin/jobnew/create" className="bg-white rounded-lg shadow p-4 hover:shadow-md transition-shadow">
+        <div className="flex flex-col items-center text-center">
+          <div className="p-2 bg-green-100 rounded-lg mb-2">
+            <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>
+          </div>
+          <h3 className="text-sm font-semibold text-gray-900 mb-1">Đăng việc làm TopNew</h3>
+          <p className="text-xs text-gray-600">Tạo việc làm mới</p>
+        </div>
+      </Link>
+      <Link href="/admin/jobs" className="bg-white rounded-lg shadow p-4 hover:shadow-md transition-shadow">
+        <div className="flex flex-col items-center text-center">
+          <div className="p-2 bg-blue-100 rounded-lg mb-2">
+            <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
+          </div>
+          <h3 className="text-sm font-semibold text-gray-900 mb-1">Quản lý việc làm</h3>
+          <p className="text-xs text-gray-600">Xem và chỉnh sửa</p>
+        </div>
+      </Link>
+      <Link href="/admin/newjobs" className="bg-white rounded-lg shadow p-4 hover:shadow-md transition-shadow">
+        <div className="flex flex-col items-center text-center">
+          <div className="p-2 bg-purple-100 rounded-lg mb-2">
+            <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2-2v2m8 0V6a2 2 0 012 2v6a2 2 0 01-2 2H8a2 2 0 01-2-2V8a2 2 0 012-2V6" /></svg>
+          </div>
+          <h3 className="text-sm font-semibold text-gray-900 mb-1">Quản lý NewJobs</h3>
+          <p className="text-xs text-gray-600">Xem và quản lý</p>
+        </div>
+      </Link>
+      <Link href="/admin/hirings" className="bg-white rounded-lg shadow p-4 hover:shadow-md transition-shadow">
+        <div className="flex flex-col items-center text-center">
+          <div className="p-2 bg-yellow-100 rounded-lg mb-2">
+            <svg className="w-5 h-5 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2-2v2m8 0V6a2 2 0 012 2v6a2 2 0 01-2 2H8a2 2 0 01-2-2V8a2 2 0 012-2V6" /></svg>
+          </div>
+          <h3 className="text-sm font-semibold text-gray-900 mb-1">Quản lý JobNew</h3>
+          <p className="text-xs text-gray-600">Xem và chỉnh sửa</p>
+        </div>
+      </Link>
+      <Link href="/admin/applications" className="bg-white rounded-lg shadow p-4 hover:shadow-md transition-shadow">
+        <div className="flex flex-col items-center text-center">
+          <div className="p-2 bg-indigo-100 rounded-lg mb-2">
+            <svg className="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+          </div>
+          <h3 className="text-sm font-semibold text-gray-900 mb-1">Quản lý ứng viên</h3>
+          <p className="text-xs text-gray-600">Xem và quản lý ứng viên</p>
+        </div>
+      </Link>
+      <Link href="/admin/news" className="bg-white rounded-lg shadow p-4 hover:shadow-md transition-shadow">
+        <div className="flex flex-col items-center text-center">
+          <div className="p-2 bg-indigo-100 rounded-lg mb-2">
+            <svg className="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+          </div>
+          <h3 className="text-sm font-semibold text-gray-900 mb-1">Đăng tin tức</h3>
+          <p className="text-xs text-gray-600">Xem tin tức</p>
+        </div>
+      </Link>
+    </div>
+  );
+}
+
+function DataOverview({ homeData }: { homeData: HomeData }) {
+  return (
+    <div className="bg-white rounded-lg shadow p-6 mb-8">
+      <h2 className="text-2xl font-bold text-gray-900 mb-6">Tổng quan dữ liệu hệ thống</h2>
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+        <div className="text-center p-4 bg-indigo-50 rounded-lg">
+          <div className="text-3xl font-bold text-indigo-600">{homeData.jobs.length}</div>
+          <div className="text-sm text-gray-600">Việc làm Jobs</div>
+        </div>
+        <div className="text-center p-4 bg-blue-50 rounded-lg">
+          <div className="text-3xl font-bold text-blue-600">{homeData.hirings.length}</div>
+          <div className="text-sm text-gray-600">Việc làm Hiring</div>
+        </div>
+        <div className="text-center p-4 bg-green-50 rounded-lg">
+          <div className="text-3xl font-bold text-green-600">{homeData.newJobs.length}</div>
+          <div className="text-sm text-gray-600">Việc làm NewJobs</div>
+        </div>
+        <div className="text-center p-4 bg-purple-50 rounded-lg">
+          <div className="text-3xl font-bold text-purple-600">{homeData.applications.length}</div>
+          <div className="text-sm text-gray-600">Ứng viên</div>
+        </div>
+        <div className="text-center p-4 bg-orange-50 rounded-lg">
+          <div className="text-3xl font-bold text-orange-600">{homeData.news.length}</div>
+          <div className="text-sm text-gray-600">Tin tức</div>
+        </div>
+      </div>
+      <div className="mt-4 text-center">
+        <div className="text-lg font-semibold text-gray-700">
+          Tổng việc làm: <span className="text-blue-600">{homeData.jobs.length + homeData.hirings.length + homeData.newJobs.length}</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SectionCard({ title, subtitle, href, children }: { title: string; subtitle?: string; href: string; children: React.ReactNode }) {
+  return (
+    <div className="bg-white rounded-lg shadow p-6">
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-2xl font-bold text-gray-900">
+          {title} {subtitle && <span className="text-sm font-normal text-gray-500 ml-2">{subtitle}</span>}
+        </h2>
+        <Link href={href} className="text-blue-600 hover:text-blue-800">Xem tất cả →</Link>
+      </div>
+      {children}
     </div>
   );
 }

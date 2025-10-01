@@ -1,11 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAdminFromRequest } from '../../../../../lib/auth';
-
-import { addCorsHeaders, createCorsOptionsResponse } from '@/lib/corsHelper';
 export const dynamic = "force-dynamic";
 // OPTIONS handler for CORS preflight
 export async function OPTIONS() {
-  return createCorsOptionsResponse();
+  return new NextResponse(null, {
+    status: 200,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    },
+  });
 }
 
 // GET /api/admin/applications/[id] - Get application details
@@ -20,13 +25,19 @@ export async function GET(
         { success: false, message: 'Unauthorized' },
         { status: 401 }
       );
-    return addCorsHeaders(response);
+    response.headers.set('Access-Control-Allow-Origin', '*');
+response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+return response;
     }
 
     const { id } = params;
     if (!id) {
       const response = NextResponse.json({ success: false, message: 'Application ID is required' }, { status: 400 });
-    return addCorsHeaders(response);
+    response.headers.set('Access-Control-Allow-Origin', '*');
+response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+return response;
     }
 
     // For now, return a mock application
@@ -53,14 +64,20 @@ export async function GET(
       success: true, 
       data: application 
     });
-    return addCorsHeaders(response);
+    response.headers.set('Access-Control-Allow-Origin', '*');
+response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+return response;
   } catch (err) {
     console.error('Error fetching application:', err);
     const response = NextResponse.json(
       { success: false, message: 'Internal server error' },
       { status: 500 }
     );
-    return addCorsHeaders(response);
+    response.headers.set('Access-Control-Allow-Origin', '*');
+response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+return response;
   }
 }
 
@@ -76,13 +93,19 @@ export async function PUT(
         { success: false, message: 'Unauthorized' },
         { status: 401 }
       );
-    return addCorsHeaders(response);
+    response.headers.set('Access-Control-Allow-Origin', '*');
+response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+return response;
     }
 
     const { id } = params;
     if (!id) {
       const response = NextResponse.json({ success: false, message: 'Application ID is required' }, { status: 400 });
-    return addCorsHeaders(response);
+    response.headers.set('Access-Control-Allow-Origin', '*');
+response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+return response;
     }
 
     const body = await request.json();
@@ -94,7 +117,10 @@ export async function PUT(
         { success: false, message: 'Applicant name and email are required' },
         { status: 400 }
       );
-    return addCorsHeaders(response);
+    response.headers.set('Access-Control-Allow-Origin', '*');
+response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+return response;
     }
 
     // Update application
@@ -111,14 +137,20 @@ export async function PUT(
       data: updatedApplication,
       message: 'Application updated successfully'
     });
-    return addCorsHeaders(response);
+    response.headers.set('Access-Control-Allow-Origin', '*');
+response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+return response;
   } catch (err) {
     console.error('Error updating application:', err);
     const response = NextResponse.json(
       { success: false, message: 'Internal server error' },
       { status: 500 }
     );
-    return addCorsHeaders(response);
+    response.headers.set('Access-Control-Allow-Origin', '*');
+response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+return response;
   }
 }
 
@@ -134,13 +166,19 @@ export async function DELETE(
         { success: false, message: 'Unauthorized' },
         { status: 401 }
       );
-    return addCorsHeaders(response);
+    response.headers.set('Access-Control-Allow-Origin', '*');
+response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+return response;
     }
 
     const { id } = params;
     if (!id) {
       const response = NextResponse.json({ success: false, message: 'Application ID is required' }, { status: 400 });
-    return addCorsHeaders(response);
+    response.headers.set('Access-Control-Allow-Origin', '*');
+response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+return response;
     }
 
     console.log('🗑️ [ADMIN APPLICATIONS] Deleting application:', id);
@@ -154,14 +192,20 @@ export async function DELETE(
       success: true,
       message: 'Application deleted successfully'
     });
-    return addCorsHeaders(response);
+    response.headers.set('Access-Control-Allow-Origin', '*');
+response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+return response;
   } catch (err) {
     console.error('Error deleting application:', err);
     const response = NextResponse.json(
       { success: false, message: 'Internal server error' },
       { status: 500 }
     );
-    return addCorsHeaders(response);
+    response.headers.set('Access-Control-Allow-Origin', '*');
+response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+return response;
   }
 }
 

@@ -7,6 +7,7 @@ import AuthModal from '../../auth/AuthModal';
 export default function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [currentUser, setCurrentUser] = useState<any>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -24,6 +25,15 @@ export default function Header() {
     const isLoggedIn = localStorage.getItem('isLoggedIn');
     const currentPath = window.location.pathname;
     const hasCompletedAuth = localStorage.getItem('hasCompletedAuth');
+    const storedUser = localStorage.getItem('user');
+    const token = localStorage.getItem('token');
+
+    // Set initial user state if available
+    if (storedUser && (token || isLoggedIn === 'true')) {
+      try {
+        setCurrentUser(JSON.parse(storedUser));
+      } catch {}
+    }
 
     // Nếu chưa truy cập và chưa đăng nhập, hiển thị modal đăng ký
     if (!hasVisited && !isLoggedIn && !hasCompletedAuth && !currentPath.startsWith('/register') && !currentPath.startsWith('/login')) {
@@ -39,16 +49,60 @@ export default function Header() {
     // Kiểm tra trạng thái đăng nhập mỗi giây
     const checkLoginStatus = () => {
       const isLoggedInNow = localStorage.getItem('isLoggedIn');
-      if (isLoggedInNow === 'true') {
+      const tokenNow = localStorage.getItem('token');
+      const userNow = localStorage.getItem('user');
+      if (isLoggedInNow === 'true' || !!tokenNow) {
         setShowAuthModal(false);
         // Đánh dấu là đã hoàn thành quá trình đăng nhập
         localStorage.setItem('hasCompletedAuth', 'true');
+        if (userNow) {
+          try {
+            setCurrentUser(JSON.parse(userNow));
+          } catch {}
+        }
       }
     };
 
     const interval = setInterval(checkLoginStatus, 1000);
     return () => clearInterval(interval);
   }, []);
+
+  // Listen for storage changes (e.g., from other tabs) and set user
+  useEffect(() => {
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === 'user' || e.key === 'token' || e.key === 'isLoggedIn') {
+        const userNow = localStorage.getItem('user');
+        const tokenNow = localStorage.getItem('token');
+        const isLoggedInNow = localStorage.getItem('isLoggedIn');
+        if (userNow && (tokenNow || isLoggedInNow === 'true')) {
+          try {
+            setCurrentUser(JSON.parse(userNow));
+          } catch {
+            setCurrentUser(null);
+          }
+        } else {
+          setCurrentUser(null);
+        }
+      }
+    };
+    window.addEventListener('storage', handleStorage);
+    return () => window.removeEventListener('storage', handleStorage);
+  }, []);
+
+  const handleLogout = () => {
+    try {
+      localStorage.removeItem('user');
+      localStorage.removeItem('token');
+      localStorage.removeItem('isLoggedIn');
+      localStorage.removeItem('hasCompletedAuth');
+    } catch {}
+    setCurrentUser(null);
+    try {
+      router.push('/');
+    } catch {
+      window.location.href = '/';
+    }
+  };
 
   // Close auth modal when route changes
   useEffect(() => {
@@ -151,42 +205,70 @@ export default function Header() {
             </Link> */}
           </div>
 
-          {/* Auth Buttons */}
-          <div className="flex gap-4">
-            <button 
-              onClick={() => {
-                try {
-                  window.location.href = '/login';
-                } catch (error) {
-                  console.error('Navigation error:', error);
-                  // Fallback: try router.push
-                  router.push('/login');
-                }
-              }}
-              className={`px-6 py-2 rounded-full font-semibold transition-all duration-300 transform hover:scale-105 ${isScrolled
-                ? 'bg-blue-900 text-white hover:bg-blue-800'
-                : 'bg-white text-blue-900 hover:bg-gray-100'
-                }`}
-            >
-              Đăng nhập
-            </button>
-            <button 
-              onClick={() => {
-                try {
-                  window.location.href = '/register';
-                } catch (error) {
-                  console.error('Navigation error:', error);
-                  // Fallback: try router.push
-                  router.push('/register');
-                }
-              }}
-              className={`px-6 py-2 rounded-full font-semibold transition-all duration-300 transform hover:scale-105 ${isScrolled
-                ? 'border-2 border-blue-900 text-blue-900 hover:bg-blue-900 hover:text-white'
-                : 'border-2 border-white text-white hover:bg-white hover:text-blue-900'
-                }`}
-            >
-              Đăng ký
-            </button>
+          {/* Auth / User */}
+          <div className="flex items-center gap-4">
+            {currentUser ? (
+              <div className="flex items-center gap-3">
+                <Link href="/profile" className="flex items-center gap-2">
+                  {/* Avatar */}
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={(currentUser.avatar || currentUser.imageUrl || currentUser.photo || '/img/ava.jpg') as string}
+                    alt={currentUser.name || currentUser.email || 'User'}
+                    className="w-10 h-10 rounded-full object-cover border-2 border-white shadow-sm"
+                  />
+                  <span className={`${isScrolled ? 'text-blue-900' : 'text-white'} font-semibold hidden sm:inline`}>
+                    {currentUser.name || currentUser.fullName || currentUser.email || 'Tài khoản'}
+                  </span>
+                </Link>
+                <button
+                  onClick={handleLogout}
+                  className={`px-4 py-2 rounded-full font-semibold transition-all duration-300 transform hover:scale-105 ${isScrolled
+                    ? 'border-2 border-blue-900 text-blue-900 hover:bg-blue-900 hover:text-white'
+                    : 'border-2 border-white text-white hover:bg-white hover:text-blue-900'
+                    }`}
+                >
+                  Đăng xuất
+                </button>
+              </div>
+            ) : (
+              <>
+                <button 
+                  onClick={() => {
+                    try {
+                      window.location.href = '/login';
+                    } catch (error) {
+                      console.error('Navigation error:', error);
+                      // Fallback: try router.push
+                      router.push('/login');
+                    }
+                  }}
+                  className={`px-6 py-2 rounded-full font-semibold transition-all duration-300 transform hover:scale-105 ${isScrolled
+                    ? 'bg-blue-900 text-white hover:bg-blue-800'
+                    : 'bg-white text-blue-900 hover:bg-gray-100'
+                    }`}
+                >
+                  Đăng nhập
+                </button>
+                <button 
+                  onClick={() => {
+                    try {
+                      window.location.href = '/register';
+                    } catch (error) {
+                      console.error('Navigation error:', error);
+                      // Fallback: try router.push
+                      router.push('/register');
+                    }
+                  }}
+                  className={`px-6 py-2 rounded-full font-semibold transition-all duration-300 transform hover:scale-105 ${isScrolled
+                    ? 'border-2 border-blue-900 text-blue-900 hover:bg-blue-900 hover:text-white'
+                    : 'border-2 border-white text-white hover:bg-white hover:text-blue-900'
+                    }`}
+                >
+                  Đăng ký
+                </button>
+              </>
+            )}
           </div>
 
           {/* Auth Modal for first-time visitors */}

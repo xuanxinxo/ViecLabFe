@@ -1,10 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import { addCorsHeaders, createCorsOptionsResponse } from '@/lib/corsHelper';
-
 // OPTIONS handler for CORS preflight
 export async function OPTIONS() {
-  return createCorsOptionsResponse();
+  return new NextResponse(null, {
+    status: 200,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    },
+  });
 }
 
 export async function POST(request: NextRequest) {
@@ -16,7 +21,10 @@ export async function POST(request: NextRequest) {
         { success: false, message: 'Vui lòng cung cấp địa chỉ email' },
         { status: 400 }
       );
-    return addCorsHeaders(response);
+    response.headers.set('Access-Control-Allow-Origin', '*');
+response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+return response;
     }
 
     // Call the backend API to process the forgot password request
@@ -35,20 +43,29 @@ export async function POST(request: NextRequest) {
         { success: false, message: data.message || 'Có lỗi xảy ra khi xử lý yêu cầu' },
         { status: response.status }
       );
-    return addCorsHeaders(response);
+    response.headers.set('Access-Control-Allow-Origin', '*');
+response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+return response;
     }
 
     const response = NextResponse.json({
       success: true,
       message: 'Đã gửi liên kết đặt lại mật khẩu đến email của bạn',
     });
-    return addCorsHeaders(response);
+    response.headers.set('Access-Control-Allow-Origin', '*');
+response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+return response;
   } catch (error) {
     console.error('Forgot password error:', error);
     const response = NextResponse.json(
       { success: false, message: 'Có lỗi xảy ra khi xử lý yêu cầu' },
       { status: 500 }
     );
-    return addCorsHeaders(response);
+    response.headers.set('Access-Control-Allow-Origin', '*');
+response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+return response;
   }
 }

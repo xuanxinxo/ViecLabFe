@@ -3,12 +3,17 @@ import { NextRequest, NextResponse } from 'next/server';
 import { authenticateAdmin, checkRateLimit } from '@/lib/auth';
 import jwt from 'jsonwebtoken';
 import { serverCookieHelper } from '@/lib/cookieHelper';
-
-import { addCorsHeaders, createCorsOptionsResponse } from '@/lib/corsHelper';
 export const dynamic = "force-dynamic";
 // OPTIONS handler for CORS preflight
 export async function OPTIONS() {
-  return createCorsOptionsResponse();
+  return new NextResponse(null, {
+    status: 200,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    },
+  });
 }
 
 const JWT_SECRET = process.env.JWT_SECRET || 'toredco-admin-secret-key-2024-super-secure';
@@ -26,7 +31,10 @@ export async function POST(request: NextRequest) {
         { success: false, message: 'Too many login attempts. Please try again later.' },
         { status: 429 },
       );
-    return addCorsHeaders(response);
+    response.headers.set('Access-Control-Allow-Origin', '*');
+response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+return response;
     }
     
     const { username, password } = await request.json();
@@ -38,7 +46,10 @@ export async function POST(request: NextRequest) {
         { success: false, message: 'Username and password are required' },
         { status: 400 },
       );
-    return addCorsHeaders(response);
+    response.headers.set('Access-Control-Allow-Origin', '*');
+response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+return response;
     }
 
     /* 1. Xác thực admin */
@@ -52,7 +63,10 @@ export async function POST(request: NextRequest) {
         { success: false, message: 'Invalid credentials' },
         { status: 401 },
       );
-    return addCorsHeaders(response);
+    response.headers.set('Access-Control-Allow-Origin', '*');
+response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+return response;
     }
 
     console.log('✅ [ADMIN LOGIN] Authentication successful for user:', user.username);
@@ -97,7 +111,10 @@ export async function POST(request: NextRequest) {
       { success: false, message: 'Internal server error' },
       { status: 500 },
     );
-    return addCorsHeaders(response);
+    response.headers.set('Access-Control-Allow-Origin', '*');
+response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+return response;
   }
 }
 

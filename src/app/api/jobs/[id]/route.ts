@@ -2,12 +2,17 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAdminFromRequest } from '@/lib/auth';
 import { promises as fs } from 'fs';
 import path from 'path';
-
-import { addCorsHeaders, createCorsOptionsResponse } from '@/lib/corsHelper';
 export const dynamic = "force-dynamic";
 // OPTIONS handler for CORS preflight
 export async function OPTIONS() {
-  return createCorsOptionsResponse();
+  return new NextResponse(null, {
+    status: 200,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    },
+  });
 }
 
 // File path for persistent mock storage
@@ -51,14 +56,20 @@ export async function GET(
             data: backendData.data,
             message: 'Lấy thông tin việc làm thành công từ backend'
           });
-    return addCorsHeaders(response);
+    response.headers.set('Access-Control-Allow-Origin', '*');
+response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+return response;
         } else if (backendData) {
           const response = NextResponse.json({
             success: true,
             data: backendData,
             message: 'Lấy thông tin việc làm thành công từ backend'
           });
-    return addCorsHeaders(response);
+    response.headers.set('Access-Control-Allow-Origin', '*');
+response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+return response;
         }
       } else {
         console.log(`⚠️ [JOBS API] Backend returned ${response.status}, falling back to mock data`);
@@ -86,7 +97,10 @@ export async function GET(
         { success: false, message: 'Không tìm thấy việc làm' },
         { status: 404 }
       );
-    return addCorsHeaders(response);
+    response.headers.set('Access-Control-Allow-Origin', '*');
+response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+return response;
     }
 
     console.log(`✅ [JOBS API] Found job in mock data:`, job.title);
@@ -95,7 +109,10 @@ export async function GET(
       data: job,
       message: 'Lấy thông tin việc làm thành công từ mock data'
     });
-    return addCorsHeaders(response);
+    response.headers.set('Access-Control-Allow-Origin', '*');
+response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+return response;
 
   } catch (error: any) {
     console.error(`💥 [JOBS API] Error:`, error);
@@ -103,7 +120,10 @@ export async function GET(
       { success: false, message: 'Có lỗi xảy ra khi lấy thông tin việc làm' },
       { status: 500 }
     );
-    return addCorsHeaders(response);
+    response.headers.set('Access-Control-Allow-Origin', '*');
+response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+return response;
   }
 }
 
@@ -120,7 +140,10 @@ export async function DELETE(
         { success: false, message: 'Cần đăng nhập admin để xóa việc làm' },
         { status: 401 }
       );
-    return addCorsHeaders(response);
+    response.headers.set('Access-Control-Allow-Origin', '*');
+response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+return response;
     }
 
     const jobId = params.id;
@@ -141,7 +164,10 @@ export async function DELETE(
         { success: false, message: 'Không tìm thấy việc làm' },
         { status: 404 }
       );
-    return addCorsHeaders(response);
+    response.headers.set('Access-Control-Allow-Origin', '*');
+response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+return response;
     }
 
     // Remove job from array
@@ -155,13 +181,19 @@ export async function DELETE(
       message: 'Xóa việc làm thành công',
       data: deletedJob
     });
-    return addCorsHeaders(response);
+    response.headers.set('Access-Control-Allow-Origin', '*');
+response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+return response;
 
   } catch (error: any) {
     const response = NextResponse.json(
       { success: false, message: 'Có lỗi xảy ra khi xóa việc làm' },
       { status: 500 }
     );
-    return addCorsHeaders(response);
+    response.headers.set('Access-Control-Allow-Origin', '*');
+response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+return response;
   }
 }

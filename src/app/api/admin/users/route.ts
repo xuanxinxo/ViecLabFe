@@ -1,12 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAdminFromRequest } from '../../../../lib/auth';
 import { apiClient } from '../../../../lib/api';
-
-import { addCorsHeaders, createCorsOptionsResponse } from '@/lib/corsHelper';
 export const dynamic = "force-dynamic";
 // OPTIONS handler for CORS preflight
 export async function OPTIONS() {
-  return createCorsOptionsResponse();
+  return new NextResponse(null, {
+    status: 200,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    },
+  });
 }
 
 // GET /api/admin/users
@@ -18,7 +23,10 @@ export async function GET(request: NextRequest) {
     if (!admin || admin.role !== 'admin') {
       console.log('❌ [ADMIN USERS] Unauthorized access');
       const response = NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
-    return addCorsHeaders(response);
+    response.headers.set('Access-Control-Allow-Origin', '*');
+response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+return response;
     }
 
     console.log('✅ [ADMIN USERS] Admin verified:', admin.username);
@@ -111,7 +119,10 @@ export async function GET(request: NextRequest) {
         limit: limitNum,
         total: filteredUsers.length,
         totalPages: Math.ceil(filteredUsers.length / limitNum);
-    return addCorsHeaders(response);
+    response.headers.set('Access-Control-Allow-Origin', '*');
+response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+return response;
       }
     });
   } catch (err) {
@@ -120,7 +131,10 @@ export async function GET(request: NextRequest) {
       { success: false, message: 'Internal server error' },
       { status: 500 }
     );
-    return addCorsHeaders(response);
+    response.headers.set('Access-Control-Allow-Origin', '*');
+response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+return response;
   }
 }
 

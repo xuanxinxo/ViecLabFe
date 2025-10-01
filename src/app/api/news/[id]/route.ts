@@ -1,11 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
-
-import { addCorsHeaders, createCorsOptionsResponse } from '@/lib/corsHelper';
 // PUT: Cập nhật tin tức
 
 // OPTIONS handler for CORS preflight
 export async function OPTIONS() {
-  return createCorsOptionsResponse();
+  return new NextResponse(null, {
+    status: 200,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    },
+  });
 }
 
 export async function PUT(
@@ -24,7 +29,10 @@ export async function PUT(
         { error: 'ID tin tức không hợp lệ' },
         { status: 400 }
       );
-    return addCorsHeaders(response);
+    response.headers.set('Access-Control-Allow-Origin', '*');
+response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+return response;
     }
     
     const contentType = request.headers.get('content-type') || '';
@@ -77,7 +85,10 @@ export async function PUT(
         { error: 'Thiếu dữ liệu bắt buộc' },
         { status: 400 }
       );
-    return addCorsHeaders(response);
+    response.headers.set('Access-Control-Allow-Origin', '*');
+response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+return response;
     }
 
     // Mock update news item
@@ -97,7 +108,10 @@ export async function PUT(
       news: updatedNews,
       message: 'Cập nhật tin tức thành công'
     });
-    return addCorsHeaders(response);
+    response.headers.set('Access-Control-Allow-Origin', '*');
+response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+return response;
 
   } catch (error) {
     console.error('Error updating news:', error);
@@ -105,7 +119,10 @@ export async function PUT(
       { error: 'Server error' },
       { status: 500 }
     );
-    return addCorsHeaders(response);
+    response.headers.set('Access-Control-Allow-Origin', '*');
+response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+return response;
   }
 }
 
@@ -139,7 +156,10 @@ export async function GET(
     
     // For single item, return the data directly
     const response = NextResponse.json(data);
-    return addCorsHeaders(response);
+    response.headers.set('Access-Control-Allow-Origin', '*');
+response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+return response;
 
   } catch (error) {
     console.error('Error fetching news:', error);
@@ -147,6 +167,9 @@ export async function GET(
       { error: 'Server error' },
       { status: 500 }
     );
-    return addCorsHeaders(response);
+    response.headers.set('Access-Control-Allow-Origin', '*');
+response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+return response;
   }
 }

@@ -1,11 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAdminFromRequest } from '../../../../lib/auth';
-
-import { addCorsHeaders, createCorsOptionsResponse } from '@/lib/corsHelper';
 export const dynamic = "force-dynamic";
 // OPTIONS handler for CORS preflight
 export async function OPTIONS() {
-  return createCorsOptionsResponse();
+  return new NextResponse(null, {
+    status: 200,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    },
+  });
 }
 
 // GET /api/admin/jobs
@@ -17,7 +22,10 @@ export async function GET(request: NextRequest) {
     if (!admin || admin.role !== 'admin') {
       console.log('❌ [ADMIN JOBS] Unauthorized access');
       const response = NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
-    return addCorsHeaders(response);
+    response.headers.set('Access-Control-Allow-Origin', '*');
+response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+return response;
     }
 
     console.log('✅ [ADMIN JOBS] Admin verified:', admin.username);
@@ -96,7 +104,10 @@ export async function GET(request: NextRequest) {
       console.log('✅ [ADMIN JOBS] Transformed', transformedJobs.length, 'jobs');
       
       const response = NextResponse.json({ success: true, data: transformedJobs });
-    return addCorsHeaders(response);
+    response.headers.set('Access-Control-Allow-Origin', '*');
+response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+return response;
       
         } catch (apiError) {
       console.error('💥 [ADMIN JOBS] Backend API error:', apiError);
@@ -107,7 +118,10 @@ export async function GET(request: NextRequest) {
         { success: false, message: 'Backend API không khả dụng. Vui lòng kiểm tra kết nối database.' },
         { status: 503 }
       );
-    return addCorsHeaders(response);
+    response.headers.set('Access-Control-Allow-Origin', '*');
+response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+return response;
     }
   } catch (err) {
     console.error('💥 [ADMIN JOBS] Error:', err);
@@ -115,7 +129,10 @@ export async function GET(request: NextRequest) {
       { success: false, message: 'Internal server error' },
       { status: 500 }
     );
-    return addCorsHeaders(response);
+    response.headers.set('Access-Control-Allow-Origin', '*');
+response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+return response;
   }
 }
 
@@ -128,7 +145,10 @@ export async function POST(request: NextRequest) {
     if (!admin || admin.role !== 'admin') {
       console.log('❌ [ADMIN JOBS] Unauthorized access');
       const response = NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
-    return addCorsHeaders(response);
+    response.headers.set('Access-Control-Allow-Origin', '*');
+response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+return response;
     }
 
     console.log('✅ [ADMIN JOBS] Admin verified:', admin.username);
@@ -142,7 +162,10 @@ export async function POST(request: NextRequest) {
         { success: false, message: 'Tiêu đề, công ty và địa điểm là bắt buộc' },
         { status: 400 }
       );
-    return addCorsHeaders(response);
+    response.headers.set('Access-Control-Allow-Origin', '*');
+response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+return response;
     }
 
     // Call backend API to create job
@@ -185,7 +208,10 @@ export async function POST(request: NextRequest) {
         { success: true, message: 'Job created successfully', data: createdJob },
         { status: 201 }
       );
-    return addCorsHeaders(response);
+    response.headers.set('Access-Control-Allow-Origin', '*');
+response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+return response;
     } catch (apiError) {
       console.error('💥 [ADMIN JOBS] Backend API error:', apiError);
       
@@ -195,7 +221,10 @@ export async function POST(request: NextRequest) {
         { success: false, message: 'Backend API không khả dụng. Vui lòng kiểm tra kết nối database.' },
         { status: 503 }
       );
-    return addCorsHeaders(response);
+    response.headers.set('Access-Control-Allow-Origin', '*');
+response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+return response;
     }
   } catch (err: any) {
     console.error('💥 [ADMIN JOBS] Error:', err);
@@ -203,6 +232,9 @@ export async function POST(request: NextRequest) {
       { success: false, message: 'Internal server error' },
       { status: 500 }
     );
-    return addCorsHeaders(response);
+    response.headers.set('Access-Control-Allow-Origin', '*');
+response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+return response;
   }
 }

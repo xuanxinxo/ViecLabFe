@@ -1,10 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import { addCorsHeaders, createCorsOptionsResponse } from '@/lib/corsHelper';
 export const dynamic = "force-dynamic";
+
 // OPTIONS handler for CORS preflight
 export async function OPTIONS() {
-  return createCorsOptionsResponse();
+  return new NextResponse(null, {
+    status: 200,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    },
+  });
 }
 
 // GET /api/newjobs - Proxy to backend
@@ -22,26 +29,29 @@ export async function GET(request: NextRequest) {
     
     console.log(`Calling backend API: ${backendApiUrl}`);
 
-    const response = await fetch(backendApiUrl, {
+    const backendResponse = await fetch(backendApiUrl, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
       },
     });
 
-    if (!response.ok) {
-      throw new Error(`Backend API error: ${response.status}`);
+    if (!backendResponse.ok) {
+      throw new Error(`Backend API error: ${backendResponse.status}`);
     }
 
-    const data = await response.json();
+    const data = await backendResponse.json();
     console.log('Backend response data:', data);
     
-    const response = NextResponse.json(data);
-    return addCorsHeaders(response);
+    const res = NextResponse.json(data, { status: backendResponse.status });
+    res.headers.set('Access-Control-Allow-Origin', '*');
+    res.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    return res;
   } catch (error: any) {
     console.error('💥 [NEWJOBS API] Error:', error);
     
-    const response = NextResponse.json(
+    const res = NextResponse.json(
       { 
         success: false,
         data: [],
@@ -49,7 +59,10 @@ export async function GET(request: NextRequest) {
       },
       { status: 500 }
     );
-    return addCorsHeaders(response);
+    res.headers.set('Access-Control-Allow-Origin', '*');
+    res.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    return res;
   }
 }
 
@@ -60,7 +73,7 @@ export async function POST(req: NextRequest) {
     
     // Proxy to backend
     const backendUrl = 'https://vieclabbe.onrender.com';
-    const response = await fetch(`${backendUrl}/api/newjobs`, {
+    const backendResponse = await fetch(`${backendUrl}/api/newjobs`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -68,15 +81,21 @@ export async function POST(req: NextRequest) {
       body: JSON.stringify(body),
     });
 
-    if (!response.ok) {
-      throw new Error(`Backend API error: ${response.status}`);
+    if (!backendResponse.ok) {
+      throw new Error(`Backend API error: ${backendResponse.status}`);
     }
 
-    const data = await response.json();
-    const response = NextResponse.json(data, { status: response.status });
-    return addCorsHeaders(response);
+    const data = await backendResponse.json();
+    const res = NextResponse.json(data, { status: backendResponse.status });
+    res.headers.set('Access-Control-Allow-Origin', '*');
+    res.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    return res;
   } catch (error) {
-    const response = NextResponse.json({ error: 'Server error' }, { status: 500 });
-    return addCorsHeaders(response);
+    const res = NextResponse.json({ error: 'Server error' }, { status: 500 });
+    res.headers.set('Access-Control-Allow-Origin', '*');
+    res.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    return res;
   }
 }

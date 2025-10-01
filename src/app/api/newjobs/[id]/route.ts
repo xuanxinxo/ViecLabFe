@@ -1,11 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { normalizeApiResponse, createErrorResponse } from '@/lib/apiResponseNormalizer';
-
-import { addCorsHeaders, createCorsOptionsResponse } from '@/lib/corsHelper';
 export const dynamic = "force-dynamic";
 // OPTIONS handler for CORS preflight
 export async function OPTIONS() {
-  return createCorsOptionsResponse();
+  return new NextResponse(null, {
+    status: 200,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    },
+  });
 }
 
 // GET /api/newjobs/[id] - Proxy to backend
@@ -35,13 +40,19 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     
     // For single item, return the data directly without normalization
     const response = NextResponse.json(data);
-    return addCorsHeaders(response);
+    response.headers.set('Access-Control-Allow-Origin', '*');
+response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+return response;
   } catch (error: any) {
     console.error('💥 [NEWJOBS API] Error:', error);
     
     const response = NextResponse.json(
       createErrorResponse('Không thể tải dữ liệu từ server');
-    return addCorsHeaders(response);,
+    response.headers.set('Access-Control-Allow-Origin', '*');
+response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+return response;,
       { status: 500 }
     );
   }
@@ -73,7 +84,10 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
     console.log('Backend response data:', data);
     
     const response = NextResponse.json(data);
-    return addCorsHeaders(response);
+    response.headers.set('Access-Control-Allow-Origin', '*');
+response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+return response;
   } catch (error: any) {
     console.error('💥 [NEWJOBS API] Error:', error);
     
@@ -84,6 +98,9 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
       },
       { status: 500 }
     );
-    return addCorsHeaders(response);
+    response.headers.set('Access-Control-Allow-Origin', '*');
+response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+return response;
   }
 }

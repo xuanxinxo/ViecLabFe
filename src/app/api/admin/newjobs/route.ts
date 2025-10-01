@@ -1,12 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { apiClient } from '../../../../lib/api';
 import { getAdminFromRequest } from '../../../../lib/auth';
-
-import { addCorsHeaders, createCorsOptionsResponse } from '@/lib/corsHelper';
 export const dynamic = "force-dynamic";
 // OPTIONS handler for CORS preflight
 export async function OPTIONS() {
-  return createCorsOptionsResponse();
+  return new NextResponse(null, {
+    status: 200,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    },
+  });
 }
 
 // POST - Tạo job mới
@@ -34,7 +39,10 @@ export async function POST(request: NextRequest) {
         { success: false, message: 'Vui lòng điền đầy đủ thông tin bắt buộc' },
         { status: 400 }
       );
-    return addCorsHeaders(response);
+    response.headers.set('Access-Control-Allow-Origin', '*');
+response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+return response;
     }
 
     // Chuẩn bị dữ liệu job mới
@@ -63,7 +71,10 @@ export async function POST(request: NextRequest) {
       { success: true, data: response.data }, 
       { status: 201 }
     );
-    return addCorsHeaders(response);
+    response.headers.set('Access-Control-Allow-Origin', '*');
+response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+return response;
   } catch (error: any) {
     console.error('Lỗi khi tạo job mới:', error);
     const response = NextResponse.json(
@@ -73,7 +84,10 @@ export async function POST(request: NextRequest) {
       },
       { status: 500 }
     );
-    return addCorsHeaders(response);
+    response.headers.set('Access-Control-Allow-Origin', '*');
+response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+return response;
   }
 }
 
@@ -86,7 +100,10 @@ export async function GET(request: NextRequest) {
     if (!admin || admin.role !== 'admin') {
       console.log('❌ [ADMIN NEWJOBS] Unauthorized access');
       const response = NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
-    return addCorsHeaders(response);
+    response.headers.set('Access-Control-Allow-Origin', '*');
+response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+return response;
     }
 
     console.log('✅ [ADMIN NEWJOBS] Admin verified:', admin.username);
@@ -169,7 +186,10 @@ export async function GET(request: NextRequest) {
             limit: limitNum,
             total: filteredJobs.length,
             totalPages: Math.ceil(filteredJobs.length / limitNum);
-    return addCorsHeaders(response);
+    response.headers.set('Access-Control-Allow-Origin', '*');
+response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+return response;
           }
         });
       } else {
@@ -186,7 +206,10 @@ export async function GET(request: NextRequest) {
         data: [],
         pagination: {
           page: parseInt(page);
-    return addCorsHeaders(response);,
+    response.headers.set('Access-Control-Allow-Origin', '*');
+response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+return response;,
           limit: parseInt(limit),
           total: 0,
           totalPages: 0
@@ -202,6 +225,9 @@ export async function GET(request: NextRequest) {
       },
       { status: 500 }
     );
-    return addCorsHeaders(response);
+    response.headers.set('Access-Control-Allow-Origin', '*');
+response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+return response;
   }
 }

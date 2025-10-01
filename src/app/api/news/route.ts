@@ -1,11 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import { addCorsHeaders, createCorsOptionsResponse } from '@/lib/corsHelper';
 // GET: Lấy danh sách tin tức
 
 // OPTIONS handler for CORS preflight
 export async function OPTIONS() {
-  return createCorsOptionsResponse();
+  return new NextResponse(null, {
+    status: 200,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    },
+  });
 }
 
 export async function GET(request: NextRequest) {
@@ -95,7 +101,10 @@ export async function GET(request: NextRequest) {
       data: news,
       count: news.length
     });
-    return addCorsHeaders(response);
+    response.headers.set('Access-Control-Allow-Origin', '*');
+    response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    return response;
   } catch (err) {
     console.error('Error in news API:', err);
     
@@ -108,7 +117,10 @@ export async function GET(request: NextRequest) {
       },
       { status: 500 }
     );
-    return addCorsHeaders(response);
+    response.headers.set('Access-Control-Allow-Origin', '*');
+    response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    return response;
   }
 }
 
@@ -127,7 +139,10 @@ export async function POST(request: NextRequest) {
         { error: 'Thiếu dữ liệu bắt buộc' },
         { status: 400 }
       );
-    return addCorsHeaders(response);
+      response.headers.set('Access-Control-Allow-Origin', '*');
+      response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+      response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+      return response;
     }
 
     // Mock create news item
@@ -146,14 +161,20 @@ export async function POST(request: NextRequest) {
       { success: true, news: newNewsItem },
       { status: 201 }
     );
-    return addCorsHeaders(response);
+    response.headers.set('Access-Control-Allow-Origin', '*');
+    response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    return response;
   } catch (error) {
     console.error('Error creating news item:', error);
     const response = NextResponse.json(
       { error: 'Có lỗi xảy ra khi tạo tin tức mới' },
       { status: 500 }
     );
-    return addCorsHeaders(response);
+    response.headers.set('Access-Control-Allow-Origin', '*');
+    response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    return response;
   }
 }
 
@@ -167,7 +188,10 @@ export async function DELETE(request: NextRequest) {
         { error: 'Thiếu ID tin tức' },
         { status: 400 }
       );
-    return addCorsHeaders(response);
+      response.headers.set('Access-Control-Allow-Origin', '*');
+      response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+      response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+      return response;
     }
     
     // Mock delete - in real app, this would delete from database
@@ -177,7 +201,10 @@ export async function DELETE(request: NextRequest) {
       success: true,
       message: 'Tin tức đã được xóa thành công' 
     });
-    return addCorsHeaders(response);
+    response.headers.set('Access-Control-Allow-Origin', '*');
+    response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    return response;
     
   } catch (error) {
     console.error('Error deleting news:', error);
@@ -185,6 +212,9 @@ export async function DELETE(request: NextRequest) {
       { error: 'Có lỗi xảy ra khi xóa tin tức' },
       { status: 500 }
     );
-    return addCorsHeaders(response);
+    response.headers.set('Access-Control-Allow-Origin', '*');
+    response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    return response;
   }
 }

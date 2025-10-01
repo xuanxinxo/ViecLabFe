@@ -1,6 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-
-import { addCorsHeaders, createCorsOptionsResponse } from '@/lib/corsHelper';
 // Mock data cho bảng xếp hạng sao
 const mockReviews = [
   // 5 sao - Nhân sự
@@ -565,7 +563,14 @@ const mockReviews = [
 
 // OPTIONS handler for CORS preflight
 export async function OPTIONS() {
-  return createCorsOptionsResponse();
+  return new NextResponse(null, {
+    status: 200,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    },
+  });
 }
 
 export async function GET(request: NextRequest) {
@@ -608,17 +613,22 @@ export async function GET(request: NextRequest) {
     console.log(`[REVIEWS API] Returning ${filteredReviews.length} reviews`);
     
     const response = NextResponse.json({
-      success: true,
-      data: filteredReviews,
-      count: filteredReviews.length,
-      pagination: {
-        total: mockReviews.length,
-        page: 1,
-        limit: limit ? parseInt(limit);
-    return addCorsHeaders(response); : filteredReviews.length,
-        totalPages: 1
-      }
-    });
+  success: true,
+  data: filteredReviews,
+  count: filteredReviews.length,
+  pagination: {
+    total: mockReviews.length,
+    page: 1,
+    limit: limit ? parseInt(limit) : filteredReviews.length,
+    totalPages: 1
+  }
+});
+
+response.headers.set('Access-Control-Allow-Origin', '*');
+response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+return response;
+
     
   } catch (err) {
     console.error('Error in reviews API:', err);
@@ -632,7 +642,10 @@ export async function GET(request: NextRequest) {
       },
       { status: 500 }
     );
-    return addCorsHeaders(response);
+    response.headers.set('Access-Control-Allow-Origin', '*');
+response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+return response;
   }
 }
 
@@ -646,7 +659,10 @@ export async function POST(request: NextRequest) {
         { error: 'Thiếu dữ liệu bắt buộc' },
         { status: 400 }
       );
-    return addCorsHeaders(response);
+    response.headers.set('Access-Control-Allow-Origin', '*');
+response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+return response;
     }
     
     // Mock create review
@@ -668,7 +684,10 @@ export async function POST(request: NextRequest) {
       { success: true, data: newReview },
       { status: 201 }
     );
-    return addCorsHeaders(response);
+    response.headers.set('Access-Control-Allow-Origin', '*');
+response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+return response;
     
   } catch (error) {
     console.error('Error creating review:', error);
@@ -676,6 +695,9 @@ export async function POST(request: NextRequest) {
       { error: 'Có lỗi xảy ra khi tạo đánh giá mới' },
       { status: 500 }
     );
-    return addCorsHeaders(response);
+    response.headers.set('Access-Control-Allow-Origin', '*');
+response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+return response;
   }
 }

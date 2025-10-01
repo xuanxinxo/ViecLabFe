@@ -1,10 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
-
-import { addCorsHeaders, createCorsOptionsResponse } from '@/lib/corsHelper';
 export const dynamic = "force-dynamic";
 // OPTIONS handler for CORS preflight
 export async function OPTIONS() {
-  return createCorsOptionsResponse();
+  return new NextResponse(null, {
+    status: 200,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    },
+  });
 }
 
 // GET /api/applications/[id] - Proxy to backend
@@ -18,22 +23,25 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     
     console.log(`Calling backend API: ${backendApiUrl}`);
 
-    const response = await fetch(backendApiUrl, {
+    const fetchResponse = await fetch(backendApiUrl, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
       },
     });
 
-    if (!response.ok) {
-      throw new Error(`Backend API error: ${response.status}`);
+    if (!fetchResponse.ok) {
+      throw new Error(`Backend API error: ${fetchResponse.status}`);
     }
 
-    const data = await response.json();
+    const data = await fetchResponse.json();
     console.log('Backend response data:', data);
     
     const response = NextResponse.json(data);
-    return addCorsHeaders(response);
+    response.headers.set('Access-Control-Allow-Origin', '*');
+response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+return response;
   } catch (error: any) {
     console.error('💥 [APPLICATIONS API] Error:', error);
     
@@ -45,7 +53,10 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
       },
       { status: 500 }
     );
-    return addCorsHeaders(response);
+    response.headers.set('Access-Control-Allow-Origin', '*');
+response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+return response;
   }
 }
 
@@ -60,22 +71,25 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
     
     console.log(`Calling backend API: ${backendApiUrl}`);
 
-    const response = await fetch(backendApiUrl, {
+    const fetchResponse = await fetch(backendApiUrl, {
       method: 'DELETE',
       headers: {
         'Content-Type': 'application/json',
       },
     });
 
-    if (!response.ok) {
-      throw new Error(`Backend API error: ${response.status}`);
+    if (!fetchResponse.ok) {
+      throw new Error(`Backend API error: ${fetchResponse.status}`);
     }
 
-    const data = await response.json();
+    const data = await fetchResponse.json();
     console.log('Backend response data:', data);
     
     const response = NextResponse.json(data);
-    return addCorsHeaders(response);
+    response.headers.set('Access-Control-Allow-Origin', '*');
+response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+return response;
   } catch (error: any) {
     console.error('💥 [APPLICATIONS API] Error:', error);
     
@@ -86,7 +100,10 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
       },
       { status: 500 }
     );
-    return addCorsHeaders(response);
+    response.headers.set('Access-Control-Allow-Origin', '*');
+response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+return response;
   }
 }
 
