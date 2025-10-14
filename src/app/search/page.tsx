@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import Link from "next/link";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
-import type { Job } from "../jobs/page";
+import type { Job } from "@/types/job";
 import { SuspenseBoundary } from "@/components/SuspenseBoundary";
 import { debounce } from "lodash";
 import { normalizeApiResponse, validateSearchParams, buildSearchParams } from "@/lib/apiResponseNormalizer";
@@ -61,6 +61,8 @@ function SearchContent() {
         if (isInitialLoad) {
           setLoading(true);
           setError("");
+          // Clear stale results when a new search starts
+          setJobs([]);
           setShowNoJobsMessage(false);
         } else {
           setLoadingMore(true);
@@ -77,8 +79,10 @@ function SearchContent() {
 
         // Log the request URL and parameters
         const apiUrl = `/api/jobs?${params.toString()}`;
-        console.log('Making API request to:', apiUrl);
-        console.log('Search parameters:', { searchQuery, locationQuery, pageNum });
+        if (process.env.NODE_ENV !== 'production') {
+          console.log('Making API request to:', apiUrl);
+          console.log('Search parameters:', { searchTerm, locationTerm, pageNum });
+        }
 
         // Make the API request
         const startTime = performance.now();
@@ -92,18 +96,22 @@ function SearchContent() {
         });
         const loadTime = performance.now() - startTime;
         
-        console.log(`API response time: ${loadTime.toFixed(2)}ms`);
-        console.log('Response status:', response.status);
+        if (process.env.NODE_ENV !== 'production') {
+          console.log(`API response time: ${loadTime.toFixed(2)}ms`);
+          console.log('Response status:', response.status);
+        }
 
         if (!isMounted.current) return;
         
         if (!response.ok) {
           const errorText = await response.text();
-          console.error('API Error Response:', {
-            status: response.status,
-            statusText: response.statusText,
-            body: errorText
-          });
+          if (process.env.NODE_ENV !== 'production') {
+            console.error('API Error Response:', {
+              status: response.status,
+              statusText: response.statusText,
+              body: errorText
+            });
+          }
           
           if (response.status === 400) {
             throw new Error("Tham số tìm kiếm không hợp lệ");
@@ -117,7 +125,7 @@ function SearchContent() {
         }
 
         const data = await response.json();
-        console.log('API response data:', data);
+        if (process.env.NODE_ENV !== 'production') console.log('API response data:', data);
         
         // Handle the API response structure
         if (!data) {
@@ -135,12 +143,14 @@ function SearchContent() {
         const jobsData: Job[] = normalizedResponse.data;
         const totalCount = normalizedResponse.pagination?.total || jobsData.length;
         
-        console.log('Normalized response:', {
-          success: normalizedResponse.success,
-          jobsCount: jobsData.length,
-          totalCount,
-          pagination: normalizedResponse.pagination
-        });
+        if (process.env.NODE_ENV !== 'production') {
+          console.log('Normalized response:', {
+            success: normalizedResponse.success,
+            jobsCount: jobsData.length,
+            totalCount,
+            pagination: normalizedResponse.pagination
+          });
+        }
         
         // Additional client-side filtering if backend doesn't filter properly
         let finalJobsData = jobsData;
@@ -154,14 +164,16 @@ function SearchContent() {
           );
           finalJobsData = filteredJobs;
           finalTotalCount = filteredJobs.length;
-          console.log(`Client-side filtering: ${finalJobsData.length} jobs match "${searchTerm}"`);
+          if (process.env.NODE_ENV !== 'production') {
+            console.log(`Client-side filtering: ${finalJobsData.length} jobs match "${searchTerm}"`);
+          }
         }
         
         // If no search query, don't show any results
         if (!searchTerm.trim() && !locationTerm.trim()) {
           finalJobsData = [];
           finalTotalCount = 0;
-          console.log('No search terms provided, clearing results');
+          if (process.env.NODE_ENV !== 'production') console.log('No search terms provided, clearing results');
         }
         const pagination = {
           page: pageNum.toString(),
@@ -181,7 +193,9 @@ function SearchContent() {
         setCurrentPage(pageNum);
         
         // Log the final results for debugging
-        console.log(`Final results: ${finalJobsData.length} jobs, total: ${finalTotalCount}, hasMore: ${hasMoreData}`);
+        if (process.env.NODE_ENV !== 'production') {
+          console.log(`Final results: ${finalJobsData.length} jobs, total: ${finalTotalCount}, hasMore: ${hasMoreData}`);
+        }
         
         // Show no jobs message if no results on initial load
         if (isInitialLoad) {
@@ -190,11 +204,13 @@ function SearchContent() {
         
         // If we have search terms but no results, show appropriate message
         if (searchTerm.trim() && finalJobsData.length === 0) {
-          console.log(`No jobs found for search term: "${searchTerm}"`);
+          if (process.env.NODE_ENV !== 'production') console.log(`No jobs found for search term: "${searchTerm}"`);
         }
       } catch (err) {
-        console.error("Error fetching jobs:", err);
+        if (process.env.NODE_ENV !== 'production') console.error("Error fetching jobs:", err);
         setError(err instanceof Error ? err.message : "Có lỗi xảy ra!");
+        // On error, ensure we don't keep stale jobs
+        setJobs([]);
         setShowNoJobsMessage(true);
       } finally {
         if (isMounted.current) {

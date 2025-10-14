@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import type { Job } from "@/src/types/job";
+import type { Job } from "@/types/job";
 import ApplyModal from "./ApplyModal";
 import JobCard from "./JobCard";
 import PaginationDots from "./PaginationDots";

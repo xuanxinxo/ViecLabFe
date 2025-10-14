@@ -443,7 +443,10 @@ function EditNewsModal({
                     className="object-cover rounded"
                     onError={(e) => {
                       e.currentTarget.style.display = 'none';
-                      e.currentTarget.nextElementSibling.style.display = 'block';
+                      const nextElement = e.currentTarget.nextElementSibling as HTMLElement;
+                      if (nextElement) {
+                        nextElement.style.display = 'block';
+                      }
                     }}
                   />
                   <div className="absolute inset-0 flex items-center justify-center bg-gray-100 text-gray-500 text-sm" style={{ display: 'none' }}>

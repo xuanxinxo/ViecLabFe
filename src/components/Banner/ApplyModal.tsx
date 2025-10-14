@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from "react";
-import type { Job } from "@/src/types/job";
+import type { Job } from "@/types/job";
 
 interface ApplyModalProps {
   open: boolean;
@@ -76,6 +76,7 @@ export default function ApplyModal({ open, onClose, job }: ApplyModalProps) {
     </div>
   );
 }
+
 
 
 

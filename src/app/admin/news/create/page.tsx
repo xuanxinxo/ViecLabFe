@@ -36,13 +36,13 @@ export default function CreateNews() {
 
       const result = await adminApi.news.create(formDataToSend);
 
-      if (result.success) {
+      if (result.data?.success) {
         setMessage({ type: 'success', text: 'Tạo tin tức thành công!' });
         setTimeout(() => {
           router.push('/admin/news');
         }, 1500);
       } else {
-        setMessage({ type: 'error', text: result.message || 'Có lỗi xảy ra' });
+        setMessage({ type: 'error', text: result.data?.message || 'Có lỗi xảy ra' });
       }
     } catch (error) {
       console.error('Error creating news:', error);

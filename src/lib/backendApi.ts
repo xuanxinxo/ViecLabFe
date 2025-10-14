@@ -1,5 +1,5 @@
 // Backend API helper for admin pages
-const BACKEND_URL = 'https://vieclabbe.onrender.com';
+const BACKEND_URL = (process.env.NEXT_PUBLIC_API_URL || 'https://vieclabbe.onrender.com').replace(/\/+$/, '');
 
 // Helper function to get auth headers
 const getAuthHeaders = () => {

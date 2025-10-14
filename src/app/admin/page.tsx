@@ -421,13 +421,13 @@ export default function AdminDashboard() {
                         {review.category === 'talent' ? '👥 Nhân sự' : '🏢 Doanh nghiệp'}
                       </span>
                     </div>
-                    {review.comment && (
+                    {review.content && (
                       <p className="text-sm text-gray-600 line-clamp-3">
-                        {review.comment}
+                        {review.content}
                       </p>
                     )}
                     <p className="text-xs text-gray-500 mt-2">
-                      📅 {new Date(review.createdAt).toLocaleDateString('vi-VN')}
+                      📅 {review.createdAt ? new Date(review.createdAt).toLocaleDateString('vi-VN') : 'N/A'}
                     </p>
                   </div>
                 ))}

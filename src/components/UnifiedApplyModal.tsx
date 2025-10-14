@@ -58,7 +58,7 @@ export default function UnifiedApplyModal({
     try {
       // Xác định ID field dựa trên type
       const jobId = job.id || job._id;
-      const requestBody = { ...form };
+      const requestBody: any = { ...form };
       
       if (type === 'hiring') {
         requestBody.hiringId = jobId;

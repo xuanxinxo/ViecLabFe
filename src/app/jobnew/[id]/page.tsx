@@ -59,7 +59,7 @@ export default function NewJobDetail() {
         const result = await apiLoaders.newjobs.loadItem(params.id as string);
 
         if (result.success && result.data) {
-          setJob(result.data);
+          setJob(result.data as NewJob);
           console.log('NewJob loaded successfully:', result.data);
         } else {
           const errorMsg = result.error || 'Không tìm thấy việc làm';

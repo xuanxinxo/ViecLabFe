@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { createNewJob, updateNewJob } from '../../lib/api';
+import { apiClient } from '../../lib/api';
 
 interface NewJobFormProps {
   job?: {
@@ -100,11 +100,11 @@ export function NewJobForm({ job, isEditing = false }: NewJobFormProps) {
         // Thêm các trường dữ liệu
         Object.keys(jobData).forEach(key => {
           if (key === 'requirements' || key === 'benefits' || key === 'tags') {
-            formDataToSend.append(key, JSON.stringify(jobData[key]));
+            formDataToSend.append(key, JSON.stringify(jobData[key as keyof typeof jobData]));
           } else if (key === 'isRemote') {
-            formDataToSend.append(key, jobData[key].toString());
+            formDataToSend.append(key, (jobData[key as keyof typeof jobData] as boolean).toString());
           } else {
-            formDataToSend.append(key, jobData[key]);
+            formDataToSend.append(key, jobData[key as keyof typeof jobData] as string);
           }
         });
         
@@ -128,9 +128,9 @@ export function NewJobForm({ job, isEditing = false }: NewJobFormProps) {
       } else {
         // Nếu không có hình ảnh mới, gửi JSON như cũ
         if (isEditing && job?.id) {
-          await updateNewJob(job.id, jobData);
+          await apiClient.newJobs.update(job.id, jobData);
         } else {
-          await createNewJob(jobData);
+          await apiClient.newJobs.create(jobData);
         }
       }
       

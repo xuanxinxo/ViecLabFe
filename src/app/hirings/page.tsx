@@ -39,7 +39,7 @@ export default function HiringsJobNewList() {
 
       if (result.success) {
         console.log(`✅ [HIRINGS] Loaded ${result.data.length} hirings successfully`);
-        setJobs(result.data);
+        setJobs(result.data as JobNew[]);
       } else {
         console.error('❌ [HIRINGS] Failed to load hirings:', result.error);
         setError(result.error || "Định dạng dữ liệu không hợp lệ từ máy chủ");

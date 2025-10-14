@@ -1,5 +1,5 @@
 import React from 'react';
-import { provinces } from '@/src/lib/provinces';
+import { provinces } from '@/lib/provinces';
 
 interface LocationFilterProps {
   onLocationSelect: (province: string) => void;
@@ -22,7 +22,7 @@ const LocationFilter: React.FC<LocationFilterProps> = ({ onLocationSelect }) => 
           }}
         />
         <datalist id="provinces">
-          {provinces.map((province) => (
+          {provinces.map((province: string) => (
             <option key={province} value={province} />
           ))}
         </datalist>

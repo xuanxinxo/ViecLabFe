@@ -64,7 +64,7 @@ return response;
       console.log('🔍 [ADMIN APPLICATIONS] Backend response status:', response.status);
       
       if (response.ok) {
-        const backendData = await response.json();
+        const backendData: any = await response.json();
         console.log('✅ [ADMIN APPLICATIONS] Backend response data:', backendData);
         
         // Handle different backend response formats
@@ -77,20 +77,21 @@ return response;
         
         console.log('✅ [ADMIN APPLICATIONS] Processed', applications.length, 'applications');
         
-        const response = NextResponse.json({
+        const nextResponse = NextResponse.json({
           success: true,
           data: applications,
           pagination: backendData.pagination || {
-            page: parseInt(page);
-    response.headers.set('Access-Control-Allow-Origin', '*');
-response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-return response;,
+            page: parseInt(page),
             limit: parseInt(limit),
             total: applications.length,
             totalPages: Math.ceil(applications.length / parseInt(limit))
           }
         });
+        
+        nextResponse.headers.set('Access-Control-Allow-Origin', '*');
+        nextResponse.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+        nextResponse.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+        return nextResponse;
       } else {
         throw new Error(`Backend API error: ${response.status}`);
       }

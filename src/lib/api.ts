@@ -5,7 +5,8 @@ type HttpMethod = 'get' | 'post' | 'put' | 'delete';
 
 // Base API configuration
 const API_URL = (process.env.NEXT_PUBLIC_API_URL || 'https://vieclabbe.onrender.com').replace(/\/+$/, '');
-console.log("api url: ", API_URL);
+const __DEV__ = process.env.NODE_ENV !== 'production';
+if (__DEV__) console.log("api url: ", API_URL);
 // Simple cache for API responses
 const apiCache = new Map<string, { data: any; timestamp: number }>();
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
@@ -16,7 +17,7 @@ const retryRequest = async (fn: () => Promise<any>, maxRetries: number = 3, dela
     try {
       return await fn();
     } catch (error: any) {
-      console.log(`[API Retry] Attempt ${i + 1}/${maxRetries} failed:`, error);
+      if (__DEV__) console.log(`[API Retry] Attempt ${i + 1}/${maxRetries} failed:`, error);
 
       // Don't retry for certain errors
       if (error.status === 401 || error.status === 403 || error.status === 404) {
@@ -29,7 +30,7 @@ const retryRequest = async (fn: () => Promise<any>, maxRetries: number = 3, dela
 
       // Exponential backoff with jitter
       const backoffDelay = delay * Math.pow(2, i) + Math.random() * 1000;
-      console.log(`[API Retry] Waiting ${Math.round(backoffDelay)}ms before retry...`);
+      if (__DEV__) console.log(`[API Retry] Waiting ${Math.round(backoffDelay)}ms before retry...`);
       await new Promise(resolve => setTimeout(resolve, backoffDelay));
     }
   }
@@ -41,11 +42,11 @@ const getCachedOrFetch = async (key: string, fetchFn: () => Promise<any>) => {
   const now = Date.now();
 
   if (cached && (now - cached.timestamp) < CACHE_DURATION) {
-    console.log(`[API Cache] Using cached data for ${key}`);
+    if (__DEV__) console.log(`[API Cache] Using cached data for ${key}`);
     return cached.data;
   }
 
-  console.log(`[API Cache] Fetching fresh data for ${key}`);
+  if (__DEV__) console.log(`[API Cache] Fetching fresh data for ${key}`);
   const data = await retryRequest(fetchFn);
   apiCache.set(key, { data, timestamp: now });
   return data;
@@ -131,7 +132,7 @@ api.interceptors.response.use(
 
     // Handle network errors
     if (error.message.includes('Network Error') || error.message.includes('ERR_NETWORK')) {
-      console.warn('[API] Network error - check internet connection');
+      if (__DEV__) console.warn('[API] Network error - check internet connection');
       return Promise.reject({
         status: 0,
         message: 'Network error. Please check your internet connection.',

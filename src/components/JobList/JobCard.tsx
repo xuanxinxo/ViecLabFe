@@ -1,6 +1,6 @@
 "use client";
 
-import { Job } from "@/src/app/types/job";
+import { Job } from "@/types/job";
 import Link from "next/link";
 
 export default function JobCard({
@@ -59,7 +59,7 @@ export default function JobCard({
         {(Array.isArray(job.requirements)
           ? job.requirements.slice(0, 2)
           : []
-        ).map((req, i) => (
+        ).map((req: string, i: number) => (
           <span
             key={i}
             className="text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded-full"

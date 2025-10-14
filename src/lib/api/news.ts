@@ -1,4 +1,4 @@
-import { PaginationParams, PaginatedResponse } from '@/src/types/job';
+import { PaginationParams, PaginatedResponse } from '@/types/job';
 
 const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL || 'https://vieclabbe.onrender.com').replace(/\/+$/, '');
 

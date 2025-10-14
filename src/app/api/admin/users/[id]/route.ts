@@ -1,17 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAdminFromRequest } from '../../../../../lib/auth';
 import { apiClient } from '../../../../../lib/api';
+
 export const dynamic = "force-dynamic";
+
+// Helper để thêm CORS headers
+function setCors(res: NextResponse) {
+  res.headers.set('Access-Control-Allow-Origin', '*');
+  res.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  return res;
+}
+
 // OPTIONS handler for CORS preflight
 export async function OPTIONS() {
-  return new NextResponse(null, {
-    status: 200,
-    headers: {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-    },
-  });
+  return setCors(new NextResponse(null, { status: 200 }));
 }
 
 // GET /api/admin/users/:id
@@ -22,43 +25,30 @@ export async function GET(
   try {
     const admin = getAdminFromRequest(request);
     if (!admin || admin.role !== 'admin') {
-      const response = NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
-    response.headers.set('Access-Control-Allow-Origin', '*');
-response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-return response;
+      return setCors(
+        NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 })
+      );
     }
 
     const { id } = params;
     if (!id) {
-      const response = NextResponse.json({ success: false, message: 'User ID is required' }, { status: 400 });
-    response.headers.set('Access-Control-Allow-Origin', '*');
-response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-return response;
+      return setCors(
+        NextResponse.json({ success: false, message: 'User ID is required' }, { status: 400 })
+      );
     }
 
     // Lấy chi tiết user từ API
-    const response = await apiClient.users.getById(id);
-    
-    const response = NextResponse.json({ 
-      success: true, 
-      data: response.data 
-    });
-    response.headers.set('Access-Control-Allow-Origin', '*');
-response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-return response;
-  } catch (err) {
-    console.error('Error fetching user:', err);
-    const response = NextResponse.json(
-      { success: false, message: 'Internal server error' },
-      { status: 500 }
+    const apiRes = await apiClient.users.getById(id);
+
+    return setCors(
+      NextResponse.json({ success: true, data: apiRes.data })
     );
-    response.headers.set('Access-Control-Allow-Origin', '*');
-response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-return response;
+
+  } catch (err) {
+    console.error('💥 [ADMIN USERS] Error fetching user:', err);
+    return setCors(
+      NextResponse.json({ success: false, message: 'Internal server error' }, { status: 500 })
+    );
   }
 }
 
@@ -70,43 +60,29 @@ export async function DELETE(
   try {
     const admin = getAdminFromRequest(request);
     if (!admin || admin.role !== 'admin') {
-      const response = NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
-    response.headers.set('Access-Control-Allow-Origin', '*');
-response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-return response;
+      return setCors(
+        NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 })
+      );
     }
 
     const { id } = params;
     if (!id) {
-      const response = NextResponse.json({ success: false, message: 'User ID is required' }, { status: 400 });
-    response.headers.set('Access-Control-Allow-Origin', '*');
-response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-return response;
+      return setCors(
+        NextResponse.json({ success: false, message: 'User ID is required' }, { status: 400 })
+      );
     }
 
     // Xóa user từ API
     await apiClient.users.delete(id);
-    
-    const response = NextResponse.json({ 
-      success: true, 
-      message: 'User deleted successfully' 
-    });
-    response.headers.set('Access-Control-Allow-Origin', '*');
-response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-return response;
-  } catch (err) {
-    console.error('Error deleting user:', err);
-    const response = NextResponse.json(
-      { success: false, message: 'Internal server error' },
-      { status: 500 }
+
+    return setCors(
+      NextResponse.json({ success: true, message: 'User deleted successfully' })
     );
-    response.headers.set('Access-Control-Allow-Origin', '*');
-response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-return response;
+
+  } catch (err) {
+    console.error('💥 [ADMIN USERS] Error deleting user:', err);
+    return setCors(
+      NextResponse.json({ success: false, message: 'Internal server error' }, { status: 500 })
+    );
   }
 }
-

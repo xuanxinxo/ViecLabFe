@@ -2,8 +2,8 @@
 const nextConfig = {
   reactStrictMode: true,
   swcMinify: true,
-  // Tắt telemetry
-  telemetry: false,
+  // Tắt telemetry - sử dụng environment variable thay vì config option
+  // telemetry: false, // Option này không còn được hỗ trợ trong Next.js 14
   images: {
     domains: [
       'media-blog.jobsgo.vn',
@@ -12,7 +12,7 @@ const nextConfig = {
       'res.cloudinary.com',
       'images.unsplash.com',
       'via.placeholder.com',
-      'vieclabbe.onrender.com', // Backend domain for images
+      'vieclabbe.onrender.com',
     ],
   },
   typescript: {

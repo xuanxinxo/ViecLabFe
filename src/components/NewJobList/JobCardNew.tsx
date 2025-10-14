@@ -26,7 +26,7 @@ export default function JobCardNew({ job }: { job: Job }) {
 
   return (
     <div
-      key={job._id || job.id}
+      key={job.id}
       className="border p-4 rounded-lg shadow-sm hover:shadow-md transition-shadow bg-white flex flex-col h-full justify-between"
     >
       <div className="flex-1 space-y-2">
@@ -88,7 +88,7 @@ export default function JobCardNew({ job }: { job: Job }) {
           Ứng tuyển
         </button>
         <Link
-          href={`/jobnew/${job._id || job.id}`}
+          href={`/jobnew/${job.id}`}
           className="w-full sm:w-auto text-sm text-blue-600 hover:text-blue-800 font-medium text-center bg-blue-50 rounded px-4 py-2 hover:bg-blue-100 transition-colors duration-200"
         >
           Xem chi tiết →

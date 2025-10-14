@@ -1,7 +1,7 @@
 'use client';
 
 import Link from "next/link";
-import type { Job } from "@/src/types/job";
+import type { Job } from "@/types/job";
 
 interface JobCardProps {
   job: Job;
@@ -48,6 +48,7 @@ export default function JobCard({ job, onApply }: JobCardProps) {
     </div>
   );
 }
+
 
 
 

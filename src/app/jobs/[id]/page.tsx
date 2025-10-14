@@ -55,7 +55,7 @@ export default function JobDetail() {
         const result = await apiLoaders.jobs.loadItem(params.id as string);
 
         if (result.success && result.data) {
-          setJob(result.data);
+          setJob(result.data as Job);
           console.log('Job loaded successfully:', result.data);
         } else {
           const errorMsg = result.error || 'Không tìm thấy việc làm';

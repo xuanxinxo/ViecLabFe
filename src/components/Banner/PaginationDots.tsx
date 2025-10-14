@@ -24,3 +24,7 @@ export default function PaginationDots({ total, current, onChange }: PaginationD
 
 
 
+
+
+
+

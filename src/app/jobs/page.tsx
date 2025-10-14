@@ -232,7 +232,7 @@ export default function AllJobsPage() {
       const result = await apiLoaders.jobs.load(params);
 
       if (result.success) {
-        setJobs(result.data);
+        setJobs(result.data as Job[]);
         setPagination(prev => ({
           ...prev,
           total: result.total,

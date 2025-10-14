@@ -44,7 +44,7 @@ export default function JobList({
       // Handle backend response format: {success: true, count: 29, data: [...]}
       let hiringsData: Job[] = [];
       
-      if (responseData.success && Array.isArray(responseData.data)) {
+      if (responseData.data && Array.isArray(responseData.data)) {
         // Backend format: {success: true, data: [...]}
         hiringsData = responseData.data;
       } else if (responseData.data && Array.isArray(responseData.data)) {
@@ -134,7 +134,7 @@ export default function JobList({
           hirings.map((job) => (
             <div
               className="transition-transform transform hover:-translate-y-1 hover:shadow-lg duration-300"
-              key={job.id || job._id}
+              key={job.id}
             >
               <JobCard job={job} onApply={() => setSelectedJob(job)} />
             </div>

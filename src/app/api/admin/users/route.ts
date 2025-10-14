@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAdminFromRequest } from '../../../../lib/auth';
-import { apiClient } from '../../../../lib/api';
+
 export const dynamic = "force-dynamic";
+
 // OPTIONS handler for CORS preflight
 export async function OPTIONS() {
   return new NextResponse(null, {
@@ -22,11 +23,14 @@ export async function GET(request: NextRequest) {
     const admin = getAdminFromRequest(request);
     if (!admin || admin.role !== 'admin') {
       console.log('❌ [ADMIN USERS] Unauthorized access');
-      const response = NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
-    response.headers.set('Access-Control-Allow-Origin', '*');
-response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-return response;
+      const response = NextResponse.json(
+        { success: false, message: 'Unauthorized' }, 
+        { status: 401 }
+      );
+      response.headers.set('Access-Control-Allow-Origin', '*');
+      response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+      response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+      return response;
     }
 
     console.log('✅ [ADMIN USERS] Admin verified:', admin.username);
@@ -38,8 +42,7 @@ return response;
 
     console.log('🔍 [ADMIN USERS] Query params:', { page, limit, search, role });
 
-    // For now, return sample users data
-    // In real implementation, fetch from backend
+    // Sample data
     const sampleUsers = [
       {
         id: 'user-1',
@@ -118,13 +121,17 @@ return response;
         page: pageNum,
         limit: limitNum,
         total: filteredUsers.length,
-        totalPages: Math.ceil(filteredUsers.length / limitNum);
-    response.headers.set('Access-Control-Allow-Origin', '*');
-response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-return response;
+        totalPages: Math.ceil(filteredUsers.length / limitNum)
       }
     });
+
+    // Set CORS headers
+    response.headers.set('Access-Control-Allow-Origin', '*');
+    response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+
+    return response;
+
   } catch (err) {
     console.error('💥 [ADMIN USERS] Error:', err);
     const response = NextResponse.json(
@@ -132,9 +139,8 @@ return response;
       { status: 500 }
     );
     response.headers.set('Access-Control-Allow-Origin', '*');
-response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-return response;
+    response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    return response;
   }
 }
-

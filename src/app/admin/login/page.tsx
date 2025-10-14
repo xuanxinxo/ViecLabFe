@@ -11,28 +11,10 @@ export default function AdminLogin() {
   const [error, setError] = useState('');
   const router = useRouter();
 
-  // Check if user is already logged in
+  // If already logged in, middleware will redirect away from this page
   useEffect(() => {
-    // Check if there's an admin-token cookie
-    const checkAuth = async () => {
-      try {
-        const response = await fetch('/api/jobs', {
-          credentials: 'include'
-        });
-        if (response.ok) {
-          const data = await response.json();
-          if (data.success) {
-            console.log('✅ Already authenticated, redirecting to admin');
-            router.push('/admin');
-          }
-        }
-      } catch (error) {
-        console.log('🔍 Not authenticated, staying on login page');
-        // Not authenticated, stay on login page
-      }
-    };
-    checkAuth();
-  }, [router]);
+    // No-op on mount
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -1,6 +1,6 @@
 "use client";
 
-import { Job } from "@/src/app/types/job";
+import { Job } from "@/types/job";
 import JobCardNew from "./JobCardNew";
 import Link from "next/link";
 import { useState, useEffect } from "react";
@@ -34,7 +34,7 @@ export default function NewJobList({
 
       if (Array.isArray(response)) {
         setJobs(response);
-      } else if (response.success && Array.isArray(response.data)) {
+      } else if (response.data && Array.isArray(response.data)) {
         setJobs(response.data);
       } else if (response && Array.isArray(response.data)) {
         setJobs(response.data);
@@ -153,7 +153,7 @@ export default function NewJobList({
       </div>
     ) : (
       jobs.slice(0, 4).map((job) => (
-        <div key={job._id || job.id} className="h-full">
+        <div key={job.id} className="h-full">
           <JobCardNew job={job} />
         </div>
       ))

@@ -68,7 +68,7 @@ export default function Detailjobs() {
         }
         
         if (result.success && result.data) {
-          setJob(result.data);
+          setJob(result.data as Hiring);
           console.log('Job loaded successfully:', result.data);
         } else {
           const errorMsg = result.error || 'Không tìm thấy việc làm';

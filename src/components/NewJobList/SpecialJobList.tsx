@@ -35,10 +35,6 @@ export default function SpecialJobList() {
       // Handle backend response format: /api/newjobs returns array directly
       if (Array.isArray(json)) {
         setJobs(json);
-      } else if (json.success && Array.isArray(json.data)) {
-        setJobs(json.data);
-      } else if (json.jobs && Array.isArray(json.jobs)) {
-        setJobs(json.jobs);
       } else if (json.data && Array.isArray(json.data)) {
         setJobs(json.data);
       } else {
@@ -114,7 +110,21 @@ export default function SpecialJobList() {
           >
             Ứng tuyển
           </button>
-          <UnifiedApplyModal open={showModal === job._id} onClose={() => setShowModal(null)} job={job} type="newjob" />
+          <UnifiedApplyModal 
+            open={showModal === job._id} 
+            onClose={() => setShowModal(null)} 
+            job={{
+              id: job._id,
+              title: job.title,
+              company: job.company,
+              location: job.location,
+              type: '',
+              salary: typeof job.salary === 'number' ? job.salary.toString() : job.salary,
+              description: '',
+              postedDate: job.createdAt || ''
+            }} 
+            type="newjob" 
+          />
         </div>
       ))}
     </div>
