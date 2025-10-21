@@ -51,6 +51,26 @@ export default function AdminDashboard() {
   const [dataLoading, setDataLoading] = useState(true);
   const router = useRouter();
 
+  // Hard guard: verify admin token with protected API; redirect to login if unauthorized
+  useEffect(() => {
+    const verifyAdmin = async () => {
+      try {
+        const res = await fetch('/api/admin/dashboard', {
+          method: 'GET',
+          credentials: 'include'
+        });
+        if (res.status === 401) {
+          router.push('/admin/login?redirect=/admin');
+          return;
+        }
+      } catch (_) {
+        router.push('/admin/login?redirect=/admin');
+        return;
+      }
+    };
+    verifyAdmin();
+  }, [router]);
+
   useEffect(() => {
     const loadDashboardStats = async () => {
       try {

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { apiClient } from '../../../lib/api';
 
 export default function AdminLogin() {
@@ -10,6 +10,7 @@ export default function AdminLogin() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   // If already logged in, middleware will redirect away from this page
   useEffect(() => {
@@ -78,10 +79,15 @@ export default function AdminLogin() {
         // Cookie is already set by the server, no need to store in localStorage
         // localStorage.setItem('adminToken', token);
         
-        // Redirect to admin dashboard
-        router.push('/admin');
+        console.log('✅ Login successful, redirecting...');
+        // Redirect to intended admin page if provided
+        const redirectParam = searchParams?.get('redirect') || '';
+        const safeRedirect = redirectParam.startsWith('/admin') ? redirectParam : '/admin';
+        console.log('Redirecting to:', safeRedirect);
+        router.push(safeRedirect);
         router.refresh(); // Force a refresh to update auth state
       } else {
+        console.error('❌ No token received in response:', data);
         throw new Error('Không nhận được token đăng nhập');
       }
     } catch (error: any) {

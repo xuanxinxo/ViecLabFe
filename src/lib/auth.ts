@@ -158,16 +158,17 @@ export function authenticateAdmin(username: string, password: string): AdminUser
     } else {
       if (__DEV__) console.log('❌ [AUTH] Password verification failed with plain text comparison');
       if (__DEV__) console.log('🔍 [AUTH] Expected:', user.password, 'Received:', '***');
-      // Fallback DEV credentials
-      if (__DEV__ && user.username.toLowerCase() === 'admin' && (normalizedPassword === 'admin' || normalizedPassword === 'password')) {
-        if (__DEV__) console.log('✅ [AUTH] Accepted DEV fallback credentials for admin (plain)');
-        return {
-          userId: user.id,
-          username: user.username,
-          role: user.role,
-          permissions: user.permissions
-        };
-      }
+    }
+    
+    // Fallback DEV credentials - chạy cho mọi trường hợp thất bại
+    if (__DEV__ && user.username.toLowerCase() === 'admin' && (normalizedPassword === 'admin' || normalizedPassword === 'password')) {
+      if (__DEV__) console.log('✅ [AUTH] Accepted DEV fallback credentials for admin');
+      return {
+        userId: user.id,
+        username: user.username,
+        role: user.role,
+        permissions: user.permissions
+      };
     }
   } else {
     if (__DEV__) console.log('❌ [AUTH] User not found in adminUsers array');
