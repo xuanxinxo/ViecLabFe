@@ -55,15 +55,27 @@ export default function AdminDashboard() {
   useEffect(() => {
     const verifyAdmin = async () => {
       try {
+        console.log('🔐 [ADMIN PAGE] Verifying admin access...');
         const res = await fetch('/api/admin/dashboard', {
           method: 'GET',
           credentials: 'include'
         });
+        
         if (res.status === 401) {
+          console.log('❌ [ADMIN PAGE] Unauthorized, redirecting to login');
           router.push('/admin/login?redirect=/admin');
           return;
         }
-      } catch (_) {
+        
+        if (!res.ok) {
+          console.log(`❌ [ADMIN PAGE] API error ${res.status}, redirecting to login`);
+          router.push('/admin/login?redirect=/admin');
+          return;
+        }
+        
+        console.log('✅ [ADMIN PAGE] Admin access verified');
+      } catch (error) {
+        console.log('❌ [ADMIN PAGE] Network error, redirecting to login:', error);
         router.push('/admin/login?redirect=/admin');
         return;
       }
